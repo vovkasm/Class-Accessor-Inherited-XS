@@ -1,0 +1,6 @@
+Revision history for Perl extension Class::Accessor::Inherited::XS.
+
+0.01  Fri Oct  9 22:52:06 2009
+	- original version; created by h2xs 1.23 with options
+		-A -n Class::Accessor::Inherited::XS
+

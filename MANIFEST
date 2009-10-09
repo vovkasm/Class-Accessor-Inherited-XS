@@ -1,0 +1,8 @@
+Changes
+Makefile.PL
+MANIFEST
+ppport.h
+README
+XS.xs
+t/Class-Accessor-Inherited-XS.t
+lib/Class/Accessor/Inherited/XS.pm
