@@ -24,7 +24,7 @@ PPCODE:
     //warn("get_inherited: ");
     if (sv_isobject(self)) {
         if (SvTYPE(SvRV(self)) != SVt_PVHV)
-            croak("Oops, object not HASH based");
+            croak("Cannot get value for inherited accessor, object is not hash-based");
 
         if (he = hv_fetch_ent( (HV *)SvRV(self), acc, 0, 0)) {
             PUSHs( HeVAL(he) );
@@ -61,10 +61,12 @@ PPCODE:
     //warn("\tlookup2: %s::%s\n",HvNAME(stash),SvPV_nolen(pkg_acc));
 
             if (he = hv_fetch_ent( stash, pkg_acc, 0, 0)) {
-                SV* sv = HeVAL(he);
+                SV* sv = GvSV( HeVAL(he) );
+                if (sv && SvOK(sv)) {
     //warn("\tfound in %s::%s val: %s\n",HvNAME(stash),SvPV_nolen(pkg_acc),SvPV_nolen(sv));
-                PUSHs( sv );
-                XSRETURN(1);
+                    PUSHs( sv );
+                    XSRETURN(1);
+                }
             }
         }
     }
