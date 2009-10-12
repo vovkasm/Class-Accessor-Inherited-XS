@@ -24,7 +24,7 @@ PPCODE:
     //warn("get_inherited: ");
     if (sv_isobject(self)) {
         if (SvTYPE(SvRV(self)) != SVt_PVHV)
-            croak("Cannot get value for inherited accessor, object is not hash-based");
+            croak("Cannot get inherited value on an object instance that is not hash-based");
 
         if (he = hv_fetch_ent( (HV *)SvRV(self), acc, 0, 0)) {
             PUSHs( HeVAL(he) );
