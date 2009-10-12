@@ -39,23 +39,23 @@ PPCODE:
     pkg_acc = newSVpvn("__cag_",6);
     sv_catsv(pkg_acc, acc);
 
-    /*    
-
     if (he = hv_fetch_ent( stash, pkg_acc, 0, 0)) {
-        PUSHs( HeVAL(he) );
-        XSRETURN(1);
+        SV* sv = GvSV( HeVAL(he) );
+        if (sv && SvOK(sv)) {
+            PUSHs( sv );
+            XSRETURN(1);
+        }
     }
-    */
+
     // Now try all superclasses
     supers = mro_get_linear_isa(stash);
     len = av_len(supers);
 
-    for (key = 0; key <= len; key++) {
+    for (key = 1; key <= len; key++) {
         SV **svp = av_fetch(supers, key, 0);
         if (svp) {
             SV* super = (SV *)*svp;
             stash = gv_stashsv(super, GV_ADD);
-
 
             if (he = hv_fetch_ent( stash, pkg_acc, 0, 0)) {
                 SV* sv = GvSV( HeVAL(he) );
@@ -64,6 +64,7 @@ PPCODE:
                     XSRETURN(1);
                 }
             }
+
         }
     }
 
