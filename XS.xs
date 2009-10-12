@@ -21,7 +21,7 @@ INIT:
     I32 key;
 PPCODE:
 {
-    warn("get_inherited: ");
+    //warn("get_inherited: ");
     if (sv_isobject(self)) {
         if (SvTYPE(SvRV(self)) != SVt_PVHV)
             croak("Oops, object not HASH based");
@@ -31,7 +31,7 @@ PPCODE:
             XSRETURN(1);
         }
 
-        stash = SvSTASH(self);
+        stash = SvSTASH(SvRV(self));
     }
     else
         stash = gv_stashsv(self, GV_ADD);
@@ -58,10 +58,12 @@ PPCODE:
             SV* super = (SV *)*svp;
             stash = gv_stashsv(super, GV_ADD);
 
-    warn("\tlookup2: %s::%s\n",HvNAME(stash),SvPV_nolen(pkg_acc));
+    //warn("\tlookup2: %s::%s\n",HvNAME(stash),SvPV_nolen(pkg_acc));
 
             if (he = hv_fetch_ent( stash, pkg_acc, 0, 0)) {
-                PUSHs( HeVAL(he) );
+                SV* sv = HeVAL(he);
+    //warn("\tfound in %s::%s val: %s\n",HvNAME(stash),SvPV_nolen(pkg_acc),SvPV_nolen(sv));
+                PUSHs( sv );
                 XSRETURN(1);
             }
         }
