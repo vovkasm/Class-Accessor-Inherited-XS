@@ -1,7 +1,16 @@
+bench/bench.pl
 Changes
+lib/Class/Accessor/Inherited/XS.pm
 Makefile.PL
 MANIFEST
 ppport.h
 README
+t/00_use.t
+t/01_basic.t
+t/02_inherited.t
+t/lib/AccessorInstaller.pm
+t/lib/BaseInheritedGroups.pm
+t/lib/ExtraInheritedGroups.pm
+t/lib/NotHashBased.pm
+t/lib/SuperInheritedGroups.pm
 XS.xs
-lib/Class/Accessor/Inherited/XS.pm
