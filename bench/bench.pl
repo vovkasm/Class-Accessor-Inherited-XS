@@ -34,13 +34,40 @@ timethese(
 
 BEGIN {
 
+    package IaInstaller;
+    use Sub::Name ();
+    use Class::Accessor::Inherited::XS;
+
+    {
+        no strict 'refs';
+        no warnings 'redefine';
+
+        sub mk_inherited_accessors {
+            my ( $self, @fields ) = @_;
+            my $class = ref $self || $self;
+            foreach my $field (@fields) {
+                my $name = $field;
+                ( $name, $field ) = @$field if ref $field;
+                my $full_name = "${class}::$name";
+                my $accessor = $self->make_inherited_accessor($field);
+                *$full_name = Sub::Name::subname( $full_name, $accessor );
+            }
+            return;
+        }
+    }
+
+    sub make_inherited_accessor {
+        my ( $class, $field ) = @_;
+        return eval "sub { Class::Accessor::Inherited::XS::inherited_accessor(shift, '$field', \@_); }";
+    }
+
     package AAA;
-    use base qw/Class::Accessor::Inherited::XS Class::Accessor::Grouped/;
+    use base qw/IaInstaller/;
     use strict;
 
     sub new { return bless {}, shift }
 
-    AAA->mk_group_accessors( inherited => qw/a/ );
+    AAA->mk_inherited_accessors( inherited => qw/a/ );
 
     package BBB;
     use base 'AAA';
@@ -65,7 +92,7 @@ BEGIN {
 
     AAA2->mk_group_accessors( inherited => qw/a/ );
 
-    Class::XSAccessor::newxs_accessor("AAA2::simplexs", "simplexs", 0);
+    Class::XSAccessor::newxs_accessor( "AAA2::simplexs", "simplexs", 0 );
 
     package BBB2;
     use base 'AAA2';

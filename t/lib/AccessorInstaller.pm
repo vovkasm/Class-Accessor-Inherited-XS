@@ -36,14 +36,7 @@ use Class::Accessor::Inherited::XS;
 
 sub make_inherited_accessor {
     my ($class, $field) = @_;
-    return eval "sub {
-        if (\@_ > 1) {
-            return Class::Accessor::Inherited::XS::inherited_accessor(shift, '$field', \@_);
-        }
-        else {
-            return Class::Accessor::Inherited::XS::inherited_accessor(shift, '$field');
-        }
-    }";
+    return eval "sub { Class::Accessor::Inherited::XS::inherited_accessor(shift, '$field', \@_); }";
 }
 
 1;
