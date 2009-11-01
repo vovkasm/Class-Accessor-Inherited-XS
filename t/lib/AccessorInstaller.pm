@@ -29,15 +29,9 @@ use Class::Accessor::Inherited::XS;
             my $name = $field;
             ($name, $field) = @$field if ref $field;
             
-            my $alias = "_${name}_accessor";
             my $full_name = join('::', $class, $name);
-            my $full_alias = join('::', $class, $alias);
-            
             my $accessor = $self->make_inherited_accessor($field);
-            my $alias_accessor = $self->make_inherited_accessor($field);
-                
             *$full_name = Sub::Name::subname($full_name, $accessor);
-            *$full_alias = Sub::Name::subname($full_alias, $alias_accessor);
         }
 
         return;
