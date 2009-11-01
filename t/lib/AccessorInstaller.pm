@@ -12,10 +12,6 @@ use Class::Accessor::Inherited::XS;
     no strict 'refs';
     no warnings 'redefine';
 
-    *get_inherited = *Class::Accessor::Inherited::XS::get_inherited;
-    *set_inherited = *Class::Accessor::Inherited::XS::set_inherited;
-    *get_super_paths = *Class::Accessor::Inherited::XS::get_super_paths;
-
     sub mk_inherited_accessors {
         my($self, @fields) = @_;
         my $class = Scalar::Util::blessed $self || $self;
@@ -41,13 +37,13 @@ use Class::Accessor::Inherited::XS;
 sub make_inherited_accessor {
     my ($class, $field) = @_;
     return eval "sub {
-        if(\@_ > 1) {
-            return shift->set_inherited('$field', \@_);
+        if (\@_ > 1) {
+            return Class::Accessor::Inherited::XS::inherited_accessor(shift, '$field', \@_);
         }
         else {
-            return shift->get_inherited('$field');
+            return Class::Accessor::Inherited::XS::inherited_accessor(shift, '$field');
         }
-    };"
+    }";
 }
 
 1;

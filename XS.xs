@@ -8,7 +8,7 @@
 MODULE = Class::Accessor::Inherited::XS		PACKAGE = Class::Accessor::Inherited::XS
 
 void
-get_inherited(self,acc)
+inherited_accessor(self,acc, ...)
     SV* self;
     SV* acc;
 PROTOTYPE: DISABLE
@@ -23,7 +23,15 @@ PPCODE:
 {
     if (sv_isobject(self)) {
         if (SvTYPE(SvRV(self)) != SVt_PVHV)
-            croak("Cannot get inherited value on an object instance that is not hash-based");
+            croak("Inherited accessor can work only with object instance that is hash-based");
+
+        if (items > 2) {
+            SV* newvalue = ST(2);
+            if (hv_store_ent( (HV *)SvRV(self), acc, newSVsv(newvalue), 0) == NULL)
+                croak("Failed to write new value to object instance.");
+            PUSHs(newvalue);
+            XSRETURN(1);
+        }
 
         if (he = hv_fetch_ent( (HV *)SvRV(self), acc, 0, 0)) {
             PUSHs( HeVAL(he) );
@@ -38,6 +46,18 @@ PPCODE:
     // Can't find in object, so try self package
     pkg_acc = newSVpvn("__cag_",6);
     sv_catsv(pkg_acc, acc);
+
+    if (items > 2) {
+        SV* newvalue = ST(2);
+        const char *stash_name = HvNAME(stash);
+        SV* fullname = newSVpvn( stash_name, strlen(stash_name) );
+        sv_catpv(fullname, "::");
+        sv_catsv(fullname, pkg_acc);
+        SV* sv = get_sv(SvPVX(fullname), GV_ADD);
+        sv_setsv(sv,newvalue);
+        PUSHs( sv );
+        XSRETURN(1);
+    }
 
     if (he = hv_fetch_ent( stash, pkg_acc, 0, 0)) {
         SV* sv = GvSV( HeVAL(he) );

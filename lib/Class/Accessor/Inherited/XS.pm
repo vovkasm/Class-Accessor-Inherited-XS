@@ -1,28 +1,9 @@
 package Class::Accessor::Inherited::XS;
-
 use 5.010001;
 use strict;
 use warnings;
 
-use Carp ();
-use Scalar::Util ();
-use mro;
-
 our $VERSION = '0.01';
-
-sub set_inherited {
-    if (Scalar::Util::blessed $_[0]) {
-        if (Scalar::Util::reftype $_[0] eq 'HASH') {
-            return $_[0]->{$_[1]} = $_[2];
-        } else {
-            Carp::croak('Cannot set inherited value on an object instance that is not hash-based');
-        };
-    } else {
-        no strict 'refs';
-
-        return ${$_[0].'::__cag_'.$_[1]} = $_[2];
-    };
-}
 
 require XSLoader;
 XSLoader::load('Class::Accessor::Inherited::XS', $VERSION);

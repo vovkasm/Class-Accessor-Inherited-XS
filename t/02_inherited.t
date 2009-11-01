@@ -64,12 +64,12 @@ my $dying = NotHashBased->new;
 eval {
     $dying->killme;
 };
-like($@, qr/Cannot get.*is not hash-based/);
+like($@, qr/is hash-based/);
 
 eval {
     $dying->killme('foo');
 };
-like($@, qr/Cannot set.*is not hash-based/);
+like($@, qr/is hash-based/);
 
 # make sure we're get defined items, even 0, ''
 BaseInheritedGroups->basefield('base');
