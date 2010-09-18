@@ -6,37 +6,27 @@ use Carp ();
 use Scalar::Util ();
 use Sub::Name ();
 
+use mro 'c3';
+use base 'Class::Accessor::Grouped';
 use Class::Accessor::Inherited::XS;
 
 {
     no strict 'refs';
     no warnings 'redefine';
 
-    sub mk_inherited_accessors {
-        my($self, @fields) = @_;
-        my $class = Scalar::Util::blessed $self || $self;
+    sub make_group_accessor {
+        my($class, $group, $field, $name) = @_;
 
-        foreach my $field (@fields) {
-            if( $field eq 'DESTROY' ) {
-                Carp::carp("Having a data accessor named DESTROY  in ".
-                             "'$class' is unwise.");
-            }
-
-            my $name = $field;
-            ($name, $field) = @$field if ref $field;
-            
-            my $full_name = join('::', $class, $name);
-            my $accessor = $self->make_inherited_accessor($field);
-            *$full_name = Sub::Name::subname($full_name, $accessor);
+        if ( $group eq 'inherited' ) {
+            Class::Accessor::Inherited::XS::install_inherited_accessor($class, $field, $name);
+#            my $full_name = join('::', $class, $name);
+#            my $accessor = eval "sub { Class::Accessor::Inherited::XS::inherited_accessor(shift, '$field', \@_); }";
+#            *$full_name = Sub::Name::subname($full_name, $accessor);
+            return;
         }
 
-        return;
+        return $class->next::method($group, $field, $name);
     }
-}
-
-sub make_inherited_accessor {
-    my ($class, $field) = @_;
-    return eval "sub { Class::Accessor::Inherited::XS::inherited_accessor(shift, '$field', \@_); }";
 }
 
 1;

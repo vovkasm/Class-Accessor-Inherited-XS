@@ -7,6 +7,6 @@ sub new {
     return bless [], shift;
 };
 
-__PACKAGE__->mk_inherited_accessors('killme');
+__PACKAGE__->mk_group_accessors(inherited => 'killme');
 
 1;

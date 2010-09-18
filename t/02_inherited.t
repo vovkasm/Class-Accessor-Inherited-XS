@@ -1,4 +1,4 @@
-use Test::More tests => 37;
+use Test::More tests => 39;
 use strict;
 use warnings;
 use lib 't/lib';
@@ -8,6 +8,10 @@ use NotHashBased;
 my $simple = SuperInheritedGroups->new;
 $simple->basefield('Yess');
 is($simple->basefield, 'Yess', 'Simple set obj, get obj');
+
+$simple->refacc('refacc');
+is($simple->refacc, 'refacc', 'Simple set/get for form [acc,field]');
+is($simple->{reffield}, 'refacc', 'Ensure right field name for form [acc,field]');
 
 my $super = SuperInheritedGroups->new;
 my $base = BaseInheritedGroups->new;
