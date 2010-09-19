@@ -3,16 +3,30 @@ use 5.010001;
 use strict;
 use warnings;
 
-our $VERSION = '0.01';
+our $VERSION = '0.01_01';
 
 require XSLoader;
 XSLoader::load('Class::Accessor::Inherited::XS', $VERSION);
 
-# Preloaded methods go here.
+{
+    no strict 'refs';
+    no warnings 'redefine';
+    
+    # for Class::Accessor::Grouped (should be in base classes)
+    sub make_group_accessor {
+        my($class, $group, $field, $name) = @_;
+
+        if ( $group eq 'inherited' ) {
+            Class::Accessor::Inherited::XS::install_inherited_accessor($class, $field, $name);
+            return;
+        }
+
+        return $class->next::method($group, $field, $name);
+    }
+}
 
 1;
 __END__
-# Below is stub documentation for your module. You'd better edit it!
 
 =head1 NAME
 

@@ -11,7 +11,6 @@ $o->a(3);
 my $o2 = CCC2->new;
 $o2->a(4);
 $o2->simple(5);
-$o2->simplexs(6);
 
 AAA->a(7);
 AAA2->a(8);
@@ -27,39 +26,14 @@ timethese(
         ic3pp => sub { CCC2->a },
         io_xs => sub { $o->a },
         io_pp => sub { $o2->a },
-        so_xs => sub { $o2->simplexs },
-        so_pp => sub { $o2->simple },
+        so => sub { $o2->simple },
     }
 );
 
 BEGIN {
 
     package IaInstaller;
-    use Sub::Name ();
-    use Class::Accessor::Inherited::XS;
-
-    {
-        no strict 'refs';
-        no warnings 'redefine';
-
-        sub mk_inherited_accessors {
-            my ( $self, @fields ) = @_;
-            my $class = ref $self || $self;
-            foreach my $field (@fields) {
-                my $name = $field;
-                ( $name, $field ) = @$field if ref $field;
-                my $full_name = "${class}::$name";
-                my $accessor = $self->make_inherited_accessor($field);
-                *$full_name = Sub::Name::subname( $full_name, $accessor );
-            }
-            return;
-        }
-    }
-
-    sub make_inherited_accessor {
-        my ( $class, $field ) = @_;
-        return eval "sub { Class::Accessor::Inherited::XS::inherited_accessor(shift, '$field', \@_); }";
-    }
+    use base qw/Class::Accessor::Inherited::XS Class::Accessor::Grouped/;
 
     package AAA;
     use base qw/IaInstaller/;
@@ -67,7 +41,7 @@ BEGIN {
 
     sub new { return bless {}, shift }
 
-    AAA->mk_inherited_accessors( inherited => qw/a/ );
+    AAA->mk_group_accessors( inherited => qw/a/ );
 
     package BBB;
     use base 'AAA';
@@ -81,18 +55,8 @@ BEGIN {
 
     sub new { return bless {}, shift }
 
-    sub simple {
-        if ( @_ > 1 ) {
-            return $_[0]->{simple} = $_[1];
-        }
-        else {
-            return $_[0]->{simple};
-        }
-    }
-
     AAA2->mk_group_accessors( inherited => qw/a/ );
-
-    Class::XSAccessor::newxs_accessor( "AAA2::simplexs", "simplexs", 0 );
+    AAA2->mk_group_accessors( simple => qw/simple/ );
 
     package BBB2;
     use base 'AAA2';
