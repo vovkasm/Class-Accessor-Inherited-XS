@@ -63,9 +63,6 @@ XS(CAIXS_inherited_accessor)
     const char* const c_acc_name = GvNAME(acc_gv);
     SV* const acc = newSVpvn(c_acc_name, strlen(c_acc_name));
 
-//    const char* const c_acc_class = HvNAME(GvSTASH(acc_gv));
-//    SV* const acc_fullname = newSVpvf("%s::%s",c_acc_class,c_acc_name);
-
     // Determine field name
     SV* field;
     if (ix) {
@@ -91,23 +88,29 @@ XS(CAIXS_inherited_accessor)
             PUSHs( HeVAL(he) );
             XSRETURN(1);
         }
-
-        stash = SvSTASH(SvRV(self));
     }
-    else
-        stash = gv_stashsv(self, GV_ADD);
 
     // Can't find in object, so try self package
     pkg_acc = newSVpvf("__cag_%"SVf,field);
 
     if (items > 1) {
         SV* newvalue = ST(1);
+
+        stash = gv_stashsv(self, GV_ADD);
         SV* fullname = newSVpvf("%s::%"SVf, HvNAME(stash), pkg_acc);
+        SV* acc_fullname = newSVpvf("%s::%"SVf, HvNAME(stash), acc);
+        if (field == acc)
+            CAIXS_install_accessor(aTHX_ acc_fullname);
+        else
+            CAIXS_install_accessor_withfield(aTHX_ aMY_CXT_ acc_fullname, field);
+
         SV* sv = get_sv(SvPVX(fullname), GV_ADD);
         sv_setsv(sv,newvalue);
         PUSHs( sv );
         XSRETURN(1);
     }
+
+    stash = GvSTASH(acc_gv);
 
     if (he = hv_fetch_ent( stash, pkg_acc, 0, 0)) {
         SV* sv = GvSV( HeVAL(he) );
