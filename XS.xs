@@ -8,7 +8,8 @@
 #define MY_CXT_KEY "Class::Accessor::Inherited::XS::_guts" XS_VERSION
 
 typedef struct {
-    HV* accdefs;
+    I32 next_ix;
+    AV* fields;
 } my_cxt_t;
 
 START_MY_CXT
@@ -30,7 +31,7 @@ XS(CAIXS_inherited_accessor)
 #else
     dXSARGS;
 #endif
-    dMY_CXT;
+    dMY_CXT; dXSI32;
 
     SV* self = ST(0);
 
@@ -53,14 +54,8 @@ XS(CAIXS_inherited_accessor)
     SV* const acc_fullname = newSVpvf("%s::%s",c_acc_class,c_acc_name);
 
     // Determine field name
-    SV* field;
-    if (he = hv_fetch_ent( MY_CXT.accdefs, acc_fullname, 0, 0)) {
-        field = HeVAL(he);
-    }
-    else {
-        field = acc;
-    }
-        
+    SV* *avent = av_fetch( MY_CXT.fields, ix, 0);
+    SV* field = (avent == NULL) ? acc : *avent;
 
     if (sv_isobject(self)) {
         if (SvTYPE(SvRV(self)) != SVt_PVHV)
@@ -133,7 +128,8 @@ MODULE = Class::Accessor::Inherited::XS		PACKAGE = Class::Accessor::Inherited::X
 BOOT:
 {
     MY_CXT_INIT;
-    MY_CXT.accdefs = newHV();
+    MY_CXT.next_ix = 1;
+    MY_CXT.fields = newAV();
 }
 
 void
@@ -150,10 +146,14 @@ INIT:
 PPCODE:
 {
     // Save mapping acc -> field
-    if (hv_store_ent( MY_CXT.accdefs, acc_fullname, newSVsv(field_name), 0) == NULL)
-        croak("Failed to create mapping accessor_name -> field_name.");
+    if (av_store( MY_CXT.fields, MY_CXT.next_ix, newSVsv(field_name)) == NULL)
+        croak("Failed to create mapping '%"SVf"' -> '%"SVf"'.", acc_fullname, field_name);
     // Install XS accessor
     cv = newXS(SvPV_nolen(acc_fullname),CAIXS_inherited_accessor,__FILE__);
+    XSANY.any_i32 = MY_CXT.next_ix;
+
+    MY_CXT.next_ix++;
+
     XSRETURN_UNDEF;
 }
 
