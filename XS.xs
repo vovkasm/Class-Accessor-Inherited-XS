@@ -14,16 +14,29 @@ typedef struct {
 
 START_MY_CXT
 
-static I32
-__poptosub_at(const PERL_CONTEXT *cxstk, I32 startingblock) {
-    I32 i;
-    for (i = startingblock; i >= 0; i--) {
-        if(CxTYPE((PERL_CONTEXT*)(&cxstk[i])) == CXt_SUB) return i;
-    }
-    return i;
+XS(CAIXS_inherited_accessor);
+
+static void
+CAIXS_install_accessor(pTHX_ SV* acc_fullname)
+{
+    // Install XS accessor
+    CV* cv = newXS(SvPV_nolen(acc_fullname),CAIXS_inherited_accessor,__FILE__);
+    XSANY.any_i32 = 0;
 }
 
-XS(CAIXS_inherited_accessor);
+static void
+CAIXS_install_accessor_withfield(pTHX_ pMY_CXT_ SV* acc_fullname, SV* field_name)
+{
+    // Save mapping acc -> field
+    if (av_store( MY_CXT.fields, MY_CXT.next_ix, newSVsv(field_name)) == NULL)
+        croak("Failed to create mapping '%"SVf"' -> '%"SVf"'.", acc_fullname, field_name);
+    // Install XS accessor
+    CV* cv = newXS(SvPV_nolen(acc_fullname),CAIXS_inherited_accessor,__FILE__);
+    XSANY.any_i32 = MY_CXT.next_ix;
+
+    MY_CXT.next_ix++;
+}
+
 XS(CAIXS_inherited_accessor)
 {
 #ifdef dVAR
@@ -50,12 +63,17 @@ XS(CAIXS_inherited_accessor)
     const char* const c_acc_name = GvNAME(acc_gv);
     SV* const acc = newSVpvn(c_acc_name, strlen(c_acc_name));
 
-    const char* const c_acc_class = HvNAME(GvSTASH(acc_gv));
-    SV* const acc_fullname = newSVpvf("%s::%s",c_acc_class,c_acc_name);
+//    const char* const c_acc_class = HvNAME(GvSTASH(acc_gv));
+//    SV* const acc_fullname = newSVpvf("%s::%s",c_acc_class,c_acc_name);
 
     // Determine field name
-    SV* *avent = av_fetch( MY_CXT.fields, ix, 0);
-    SV* field = (avent == NULL) ? acc : *avent;
+    SV* field;
+    if (ix) {
+        SV* *avent = av_fetch( MY_CXT.fields, ix, 0);
+        field = (avent == NULL) ? acc : *avent;
+    }
+    else
+        field = acc;
 
     if (sv_isobject(self)) {
         if (SvTYPE(SvRV(self)) != SVt_PVHV)
@@ -142,17 +160,13 @@ PREINIT:
     dMY_CXT;
 INIT:
     SV* acc_fullname = newSVpvf("%"SVf"::%"SVf,class,acc_name);
-    CV* cv;
 PPCODE:
 {
-    // Save mapping acc -> field
-    if (av_store( MY_CXT.fields, MY_CXT.next_ix, newSVsv(field_name)) == NULL)
-        croak("Failed to create mapping '%"SVf"' -> '%"SVf"'.", acc_fullname, field_name);
-    // Install XS accessor
-    cv = newXS(SvPV_nolen(acc_fullname),CAIXS_inherited_accessor,__FILE__);
-    XSANY.any_i32 = MY_CXT.next_ix;
 
-    MY_CXT.next_ix++;
+    if (sv_cmp(field_name,acc_name) == 0)
+        CAIXS_install_accessor(aTHX_ acc_fullname);
+    else
+        CAIXS_install_accessor_withfield(aTHX_ aMY_CXT_ acc_fullname, field_name);
 
     XSRETURN_UNDEF;
 }
