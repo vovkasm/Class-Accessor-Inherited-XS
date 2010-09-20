@@ -1,4 +1,4 @@
-use Test::More tests => 39;
+use Test::More tests => 44;
 use strict;
 use warnings;
 use lib 't/lib';
@@ -8,6 +8,8 @@ use NotHashBased;
 my $simple = SuperInheritedGroups->new;
 $simple->basefield('Yess');
 is($simple->basefield, 'Yess', 'Simple set obj, get obj');
+$simple->basefield('Yess2');
+is($simple->basefield, 'Yess2', 'Simple set obj, get obj');
 
 $simple->refacc('refacc');
 is($simple->refacc, 'refacc', 'Simple set/get for form [acc,field]');
@@ -22,6 +24,12 @@ ok(@ret == 1, 'Return value before set');
 ok(!defined(SuperInheritedGroups->basefield), 'Undef return before set');
 
 # set base. base, super, object = base
+is(BaseInheritedGroups->basefield('QQQ'), 'QQQ');
+is(SuperInheritedGroups->basefield, 'QQQ');
+is($super->basefield, 'QQQ');
+is($base->basefield, 'QQQ');
+
+# set base. base, super, object = base to another value
 is(BaseInheritedGroups->basefield('All Your Base'), 'All Your Base');
 is(SuperInheritedGroups->basefield, 'All Your Base');
 is($super->basefield, 'All Your Base');

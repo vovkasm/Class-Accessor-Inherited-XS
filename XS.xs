@@ -81,11 +81,13 @@ XS(CAIXS_inherited_accessor)
             if (hv_store_ent( (HV *)SvRV(self), field, newSVsv(newvalue), 0) == NULL)
                 croak("Failed to write new value to object instance.");
             PUSHs(newvalue);
+            SvREFCNT_dec(acc);
             XSRETURN(1);
         }
 
         if (he = hv_fetch_ent( (HV *)SvRV(self), field, 0, 0)) {
             PUSHs( HeVAL(he) );
+            SvREFCNT_dec(acc);
             XSRETURN(1);
         }
     }
@@ -107,15 +109,19 @@ XS(CAIXS_inherited_accessor)
         SV* sv = get_sv(SvPVX(fullname), GV_ADD);
         sv_setsv(sv,newvalue);
         PUSHs( sv );
+
+        SvREFCNT_dec(acc);
         XSRETURN(1);
     }
-
+    SvREFCNT_dec(acc);
+    
     stash = GvSTASH(acc_gv);
 
     if (he = hv_fetch_ent( stash, pkg_acc, 0, 0)) {
         SV* sv = GvSV( HeVAL(he) );
         if (sv && SvOK(sv)) {
             PUSHs( sv );
+            SvREFCNT_dec(pkg_acc);
             XSRETURN(1);
         }
     }
@@ -134,6 +140,7 @@ XS(CAIXS_inherited_accessor)
                 SV* sv = GvSV( HeVAL(he) );
                 if (sv && SvOK(sv)) {
                     PUSHs( sv );
+                    SvREFCNT_dec(pkg_acc);
                     XSRETURN(1);
                 }
             }
@@ -141,6 +148,7 @@ XS(CAIXS_inherited_accessor)
         }
     }
 
+    SvREFCNT_dec(pkg_acc);
     XSRETURN_UNDEF;
 }
 
