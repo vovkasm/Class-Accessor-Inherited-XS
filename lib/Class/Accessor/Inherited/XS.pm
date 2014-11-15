@@ -2,6 +2,7 @@ package Class::Accessor::Inherited::XS;
 use 5.010001;
 use strict;
 use warnings;
+use mro 'c3';
 use parent 'Class::Accessor::Grouped';
 
 our $VERSION = '0.02';
@@ -18,7 +19,7 @@ Panda::XSLoader::load();
     sub make_group_accessor {
         my($class, $group, $field, $name) = @_;
 
-        if ( $group eq 'inherited' ) {
+        if ($group eq 'inherited') {
             Class::Accessor::Inherited::XS::install_inherited_accessor("${class}::${name}", $field);
             return;
         }
