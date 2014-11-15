@@ -2,11 +2,13 @@ package Class::Accessor::Inherited::XS;
 use 5.010001;
 use strict;
 use warnings;
+use parent 'Class::Accessor::Grouped';
 
-our $VERSION = '0.01_04';
+our $VERSION = '0.02';
 
-require XSLoader;
-XSLoader::load('Class::Accessor::Inherited::XS', $VERSION);
+use Panda::XS;
+require Panda::XSLoader;
+Panda::XSLoader::load();
 
 {
     no strict 'refs';
@@ -17,7 +19,7 @@ XSLoader::load('Class::Accessor::Inherited::XS', $VERSION);
         my($class, $group, $field, $name) = @_;
 
         if ( $group eq 'inherited' ) {
-            Class::Accessor::Inherited::XS::install_inherited_accessor($class, $field, $name);
+            Class::Accessor::Inherited::XS::install_inherited_accessor("${class}::${name}", $field);
             return;
         }
 

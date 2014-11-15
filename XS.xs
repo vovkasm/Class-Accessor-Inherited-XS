@@ -1,184 +1,176 @@
 #define PERL_NO_GET_CONTEXT
-#include "EXTERN.h"
-#include "perl.h"
-#include "XSUB.h"
 
-#include "ppport.h"
+#include <xs/xs.h>
+using namespace xs;
 
-#define MY_CXT_KEY "Class::Accessor::Inherited::XS::_guts" XS_VERSION
+static const char CAIXS_PKG_PREFIX[] = "__cag_";
 
-typedef struct {
-    I32 next_ix;
-    AV* fields;
-} my_cxt_t;
+#define HEK_PKG_LEN(hent) \
+    (HEK_LEN(hent) + sizeof(CAIXS_PKG_PREFIX) - 1)
 
-START_MY_CXT
+#define HEK_PKG_KEY(hent) \
+    (hent->prefix)
+
+#define HEK_PKG_HASH(hent) \
+    (hent->pkg_hash)
+
+struct double_hek {
+    U32  hek_hash;
+    U32  pkg_hash;
+    I32  hek_len;
+    char prefix[sizeof(CAIXS_PKG_PREFIX) - 1]; /* fixed CAIXS_PKG_PREFIX string */
+    char hek_key[1]; 
+};
+
+#define CAIXS_FETCH_PKG_HEK(hv, hent) \
+    CAIXS_HASH_FETCH(hv, HEK_PKG_KEY(hent), HEK_PKG_LEN(hent), HEK_PKG_HASH(hent))
+
+#define CAIXS_FETCH_HASH_HEK(hv, hent) \
+    CAIXS_HASH_FETCH(hv, HEK_KEY(hent), HEK_LEN(hent), HEK_HASH(hent))
+
+#define CAIXS_HASH_FETCH(hv, key, len, hash) \
+    (SV**)hv_common_key_len((hv), (key), (len), HV_FETCH_JUST_SV, NULL, (hash))
+
+#define CREATE_KEY_SV(var, key)                                                     \
+STMT_START {                                                                        \
+    STRLEN len;                                                                     \
+    const char* buf = SvPV(key, len);                                               \
+    var = newSV(sizeof(double_hek) + len);                                          \
+    double_hek* hent = (double_hek*)SvPVX(var);                                     \
+    HEK_LEN(hent) = len;                                                            \
+    memcpy(HEK_PKG_KEY(hent), CAIXS_PKG_PREFIX, sizeof(CAIXS_PKG_PREFIX) - 1);      \
+    memcpy(HEK_KEY(hent), buf, len + 1);                                            \
+    PERL_HASH(HEK_HASH(hent), buf, len);                                            \
+    len += sizeof(CAIXS_PKG_PREFIX) - 1;                                            \
+    PERL_HASH(HEK_PKG_HASH(hent), HEK_PKG_KEY(hent), len);                          \
+    /*HEK_FLAGS(hent) = 0;*/                                                        \
+} STMT_END
+
+static payload_marker_t* my_marker = sv_payload_marker("Class::Accessor::Inherited::XS");
 
 XS(CAIXS_inherited_accessor);
 
 static void
-CAIXS_install_accessor(pTHX_ SV* acc_fullname)
+CAIXS_install_accessor(pTHX_ const char* full_name, SV* hash_key)
 {
-    // Install XS accessor
-    CV* cv = newXS(SvPV_nolen(acc_fullname),CAIXS_inherited_accessor,__FILE__);
-    XSANY.any_i32 = 0;
-}
-
-static void
-CAIXS_install_accessor_withfield(pTHX_ pMY_CXT_ SV* acc_fullname, SV* field_name)
-{
-    // Save mapping acc -> field
-    if (av_store( MY_CXT.fields, MY_CXT.next_ix, newSVsv(field_name)) == NULL)
-        croak("Failed to create mapping '%"SVf"' -> '%"SVf"'.", acc_fullname, field_name);
-    // Install XS accessor
-    CV* cv = newXS(SvPV_nolen(acc_fullname),CAIXS_inherited_accessor,__FILE__);
-    XSANY.any_i32 = MY_CXT.next_ix;
-
-    MY_CXT.next_ix++;
+    CV* cv = newXS(full_name, CAIXS_inherited_accessor, __FILE__);
+    SV* keysv;
+    CREATE_KEY_SV(keysv, hash_key);
+    sv_payload_attach((SV*)cv, keysv, my_marker);
+    SvREFCNT_dec_NN(keysv); 
+    CvXSUBANY(cv).any_ptr = (void*)keysv;
 }
 
 XS(CAIXS_inherited_accessor)
 {
-#ifdef dVAR
     dVAR; dXSARGS;
-#else
-    dXSARGS;
-#endif
-    dMY_CXT; dXSI32;
-
+    dXSI32;
+    
+    SP -= items;
+    
     SV* self = ST(0);
 
-    HE* he;
-    HV* stash;
-    SV* pkg_acc;
-    AV* supers;
-    I32 len;
-    I32 key;
+    SV* keysv = (SV*)(CvXSUBANY(cv).any_ptr);
+    //SV* keysv = sv_payload_sv((SV*)cv, my_marker);
+    if (!keysv) croak("Can't find hash key information");
 
-    SP -= items;
+    double_hek* hent = (double_hek*)SvPVX(keysv);
 
-    const GV *const acc_gv = CvGV(cv);
-    if (!acc_gv) croak("TODO: can't understand accessor name");
-
-    const char* const c_acc_name = GvNAME(acc_gv);
-    SV* const acc = newSVpvn(c_acc_name, strlen(c_acc_name));
-
-    // Determine field name
-    SV* field;
-    if (ix) {
-        SV* *avent = av_fetch( MY_CXT.fields, ix, 0);
-        field = (avent == NULL) ? acc : *avent;
-    }
-    else
-        field = acc;
-
-    if (sv_isobject(self)) {
-        if (SvTYPE(SvRV(self)) != SVt_PVHV)
+    if (SvROK(self)) {
+        HV* obj = (HV*)SvRV(self);
+        if (SvTYPE((SV*)obj) != SVt_PVHV)
             croak("Inherited accessor can work only with object instance that is hash-based");
 
         if (items > 1) {
-            SV* newvalue = ST(1);
-            if (hv_store_ent( (HV *)SvRV(self), field, newSVsv(newvalue), 0) == NULL)
-                croak("Failed to write new value to object instance.");
-            PUSHs(newvalue);
-            SvREFCNT_dec(acc);
+            SV* orig_value = ST(1);
+            SV* new_value  = newSVsv(orig_value);
+            if (!hv_store((HV*)SvRV(self), HEK_KEY(hent), HEK_LEN(hent), new_value, HEK_HASH(hent))) {
+                croak("Can't store new hash value");
+            }
+            PUSHs(new_value);
             XSRETURN(1);
-        }
-
-        if (he = hv_fetch_ent( (HV *)SvRV(self), field, 0, 0)) {
-            PUSHs( HeVAL(he) );
-            SvREFCNT_dec(acc);
-            XSRETURN(1);
+                    
+        } else {
+            SV** svp = CAIXS_FETCH_HASH_HEK(obj, hent);
+            if (svp) {
+                PUSHs(*svp);
+                XSRETURN(1);
+            }
         }
     }
+
+    I32 key;
 
     // Can't find in object, so try self package
-    pkg_acc = newSVpvf("__cag_%"SVf,field);
+
+    static char fullname[256];
+    STRLEN len;
+    const char* pkg_name = SvPV(self, len);
+    snprintf(fullname, 255, "%s::__cag_%s", pkg_name, HEK_KEY(hent));
 
     if (items > 1) {
-        SV* newvalue = ST(1);
+        SV* orig_value = ST(1);
 
-        stash = gv_stashsv(self, GV_ADD);
-        SV* fullname = newSVpvf("%s::%"SVf, HvNAME(stash), pkg_acc);
-        SV* acc_fullname = newSVpvf("%s::%"SVf, HvNAME(stash), acc);
-        if (field == acc)
-            CAIXS_install_accessor(aTHX_ acc_fullname);
-        else
-            CAIXS_install_accessor_withfield(aTHX_ aMY_CXT_ acc_fullname, field);
+        //SV* fullname = newSVpvf("%s::%s", SvPV_nolen(self), );
+        //SV* acc_fullname = newSVpvf("%s::%"SVf, HvNAME(stash), acc);
+        //CAIXS_install_accessor(aTHX_ c_acc_name, c_acc_name);
 
-        SV* sv = get_sv(SvPVX(fullname), GV_ADD);
-        sv_setsv(sv,newvalue);
-        PUSHs( sv );
+        SV* new_value = get_sv(fullname, GV_ADD);
+        sv_setsv(new_value, orig_value);
+        PUSHs(new_value);
 
-        SvREFCNT_dec(acc);
         XSRETURN(1);
     }
-    SvREFCNT_dec(acc);
     
-    stash = GvSTASH(acc_gv);
+    GV* acc_gv = CvGV(cv);
+    if (!acc_gv) croak("TODO: can't understand accessor name");
 
-    if (he = hv_fetch_ent( stash, pkg_acc, 0, 0)) {
-        SV* sv = GvSV( HeVAL(he) );
+    HV* stash;
+    if (SvROK(self)) {
+        stash = SvSTASH(SvRV(self));
+    } else {
+        stash = gv_stashsv(self, 0);
+        //stash = GvSTASH(acc_gv);
+    }
+    
+    SV** svp;
+    if (stash && (svp = CAIXS_FETCH_PKG_HEK(stash, hent))) {
+        SV* sv = GvSV(*svp);
         if (sv && SvOK(sv)) {
-            PUSHs( sv );
-            SvREFCNT_dec(pkg_acc);
+            PUSHs(sv);
             XSRETURN(1);
         }
     }
 
     // Now try all superclasses
-    supers = mro_get_linear_isa(stash);
+    AV* supers = mro_get_linear_isa(stash);
     len = av_len(supers);
 
+    HE* he;
     for (key = 1; key <= len; key++) {
-        SV **svp = av_fetch(supers, key, 0);
+        svp = av_fetch(supers, key, 0);
         if (svp) {
             SV* super = (SV *)*svp;
-            stash = gv_stashsv(super, GV_ADD);
+            stash = gv_stashsv(super, 0);
 
-            if (he = hv_fetch_ent( stash, pkg_acc, 0, 0)) {
-                SV* sv = GvSV( HeVAL(he) );
+            if (stash && (svp = CAIXS_FETCH_PKG_HEK(stash, hent))) {
+                SV* sv = GvSV(*svp);
                 if (sv && SvOK(sv)) {
-                    PUSHs( sv );
-                    SvREFCNT_dec(pkg_acc);
+                    PUSHs(sv);
                     XSRETURN(1);
                 }
             }
-
         }
     }
 
-    SvREFCNT_dec(pkg_acc);
     XSRETURN_UNDEF;
 }
 
 MODULE = Class::Accessor::Inherited::XS		PACKAGE = Class::Accessor::Inherited::XS
+PROTOTYPES: DISABLE
 
-BOOT:
-{
-    MY_CXT_INIT;
-    MY_CXT.next_ix = 1;
-    MY_CXT.fields = newAV();
-}
-
-void
-install_inherited_accessor(class,field_name,acc_name)
-    SV* class;
-    SV* field_name;
-    SV* acc_name;
-PROTOTYPE: DISABLE
-PREINIT:
-    dMY_CXT;
-INIT:
-    SV* acc_fullname = newSVpvf("%"SVf"::%"SVf,class,acc_name);
-PPCODE:
-{
-
-    if (sv_cmp(field_name,acc_name) == 0)
-        CAIXS_install_accessor(aTHX_ acc_fullname);
-    else
-        CAIXS_install_accessor_withfield(aTHX_ aMY_CXT_ acc_fullname, field_name);
-
+void install_inherited_accessor(const char* full_name, SV* hash_key) {
+    CAIXS_install_accessor(aTHX_ full_name, hash_key);
     XSRETURN_UNDEF;
 }
 
