@@ -9,7 +9,7 @@ static const char CAIXS_PKG_PREFIX[] = "__cag_";
     (HEK_LEN(hent) + sizeof(CAIXS_PKG_PREFIX) - 1)
 
 #define HEK_PKG_KEY(hent) \
-    (hent->prefix)
+    ((char*)(hent->prefix) + 2)
 
 #define HEK_PKG_HASH(hent) \
     (hent->pkg_hash)
@@ -18,7 +18,7 @@ struct double_hek {
     U32  hek_hash;
     U32  pkg_hash;
     I32  hek_len;
-    char prefix[sizeof(CAIXS_PKG_PREFIX) - 1]; /* fixed CAIXS_PKG_PREFIX string */
+    char prefix[8]; /* fixed CAIXS_PKG_PREFIX string, shifted by 2 bytes offset to prevent padding */
     char hek_key[1]; 
 };
 
