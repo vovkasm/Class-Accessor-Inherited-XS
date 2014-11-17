@@ -63,15 +63,12 @@ CAIXS_install_accessor(pTHX_ const char* full_name, SV* hash_key)
 
 XS(CAIXS_inherited_accessor)
 {
-    dVAR; dXSARGS;
-    dXSI32;
-    
+    dXSARGS;
     SP -= items;
-    
+
     SV* self = ST(0);
 
     SV* keysv = (SV*)(CvXSUBANY(cv).any_ptr);
-    //SV* keysv = sv_payload_sv((SV*)cv, my_marker);
     if (!keysv) croak("Can't find hash key information");
 
     double_hek* hent = (double_hek*)SvPVX(keysv);
@@ -99,41 +96,53 @@ XS(CAIXS_inherited_accessor)
         }
     }
 
-    I32 key;
-
     // Can't find in object, so try self package
 
-    static char fullname[256];
-    STRLEN len;
-    const char* pkg_name = SvPV(self, len);
-    snprintf(fullname, 255, "%s::__cag_%s", pkg_name, HEK_KEY(hent));
+    HV* stash;
+    if (SvROK(self)) {
+        stash = SvSTASH(SvRV(self));
+    } else {
+        stash = gv_stashsv(self, (items > 1) ? GV_ADD : 1);
+        //GV* acc_gv = CvGV(cv);
+        //if (!acc_gv) croak("TODO: can't understand accessor name");
+        //stash = GvSTASH(acc_gv);
+    }
 
+    SV** svp;
     if (items > 1) {
         SV* orig_value = ST(1);
 
-        //SV* fullname = newSVpvf("%s::%s", SvPV_nolen(self), );
         //SV* acc_fullname = newSVpvf("%s::%"SVf, HvNAME(stash), acc);
         //CAIXS_install_accessor(aTHX_ c_acc_name, c_acc_name);
 
-        SV* new_value = get_sv(fullname, GV_ADD);
+        if (!stash) {
+            croak("Couldn't add stash for package setter");
+        }
+
+        svp = CAIXS_FETCH_PKG_HEK(stash, hent);
+        GV* glob;
+        if (!svp || !isGV(*svp) || SvFAKE(*svp)) {
+            glob = svp ? (GV*)*svp : (GV*)newSV(0);
+            gv_init_pvn(glob, stash, HEK_PKG_KEY(hent), HEK_PKG_LEN(hent), 0);
+            if (svp) {
+warn("glob - replace");
+                SvREFCNT_dec_NN(*svp);
+                *svp = (SV*)glob;
+            } else {
+warn("glob - hv_store");
+                hv_store(stash, HEK_PKG_KEY(hent), HEK_PKG_LEN(hent), (SV*)glob, HEK_PKG_HASH(hent));
+            }
+        } else {
+            glob = (GV*)*svp;
+        }
+
+        SV* new_value = GvSVn(glob);
         sv_setsv(new_value, orig_value);
         PUSHs(new_value);
 
         XSRETURN(1);
     }
     
-    GV* acc_gv = CvGV(cv);
-    if (!acc_gv) croak("TODO: can't understand accessor name");
-
-    HV* stash;
-    if (SvROK(self)) {
-        stash = SvSTASH(SvRV(self));
-    } else {
-        stash = gv_stashsv(self, 0);
-        //stash = GvSTASH(acc_gv);
-    }
-    
-    SV** svp;
     if (stash && (svp = CAIXS_FETCH_PKG_HEK(stash, hent))) {
         SV* sv = GvSV(*svp);
         if (sv && SvOK(sv)) {
@@ -144,11 +153,11 @@ XS(CAIXS_inherited_accessor)
 
     // Now try all superclasses
     AV* supers = mro_get_linear_isa(stash);
-    len = av_len(supers);
+    int len = av_len(supers);
 
     HE* he;
-    for (key = 1; key <= len; key++) {
-        svp = av_fetch(supers, key, 0);
+    for (int i = 1; i <= len; ++i) {
+        svp = av_fetch(supers, i, 0);
         if (svp) {
             SV* super = (SV *)*svp;
             stash = gv_stashsv(super, 0);
