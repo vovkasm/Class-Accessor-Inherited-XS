@@ -127,11 +127,11 @@ XS(CAIXS_inherited_accessor)
             glob = svp ? (GV*)*svp : (GV*)newSV(0);
             gv_init_pvn(glob, stash, HEK_PKG_KEY(hent), HEK_PKG_LEN(hent), 0);
             if (svp) {
-warn("glob - replace");
+                /* not sure when this can happen - remains untested */
                 SvREFCNT_dec_NN(*svp);
                 *svp = (SV*)glob;
+                SvREFCNT_inc_simple_NN((SV*)glob);
             } else {
-warn("glob - hv_store");
                 hv_store(stash, HEK_PKG_KEY(hent), HEK_PKG_LEN(hent), (SV*)glob, HEK_PKG_HASH(hent));
             }
         } else {
