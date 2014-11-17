@@ -46,6 +46,12 @@ no_leaks_ok {
     Jopa->foo('bar');
 };
 
+Class::Accessor::Inherited::XS::install_inherited_accessor("Jopa::foobaz", "foobaz");
+
 no_leaks_ok {
-    Jopa->foo;
+    Jopa->foobaz('bar');
+};
+
+no_leaks_ok {
+    Jopa->foobaz;
 };
