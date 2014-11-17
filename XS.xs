@@ -66,6 +66,8 @@ XS(CAIXS_inherited_accessor)
     dXSARGS;
     SP -= items;
 
+    if (!items) croak("Usage: $obj->accessor or __PACKAGE__->accessor");
+
     SV* self = ST(0);
 
     SV* keysv = (SV*)(CvXSUBANY(cv).any_ptr);
