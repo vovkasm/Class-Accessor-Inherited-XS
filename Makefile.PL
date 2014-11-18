@@ -2,6 +2,7 @@ use 5.010001;
 use ExtUtils::MakeMaker;
 
 my $CCFLAGS = join(' ',$Config{ccflags},'-x c++');
+system 'pod2text lib/Class/Accessor/Inherited/XS.pm > README';
 
 WriteMakefile(
     NAME            => 'Class::Accessor::Inherited::XS',
