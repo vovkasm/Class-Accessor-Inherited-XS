@@ -48,21 +48,6 @@ struct double_hek {
 #define CAIXS_HASH_FETCH(hv, key, len, hash) \
     (SV**)hv_common_key_len((hv), (key), (len), HV_FETCH_JUST_SV, NULL, (hash))
 
-#define CREATE_KEY_SV(var, key)                                                     \
-STMT_START {                                                                        \
-    STRLEN len;                                                                     \
-    const char* buf = SvPV(key, len);                                               \
-    var = newSV(sizeof(double_hek) + len);                                          \
-    double_hek* hent = (double_hek*)SvPVX(var);                                     \
-    HEK_LEN(hent) = len;                                                            \
-    memcpy(HEK_PKG_KEY(hent), CAIXS_PKG_PREFIX, sizeof(CAIXS_PKG_PREFIX) - 1);      \
-    memcpy(HEK_KEY(hent), buf, len + 1);                                            \
-    PERL_HASH(HEK_HASH(hent), buf, len);                                            \
-    len += sizeof(CAIXS_PKG_PREFIX) - 1;                                            \
-    PERL_HASH(HEK_PKG_HASH(hent), HEK_PKG_KEY(hent), len);                          \
-    /*HEK_FLAGS(hent) = 0;*/                                                        \
-} STMT_END
-
 MGVTBL sv_payload_marker;
 
 XS(CAIXS_inherited_accessor);
@@ -70,13 +55,28 @@ XS(CAIXS_inherited_accessor);
 static void
 CAIXS_install_accessor(pTHX_ const char* full_name, SV* hash_key)
 {
+    STRLEN len;
+
     CV* cv = newXS(full_name, CAIXS_inherited_accessor, __FILE__);
-    SV* keysv;
-    CREATE_KEY_SV(keysv, hash_key);
+    if (!cv) croak("Can't install XS accessor");
+
+    const char* buf = SvPV(hash_key, len);
+    SV* keysv = newSV(sizeof(double_hek) + len);
+    double_hek* hent = (double_hek*)SvPVX(keysv);
+
+    HEK_LEN(hent) = len;
+    memcpy(HEK_PKG_KEY(hent), CAIXS_PKG_PREFIX, sizeof(CAIXS_PKG_PREFIX) - 1);
+    memcpy(HEK_KEY(hent), buf, len + 1);
+    PERL_HASH(HEK_HASH(hent), buf, len);
+    len += sizeof(CAIXS_PKG_PREFIX) - 1;
+    PERL_HASH(HEK_PKG_HASH(hent), HEK_PKG_KEY(hent), len);
+    /*HEK_FLAGS(hent) = 0;*/
+
     MAGIC* mg = sv_magicext((SV*)cv, keysv, PERL_MAGIC_ext, &sv_payload_marker, NULL, 0);
     mg->mg_flags |= MGf_REFCOUNTED;
     SvRMAGICAL_off((SV*)cv); // remove unnecessary perfomance overheat
     SvREFCNT_dec_NN(keysv); 
+
     CvXSUBANY(cv).any_ptr = (void*)keysv;
 }
 
