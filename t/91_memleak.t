@@ -30,8 +30,6 @@ no_leaks_ok {
 
 no_leaks_ok {
     my $z = \($obj->foo(24));
-    $$z++;
-    warn $obj->foo;
 };
 
 no_leaks_ok {
