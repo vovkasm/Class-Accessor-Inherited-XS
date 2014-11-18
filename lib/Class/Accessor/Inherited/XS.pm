@@ -12,7 +12,6 @@ XSLoader::load('Class::Accessor::Inherited::XS', $VERSION);
 
 {
     no strict 'refs';
-    no warnings 'redefine';
     
     # for Class::Accessor::Grouped (should be in base classes)
     sub make_group_accessor {
