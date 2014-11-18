@@ -6,47 +6,8 @@ extern "C" {
     #include "XSUB.h"
 }
 #include "ppport.h"
-
-#ifndef SvREFCNT_dec_NN
-#define SvREFCNT_dec_NN SvREFCNT_dec
-#endif
-
-#ifdef dNOOP
-#undef dNOOP
-#define dNOOP
-#endif
-
-#ifndef gv_init_pvn
-#define gv_init_pvn(gv, stash, name, len, flags) gv_init(gv, stash, name, len, 0)
-#endif
-
-static const char CAIXS_PKG_PREFIX[] = "__cag_";
-
-#define HEK_PKG_LEN(hent) \
-    (HEK_LEN(hent) + sizeof(CAIXS_PKG_PREFIX) - 1)
-
-#define HEK_PKG_KEY(hent) \
-    ((char*)(hent->prefix) + 2)
-
-#define HEK_PKG_HASH(hent) \
-    (hent->pkg_hash)
-
-struct double_hek {
-    U32  hek_hash;
-    U32  pkg_hash;
-    I32  hek_len;
-    char prefix[8]; /* fixed CAIXS_PKG_PREFIX string, shifted by 2 bytes offset to prevent padding */
-    char hek_key[1]; 
-};
-
-#define CAIXS_FETCH_PKG_HEK(hv, hent) \
-    CAIXS_HASH_FETCH(hv, HEK_PKG_KEY(hent), HEK_PKG_LEN(hent), HEK_PKG_HASH(hent))
-
-#define CAIXS_FETCH_HASH_HEK(hv, hent) \
-    CAIXS_HASH_FETCH(hv, HEK_KEY(hent), HEK_LEN(hent), HEK_HASH(hent))
-
-#define CAIXS_HASH_FETCH(hv, key, len, hash) \
-    (SV**)hv_common_key_len((hv), (key), (len), HV_FETCH_JUST_SV, NULL, (hash))
+#include "xs/compat.h"
+#include "xs/double_hek.h"
 
 MGVTBL sv_payload_marker;
 
