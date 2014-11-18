@@ -1,6 +1,5 @@
 use Test::More;
 use Class::Accessor::Inherited::XS;
-use Class::Accessor::Grouped;
 use strict;
 
 {

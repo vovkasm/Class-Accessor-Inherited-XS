@@ -1,11 +1,10 @@
 use Test::More;
 use Class::Accessor::Inherited::XS;
-use Class::Accessor::Grouped;
 use strict;
 
 {
     package Jopa;
-    use base qw/Class::Accessor::Inherited::XS Class::Accessor::Grouped/;
+    use base qw/Class::Accessor::Inherited::XS/; 
     use strict;
 
     sub new { return bless {}, shift }
