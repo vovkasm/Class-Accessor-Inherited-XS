@@ -7,9 +7,8 @@ use parent 'Class::Accessor::Grouped';
 
 our $VERSION = '0.02';
 
-use Panda::XS;
-require Panda::XSLoader;
-Panda::XSLoader::load();
+require XSLoader;
+XSLoader::load('Class::Accessor::Inherited::XS', $VERSION);
 
 {
     no strict 'refs';

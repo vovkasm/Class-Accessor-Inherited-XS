@@ -1,7 +1,24 @@
 #define PERL_NO_GET_CONTEXT
 
-#include <xs/xs.h>
-using namespace xs;
+extern "C" {
+    #include "EXTERN.h"
+    #include "perl.h"
+    #include "XSUB.h"
+}
+#include "ppport.h"
+
+#ifndef SvREFCNT_dec_NN
+#define SvREFCNT_dec_NN SvREFCNT_dec
+#endif
+
+#ifdef dNOOP
+#undef dNOOP
+#define dNOOP
+#endif
+
+#ifndef gv_init_pvn
+#define gv_init_pvn(gv, stash, name, len, flags) gv_init(gv, stash, name, len, 0)
+#endif
 
 static const char CAIXS_PKG_PREFIX[] = "__cag_";
 
@@ -46,7 +63,7 @@ STMT_START {                                                                    
     /*HEK_FLAGS(hent) = 0;*/                                                        \
 } STMT_END
 
-static payload_marker_t* my_marker = sv_payload_marker("Class::Accessor::Inherited::XS");
+MGVTBL sv_payload_marker;
 
 XS(CAIXS_inherited_accessor);
 
@@ -56,7 +73,9 @@ CAIXS_install_accessor(pTHX_ const char* full_name, SV* hash_key)
     CV* cv = newXS(full_name, CAIXS_inherited_accessor, __FILE__);
     SV* keysv;
     CREATE_KEY_SV(keysv, hash_key);
-    sv_payload_attach((SV*)cv, keysv, my_marker);
+    MAGIC* mg = sv_magicext((SV*)cv, keysv, PERL_MAGIC_ext, &sv_payload_marker, NULL, 0);
+    mg->mg_flags |= MGf_REFCOUNTED;
+    SvRMAGICAL_off((SV*)cv); // remove unnecessary perfomance overheat
     SvREFCNT_dec_NN(keysv); 
     CvXSUBANY(cv).any_ptr = (void*)keysv;
 }
@@ -180,7 +199,10 @@ XS(CAIXS_inherited_accessor)
 MODULE = Class::Accessor::Inherited::XS		PACKAGE = Class::Accessor::Inherited::XS
 PROTOTYPES: DISABLE
 
-void install_inherited_accessor(const char* full_name, SV* hash_key) {
+void
+install_inherited_accessor(const char* full_name, SV* hash_key)
+PPCODE: 
+{
     CAIXS_install_accessor(aTHX_ full_name, hash_key);
     XSRETURN_UNDEF;
 }
