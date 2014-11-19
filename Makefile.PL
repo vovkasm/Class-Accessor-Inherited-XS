@@ -12,6 +12,10 @@ WriteMakefile(
         'Class::Accessor::Grouped'  => 0,
         'XSLoader'                  => 0,
     },
+    TEST_REQUIRES   => {
+        'Test::Fatal' => 0,
+        'Test::More'  => 0,
+    },
     META_MERGE => {
         resources => {
             repository => 'http://github.com/vovkasm/Class-Accessor-Inherited-XS',
