@@ -1,9 +1,8 @@
-use Test::More tests => 44;
+use Test::More tests => 42;
 use strict;
 use warnings;
 use lib 't/lib';
 use SuperInheritedGroups;
-use NotHashBased;
 
 my $simple = SuperInheritedGroups->new;
 $simple->basefield('Yess');
@@ -69,19 +68,6 @@ is($newsuper->basefield, 'Now Its Our Base');
 is($super->basefield, 'Third Base');
 is(SuperInheritedGroups->basefield, 'Now Its Our Base');
 is(BaseInheritedGroups->basefield, 'All Your Base');
-
-# croak on get/set on non hash-based object
-my $dying = NotHashBased->new;
-
-eval {
-    $dying->killme;
-};
-like($@, qr/is hash-based/);
-
-eval {
-    $dying->killme('foo');
-};
-like($@, qr/is hash-based/);
 
 # make sure we're get defined items, even 0, ''
 BaseInheritedGroups->basefield('base');
