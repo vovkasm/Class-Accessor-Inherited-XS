@@ -21,12 +21,12 @@ struct double_hek {
     (hent->pkg_hash)
 
 #define CAIXS_FETCH_PKG_HEK(hv, hent) \
-    CAIXS_HASH_FETCH(hv, HEK_PKG_KEY(hent), HEK_PKG_LEN(hent), HEK_PKG_HASH(hent))
+    CAIXS_HASH_FETCH(hv, HEK_PKG_KEY(hent), HEK_PKG_LEN(hent), HEK_PKG_HASH(hent), HEK_UTF8(hent))
 
 #define CAIXS_FETCH_HASH_HEK(hv, hent) \
-    CAIXS_HASH_FETCH(hv, HEK_KEY(hent), HEK_LEN(hent), HEK_HASH(hent))
+    CAIXS_HASH_FETCH(hv, HEK_KEY(hent), HEK_LEN(hent), HEK_HASH(hent), HEK_UTF8(hent))
 
-#define CAIXS_HASH_FETCH(hv, key, len, hash) \
-    (SV**)hv_common_key_len((hv), (key), (len), HV_FETCH_JUST_SV, NULL, (hash))
+#define CAIXS_HASH_FETCH(hv, key, len, hash, flags) \
+    (SV**)hv_common((hv), NULL, (key), (len), (flags), HV_FETCH_JUST_SV, NULL, (hash))
 
 #endif

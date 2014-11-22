@@ -14,24 +14,27 @@ MGVTBL sv_payload_marker;
 XS(CAIXS_inherited_accessor);
 
 static void
-CAIXS_install_accessor(pTHX_ const char* full_name, SV* hash_key)
+CAIXS_install_accessor(pTHX_ SV* full_name, SV* hash_key)
 {
     STRLEN len;
 
-    CV* cv = newXS(full_name, CAIXS_inherited_accessor, __FILE__);
+    const char* full_name_buf = SvPV_nolen(full_name);
+    CV* cv = newXS_flags(full_name_buf, CAIXS_inherited_accessor, __FILE__, NULL, SvUTF8(full_name));
     if (!cv) croak("Can't install XS accessor");
 
-    const char* buf = SvPV(hash_key, len);
+    const char* hash_key_buf = SvPV(hash_key, len);
     SV* keysv = newSV(sizeof(double_hek) + len);
     double_hek* hent = (double_hek*)SvPVX(keysv);
 
     HEK_LEN(hent) = len;
     memcpy(HEK_PKG_KEY(hent), CAIXS_PKG_PREFIX, sizeof(CAIXS_PKG_PREFIX) - 1);
-    memcpy(HEK_KEY(hent), buf, len + 1);
-    PERL_HASH(HEK_HASH(hent), buf, len);
+    memcpy(HEK_KEY(hent), hash_key_buf, len + 1);
+    PERL_HASH(HEK_HASH(hent), hash_key_buf, len);
     len += sizeof(CAIXS_PKG_PREFIX) - 1;
     PERL_HASH(HEK_PKG_HASH(hent), HEK_PKG_KEY(hent), len);
-    /*HEK_FLAGS(hent) = 0;*/
+    if (SvUTF8(hash_key)) {
+        HEK_FLAGS(hent) = HVhek_UTF8;
+    }
 
     MAGIC* mg = sv_magicext((SV*)cv, keysv, PERL_MAGIC_ext, &sv_payload_marker, NULL, 0);
     mg->mg_flags |= MGf_REFCOUNTED;
@@ -63,7 +66,7 @@ XS(CAIXS_inherited_accessor)
         if (items > 1) {
             SV* orig_value = ST(1);
             SV* new_value  = newSVsv(orig_value);
-            if (!hv_store((HV*)SvRV(self), HEK_KEY(hent), HEK_LEN(hent), new_value, HEK_HASH(hent))) {
+            if (!hv_store_flags((HV*)SvRV(self), HEK_KEY(hent), HEK_LEN(hent), new_value, HEK_HASH(hent), HEK_UTF8(hent))) {
                 croak("Can't store new hash value");
             }
             PUSHs(new_value);
@@ -112,7 +115,7 @@ XS(CAIXS_inherited_accessor)
                 *svp = (SV*)glob;
                 SvREFCNT_inc_simple_NN((SV*)glob);
             } else {
-                hv_store(stash, HEK_PKG_KEY(hent), HEK_PKG_LEN(hent), (SV*)glob, HEK_PKG_HASH(hent));
+                hv_store_flags(stash, HEK_PKG_KEY(hent), HEK_PKG_LEN(hent), (SV*)glob, HEK_PKG_HASH(hent), HEK_UTF8(hent));
             }
         } else {
             glob = (GV*)*svp;
@@ -161,7 +164,7 @@ MODULE = Class::Accessor::Inherited::XS		PACKAGE = Class::Accessor::Inherited::X
 PROTOTYPES: DISABLE
 
 void
-install_inherited_accessor(const char* full_name, SV* hash_key)
+install_inherited_accessor(SV* full_name, SV* hash_key)
 PPCODE: 
 {
     CAIXS_install_accessor(aTHX_ full_name, hash_key);
