@@ -108,7 +108,10 @@ XS(CAIXS_inherited_accessor)
         GV* glob;
         if (!svp || !isGV(*svp) || SvFAKE(*svp)) {
             glob = svp ? (GV*)*svp : (GV*)newSV(0);
-            gv_init_pvn(glob, stash, HEK_PKG_KEY(hent), HEK_PKG_LEN(hent), 0);
+
+            U32 uflag = HEK_UTF8(hent) ? SVf_UTF8 : 0;
+            gv_init_pvn(glob, stash, HEK_PKG_KEY(hent), HEK_PKG_LEN(hent), uflag);
+
             if (svp) {
                 /* not sure when this can happen - remains untested */
                 SvREFCNT_dec_NN(*svp);
