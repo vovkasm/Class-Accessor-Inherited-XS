@@ -3,7 +3,7 @@ use Class::Accessor::Inherited::XS;
 use strict;
 use utf8;
 
-my $broken_utf8_subs = $[ <= 5.016; #see perl5160delta
+my $broken_utf8_subs = $] <= 5.016; #see perl5160delta
 
 my $utf8_key = "ц";
 my $nonutf_key = "ц";
