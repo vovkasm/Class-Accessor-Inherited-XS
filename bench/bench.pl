@@ -1,10 +1,9 @@
 #!perl
-
 use Class::Accessor::Inherited::XS;
 use Class::Accessor::Grouped;
 use Class::XSAccessor;
 use strict;
-use Benchmark qw/timethis timethese/;
+use Benchmark qw/cmpthese/;
 
 my $o = CCC->new;
 $o->a(3);
@@ -15,23 +14,23 @@ $o2->simple(5);
 AAA->a(7);
 AAA2->a(8);
 
-timethese(
+cmpthese(
     -2,
     {
-        ic1xs => sub { AAA->a },
-        ic1pp => sub { AAA2->a },
-        ic2xs => sub { BBB->a },
-        ic2pp => sub { BBB2->a },
-        ic3xs => sub { CCC->a },
-        ic3pp => sub { CCC2->a },
-        io_xs => sub { $o->a },
-        io_pp => sub { $o2->a },
-        so => sub { $o2->simple },
+        pkg_caix          => sub { AAA->a },
+        pkg_cag           => sub { AAA2->a },
+        pkg_gparent_caixs => sub { CCC->a },
+        pkg_gparent_cag   => sub { CCC2->a },
+        pkg_set_caix      => sub { AAA->a(42) },
+        pkg_set_cag       => sub { AAA2->a(42) },
+        obj_caix          => sub { $o->a },
+        obj_cag           => sub { $o2->a },
+        obj_cxa           => sub { $o2->simple },
+        obj_direct        => sub { $o2->{a} },
     }
 );
 
 BEGIN {
-
     package IaInstaller;
     use base qw/Class::Accessor::Inherited::XS Class::Accessor::Grouped/;
 
@@ -65,5 +64,4 @@ BEGIN {
     use base 'BBB2';
 
     1;
-
 }
