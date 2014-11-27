@@ -86,11 +86,17 @@ XS(CAIXS_inherited_accessor)
     HV* stash;
     if (SvROK(self)) {
         stash = SvSTASH(SvRV(self));
+
     } else {
-        stash = gv_stashsv(self, (items > 1) ? GV_ADD : 1);
-        //GV* acc_gv = CvGV(cv);
-        //if (!acc_gv) croak("TODO: can't understand accessor name");
-        //stash = GvSTASH(acc_gv);
+        GV* acc_gv = CvGV(cv);
+        if (!acc_gv) croak("TODO: can't understand accessor name");
+        stash = GvSTASH(acc_gv);
+
+        const char* stash_name = HvNAME(stash);
+        const char* self_name = SvPV_nolen(self);
+        if (strcmp(stash_name, self_name) != 0) {
+            stash = gv_stashsv(self, (items > 1) ? GV_ADD : 1);
+        }
     }
 
     SV** svp;
