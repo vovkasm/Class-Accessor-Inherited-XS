@@ -1,6 +1,11 @@
-Revision history for Perl extension Class::Accessor::Inherited::XS.
+Revision history for Class::Accessor::Inherited::XS.
+
+0.02 Sat Nov 29 23:53:35 MSK 2014 
+    - complete internal redesign
+    - 5x-12x times faster then Class::Accessor::Grouped
+    - full thread-safety
+    - utf8 accessors names support
 
 0.01  Fri Oct  9 22:52:06 2009
-	- original version; created by h2xs 1.23 with options
-		-A -n Class::Accessor::Inherited::XS
+    - never released to public
 
