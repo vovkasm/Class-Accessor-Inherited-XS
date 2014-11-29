@@ -32,7 +32,7 @@ cmpthese(
 
 BEGIN {
     package IaInstaller;
-    use base qw/Class::Accessor::Inherited::XS Class::Accessor::Grouped/;
+    use base qw/Class::Accessor::Inherited::XS/;
 
     package AAA;
     use base qw/IaInstaller/;
@@ -40,7 +40,7 @@ BEGIN {
 
     sub new { return bless {}, shift }
 
-    AAA->mk_group_accessors( inherited => qw/a/ );
+    AAA->mk_inherited_accessors(qw/a/);
 
     package BBB;
     use base 'AAA';
