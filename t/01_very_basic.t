@@ -9,8 +9,8 @@ use strict;
 
     sub new { return bless {}, shift }
 
-    Jopa->mk_group_accessors( inherited => qw/a b c/ );
-    Jopa->mk_group_accessors( inherited => q/d/ );
+    Jopa->mk_inherited_accessors(qw/a b c/);
+    Jopa->mk_inherited_accessors(qw/d/);
 
     1;
 }

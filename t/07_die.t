@@ -8,7 +8,7 @@ use strict;
     use base qw/Class::Accessor::Inherited::XS/; 
     use strict;
 
-    Jopa->mk_group_accessors( inherited => qw/foo/ );
+    Jopa->mk_inherited_accessors('foo');
 }
 
 like exception {&Jopa::foo}, qr/Usage:/;

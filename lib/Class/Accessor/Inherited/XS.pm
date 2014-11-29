@@ -2,8 +2,6 @@ package Class::Accessor::Inherited::XS;
 use 5.010001;
 use strict;
 use warnings;
-use mro 'c3';
-use parent 'Class::Accessor::Grouped';
 
 our $VERSION = '0.02';
 
@@ -13,16 +11,41 @@ XSLoader::load('Class::Accessor::Inherited::XS', $VERSION);
 {
     no strict 'refs';
     
-    # for Class::Accessor::Grouped (should be in base classes)
-    sub make_group_accessor {
-        my($class, $group, $field, $name) = @_;
+    sub import {
+        return if scalar @_ < 2;
 
-        if ($group eq 'inherited') {
-            Class::Accessor::Inherited::XS::install_inherited_accessor("${class}::${name}", $field);
-            return;
+        my $class = caller;
+        my %opts = ref($_[1]) eq 'HASH' ? %{ $_[1] } : @_;
+
+        if (my $inherited = $opts{inherited}) {
+            if (ref($inherited) eq 'HASH') {
+                mk_inherited_accessor($class, $_, $inherited->{$_}) for keys %$inherited;
+
+            } elsif (ref($inherited) eq 'ARRAY') {
+                mk_inherited_accessor($class, $_, $_) for @$inherited;
+
+            } else {
+                warn "Can't understand format for inherited accessors initializer for class $class";
+            }
         }
+    }
 
-        return $class->next::method($group, $field, $name);
+    sub mk_inherited_accessors {
+        my $class = shift;
+
+        for my $entry (@_) {
+            if (ref($entry) eq 'ARRAY') {
+                mk_inherited_accessor($class, @$entry);
+            } else {
+                mk_inherited_accessor($class, $entry, $entry);
+            }
+        }
+    }
+
+    sub mk_inherited_accessor {
+        my($class, $name, $field) = @_;
+
+        Class::Accessor::Inherited::XS::install_inherited_accessor("${class}::${name}", $field);
     }
 }
 

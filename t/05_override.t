@@ -4,7 +4,7 @@ use strict;
 package Test;
 
 use parent qw/Class::Accessor::Inherited::XS/;
-__PACKAGE__->make_group_accessor(inherited => qw/foo foo/);
+__PACKAGE__->mk_inherited_accessor(qw/foo foo/);
 
 our $foo = 12;
 

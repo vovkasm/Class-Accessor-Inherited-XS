@@ -9,7 +9,7 @@ use strict;
 
     sub new { return bless {}, shift }
 
-    Jopa->mk_group_accessors(inherited => qw/foo bar/);
+    Jopa->mk_inherited_accessors(qw/foo bar/);
 
     1;
 }

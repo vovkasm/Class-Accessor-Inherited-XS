@@ -9,7 +9,6 @@ WriteMakefile(
     VERSION_FROM    => 'lib/Class/Accessor/Inherited/XS.pm',
     AUTHOR          => ['Vladimir Timofeev <vovkasm@crazypanda.ru>', 'Sergey Aleynikov <sergey.aleynikov@gmail.com>'],
     PREREQ_PM       => {
-        'Class::Accessor::Grouped'  => 0,
         'XSLoader'                  => 0,
     },
     TEST_REQUIRES   => {
