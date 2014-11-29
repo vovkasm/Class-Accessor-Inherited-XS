@@ -12,10 +12,11 @@ XSLoader::load('Class::Accessor::Inherited::XS', $VERSION);
     no strict 'refs';
     
     sub import {
-        return if scalar @_ < 2;
+        my $pkg = shift;
+        return unless scalar @_;
 
         my $class = caller;
-        my %opts = ref($_[1]) eq 'HASH' ? %{ $_[1] } : @_;
+        my %opts = ref($_[0]) eq 'HASH' ? %{ $_[0] } : @_;
 
         if (my $inherited = $opts{inherited}) {
             if (ref($inherited) eq 'HASH') {
