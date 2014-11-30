@@ -12,7 +12,6 @@ WriteMakefile(
         'XSLoader'                  => 0,
     },
     TEST_REQUIRES   => {
-        'Test::Fatal' => 0,
         'Test::More'  => 0,
     },
     META_MERGE => {

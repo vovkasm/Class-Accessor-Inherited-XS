@@ -1,5 +1,4 @@
 use Test::More;
-use Test::Fatal;
 use Class::Accessor::Inherited::XS;
 use strict;
 
@@ -11,7 +10,13 @@ use strict;
     Jopa->mk_inherited_accessors('foo');
 }
 
-like exception {&Jopa::foo}, qr/Usage:/;
+sub exception (&) {
+    $@ = undef;
+    eval { shift->() };
+    $@
+}
+
+like exception {Jopa::foo()}, qr/Usage:/;
 
 my $arrobj = bless [], 'Jopa';
 like exception {$arrobj->foo}, qr/hash-based/;
