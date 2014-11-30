@@ -72,6 +72,7 @@ Class::Accessor::Inherited::XS - fast XS inherited accessors
   };
   
   #or in a Class::Accessor::Grouped-like fashion
+  use parent 'Class::Accessor::Inherited::XS';
   __PACKAGE__->mk_inherited_accessors('foo', ['bar', 'bar_key']);
 
 =head1 DESCRIPTION
