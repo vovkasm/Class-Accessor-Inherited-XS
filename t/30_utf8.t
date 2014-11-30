@@ -1,9 +1,7 @@
-use Test::More;
+use Test::More ($] <= 5.016) ? (skip_all => 'utf8 support on this perl is broken') : (no_plan);
 use Class::Accessor::Inherited::XS;
 use strict;
 use utf8;
-
-my $broken_utf8_subs = $] <= 5.016; #see perl5160delta
 
 my $utf8_key = "ц";
 my $nonutf_key = "ц";
@@ -25,14 +23,10 @@ is($obj->$utf8_acc, 42);
 is($obj->{$utf8_key}, 42);
 is($obj->{$nonutf_key}, undef);
 
-if (!$broken_utf8_subs) {
-    is($obj->$nonutf_acc, undef);
+is($obj->$nonutf_acc, undef);
 
-    is($obj->$nonutf_acc(17), 17);
-    is($obj->{$nonutf_key}, 17);
+is($obj->$nonutf_acc(17), 17);
+is($obj->{$nonutf_key}, 17);
 
-    is($obj->$utf8_acc, 42);
-    is($obj->{$utf8_key}, 42);
-}
-
-done_testing;
+is($obj->$utf8_acc, 42);
+is($obj->{$utf8_key}, 42);

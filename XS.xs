@@ -32,8 +32,11 @@ CAIXS_install_accessor(pTHX_ SV* full_name, SV* hash_key)
     PERL_HASH(HEK_HASH(hent), hash_key_buf, len);
     len += sizeof(CAIXS_PKG_PREFIX) - 1;
     PERL_HASH(HEK_PKG_HASH(hent), HEK_PKG_KEY(hent), len);
+
     if (SvUTF8(hash_key)) {
         HEK_FLAGS(hent) = HVhek_UTF8;
+    } else {
+        HEK_FLAGS(hent) = 0;
     }
 
     MAGIC* mg = sv_magicext((SV*)cv, keysv, PERL_MAGIC_ext, &sv_payload_marker, NULL, 0);
