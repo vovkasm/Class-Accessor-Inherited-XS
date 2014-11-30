@@ -1,13 +1,13 @@
 use 5.010001;
 use ExtUtils::MakeMaker;
 
+#system 'pod2text lib/Class/Accessor/Inherited/XS.pm > README';
 my $CCFLAGS = join(' ',$Config{ccflags},'-x c++');
-system 'pod2text lib/Class/Accessor/Inherited/XS.pm > README';
 
 WriteMakefile(
     NAME            => 'Class::Accessor::Inherited::XS',
     VERSION_FROM    => 'lib/Class/Accessor/Inherited/XS.pm',
-    AUTHOR          => ['Vladimir Timofeev <vovkasm@crazypanda.ru>', 'Sergey Aleynikov <sergey.aleynikov@gmail.com>'],
+    AUTHOR          => ['Vladimir Timofeev <vovkasm@crazypanda.ru>', 'Sergey Aleynikov <randir@cpan.org>'],
     PREREQ_PM       => {
         'XSLoader'                  => 0,
     },
@@ -21,8 +21,6 @@ WriteMakefile(
         },
     },
     ABSTRACT_FROM   => 'lib/Class/Accessor/Inherited/XS.pm',
-    LIBS            => ['-lstdc++'],
-    INC             => '-I.',
     CCFLAGS         => $CCFLAGS,
     LICENSE         => 'perl',
     MIN_PERL_VERSION=> 5.010001,
