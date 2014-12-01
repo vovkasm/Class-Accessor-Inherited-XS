@@ -140,13 +140,16 @@ XS(CAIXS_inherited_accessor)
         XSRETURN(1);
     }
     
-    if (stash && (svp = CAIXS_FETCH_PKG_HEK(stash, hent))) {
-        SV* sv = GvSV(*svp);
-        if (sv && SvOK(sv)) {
-            PUSHs(sv);
-            XSRETURN(1);
-        }
+    #define TRY_FETCH_PKG_VALUE(stash, hent, svp)               \
+    if (stash && (svp = CAIXS_FETCH_PKG_HEK(stash, hent))) {    \
+        SV* sv = GvSV(*svp);                                    \
+        if (sv && SvOK(sv)) {                                   \
+            PUSHs(sv);                                          \
+            XSRETURN(1);                                        \
+        }                                                       \
     }
+
+    TRY_FETCH_PKG_VALUE(stash, hent, svp);
 
     // Now try all superclasses
     AV* supers = mro_get_linear_isa(stash);
@@ -156,16 +159,10 @@ XS(CAIXS_inherited_accessor)
     SV** supers_list = AvARRAY(supers);
     while (--fill >= 0) {
         elem = *supers_list++;
+
         if (elem) {
             stash = gv_stashsv(elem, 0);
-
-            if (stash && (svp = CAIXS_FETCH_PKG_HEK(stash, hent))) {
-                SV* sv = GvSV(*svp);
-                if (sv && SvOK(sv)) {
-                    PUSHs(sv);
-                    XSRETURN(1);
-                }
-            }
+            TRY_FETCH_PKG_VALUE(stash, hent, svp);
         }
     }
 
