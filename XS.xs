@@ -150,14 +150,14 @@ XS(CAIXS_inherited_accessor)
 
     // Now try all superclasses
     AV* supers = mro_get_linear_isa(stash);
-    int len = av_len(supers);
 
-    HE* he;
-    for (int i = 1; i <= len; ++i) {
-        svp = av_fetch(supers, i, 0);
-        if (svp) {
-            SV* super = (SV *)*svp;
-            stash = gv_stashsv(super, 0);
+    SV* elem;
+    SSize_t fill = AvFILLp(supers) + 1;
+    SV** supers_list = AvARRAY(supers);
+    while (--fill >= 0) {
+        elem = *supers_list++;
+        if (elem) {
+            stash = gv_stashsv(elem, 0);
 
             if (stash && (svp = CAIXS_FETCH_PKG_HEK(stash, hent))) {
                 SV* sv = GvSV(*svp);
