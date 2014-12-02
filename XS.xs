@@ -22,26 +22,26 @@ CAIXS_install_accessor(pTHX_ SV* full_name, SV* hash_key)
     if (!cv) croak("Can't install XS accessor");
 
     const char* hash_key_buf = SvPV(hash_key, len);
-    SV* keysv = newSV(sizeof(double_hek) + (len > 3 ? len - 3 : 0));
+    SV* keysv = newSV(sizeof(double_hek) + len + 3);
     double_hek* hent = (double_hek*)SvPVX(keysv);
 
-    HEK_LEN(hent) = len;
-    memcpy(HEK_PKG_KEY(hent), CAIXS_PKG_PREFIX, sizeof(CAIXS_PKG_PREFIX) - 1);
-    memcpy(HEK_KEY(hent), hash_key_buf, len + 1);
-    PERL_HASH(HEK_HASH(hent), hash_key_buf, len);
+    DHEK_LEN(hent) = len;
+    memcpy(DHEK_PKG_KEY(hent), CAIXS_PKG_PREFIX, sizeof(CAIXS_PKG_PREFIX) - 1);
+    memcpy(DHEK_KEY(hent), hash_key_buf, len + 1);
+    PERL_HASH(DHEK_HASH(hent), hash_key_buf, len);
     len += sizeof(CAIXS_PKG_PREFIX) - 1;
-    PERL_HASH(HEK_PKG_HASH(hent), HEK_PKG_KEY(hent), len);
+    PERL_HASH(DHEK_PKG_HASH(hent), DHEK_PKG_KEY(hent), len);
 
     if (SvUTF8(hash_key)) {
-        HEK_FLAGS(hent) = HVhek_UTF8;
+        DHEK_FLAGS(hent) = HVhek_UTF8;
     } else {
-        HEK_FLAGS(hent) = 0;
+        DHEK_FLAGS(hent) = 0;
     }
 
     MAGIC* mg = sv_magicext((SV*)cv, keysv, PERL_MAGIC_ext, &sv_payload_marker, NULL, 0);
     mg->mg_flags |= MGf_REFCOUNTED;
-    SvRMAGICAL_off((SV*)cv); // remove unnecessary perfomance overheat
-    SvREFCNT_dec_NN(keysv); 
+    SvRMAGICAL_off((SV*)cv);
+    SvREFCNT_dec_NN(keysv);
 
     CvXSUBANY(cv).any_ptr = (void*)keysv;
 }
@@ -68,7 +68,7 @@ XS(CAIXS_inherited_accessor)
         if (items > 1) {
             SV* orig_value = ST(1);
             SV* new_value  = newSVsv(orig_value);
-            if (!hv_store_flags((HV*)SvRV(self), HEK_KEY(hent), HEK_LEN(hent), new_value, HEK_HASH(hent), HEK_UTF8(hent))) {
+            if (!hv_store_flags((HV*)SvRV(self), DHEK_KEY(hent), DHEK_LEN(hent), new_value, DHEK_HASH(hent), DHEK_UTF8(hent))) {
                 croak("Can't store new hash value");
             }
             PUSHs(new_value);
@@ -117,8 +117,8 @@ XS(CAIXS_inherited_accessor)
         if (!svp || !isGV(*svp) || SvFAKE(*svp)) {
             glob = svp ? (GV*)*svp : (GV*)newSV(0);
 
-            U32 uflag = HEK_UTF8(hent) ? SVf_UTF8 : 0;
-            gv_init_pvn(glob, stash, HEK_PKG_KEY(hent), HEK_PKG_LEN(hent), uflag);
+            U32 uflag = DHEK_UTF8(hent) ? SVf_UTF8 : 0;
+            gv_init_pvn(glob, stash, DHEK_PKG_KEY(hent), DHEK_PKG_LEN(hent), uflag);
 
             if (svp) {
                 /* not sure when this can happen - remains untested */
@@ -126,7 +126,7 @@ XS(CAIXS_inherited_accessor)
                 *svp = (SV*)glob;
                 SvREFCNT_inc_simple_NN((SV*)glob);
             } else {
-                hv_store_flags(stash, HEK_PKG_KEY(hent), HEK_PKG_LEN(hent), (SV*)glob, HEK_PKG_HASH(hent), HEK_UTF8(hent));
+                hv_store_flags(stash, DHEK_PKG_KEY(hent), DHEK_PKG_LEN(hent), (SV*)glob, DHEK_PKG_HASH(hent), DHEK_UTF8(hent));
             }
         } else {
             glob = (GV*)*svp;
