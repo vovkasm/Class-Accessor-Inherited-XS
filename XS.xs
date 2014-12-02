@@ -1,11 +1,10 @@
 #define PERL_NO_GET_CONTEXT
 
-extern "C" {
-    #include "EXTERN.h"
-    #include "perl.h"
-    #include "XSUB.h"
-}
+#include "EXTERN.h"
+#include "perl.h"
+#include "XSUB.h"
 #include "ppport.h"
+
 #include "xs/compat.h"
 #include "xs/double_hek.h"
 
