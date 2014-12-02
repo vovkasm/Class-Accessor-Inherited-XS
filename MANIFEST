@@ -6,8 +6,8 @@ MANIFEST			This list of files
 ppport.h
 README
 t/00_use.t
-t/01_very_basic.t
-t/02_basic.t
+t/01_basic_obj.t
+t/02_basic_pkg.t
 t/03_inherited.t
 t/04_package.t
 t/05_override.t
