@@ -23,7 +23,7 @@ CAIXS_install_accessor(pTHX_ SV* full_name, SV* hash_key)
     if (!cv) croak("Can't install XS accessor");
 
     const char* hash_key_buf = SvPV(hash_key, len);
-    SV* keysv = newSV(sizeof(double_hek) + len);
+    SV* keysv = newSV(sizeof(double_hek) + (len > 3 ? len - 3 : 0));
     double_hek* hent = (double_hek*)SvPVX(keysv);
 
     HEK_LEN(hent) = len;
