@@ -4,7 +4,7 @@ use strict;
 no strict 'refs';
 use utf8;
 
-my $broken_utf8_subs = ($] <= 5.016); #see perl5160delta
+my $broken_utf8_subs = ($] < 5.016); #see perl5160delta
 
 my $utf8_key = "ц";
 my $nonutf_key = "ц";

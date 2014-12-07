@@ -1,4 +1,4 @@
-use Test::More ($] <= 5.016) ? (skip_all => 'utf8 support on this perl is broken') : (no_plan);
+use Test::More ($] < 5.016) ? (skip_all => 'utf8 support on this perl is broken') : (no_plan);
 use Class::Accessor::Inherited::XS;
 use strict;
 use utf8;
