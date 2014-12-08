@@ -1,5 +1,9 @@
 Revision history for Class::Accessor::Inherited::XS.
 
+0.04 Mon Dec  8 11:36:27 MSK 2014
+    - use even less memory for accessor data
+    - correct tests for 5.16.0
+
 0.03 Tue Dec  2 17:01:24 MSK 2014
     - change compiler to be pure c
     - save up to 3 bytes per accessor
