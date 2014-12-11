@@ -8,7 +8,7 @@
 #include "xs/compat.h"
 #include "xs/double_hek.h"
 
-MGVTBL sv_payload_marker;
+static MGVTBL sv_payload_marker;
 
 XS(CAIXS_inherited_accessor);
 
