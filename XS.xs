@@ -97,7 +97,8 @@ XS(CAIXS_inherited_accessor)
         const char* stash_name = HvNAME(stash);
         const char* self_name = SvPV_nolen(self);
         if (strcmp(stash_name, self_name) != 0) {
-            stash = gv_stashsv(self, (items > 1) ? GV_ADD : 1);
+            stash = gv_stashsv(self, GV_ADD);
+            if (!stash) croak("Couldn't get required stash");
         }
     }
 
@@ -107,10 +108,6 @@ XS(CAIXS_inherited_accessor)
 
         //SV* acc_fullname = newSVpvf("%s::%"SVf, HvNAME(stash), acc);
         //CAIXS_install_accessor(aTHX_ c_acc_name, c_acc_name);
-
-        if (!stash) {
-            croak("Couldn't add stash for package setter");
-        }
 
         svp = CAIXS_FETCH_PKG_HEK(stash, hent);
         GV* glob;
