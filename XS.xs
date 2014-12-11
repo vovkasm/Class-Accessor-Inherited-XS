@@ -91,7 +91,7 @@ XS(CAIXS_inherited_accessor)
 
     } else {
         GV* acc_gv = CvGV(cv);
-        if (!acc_gv) croak("TODO: can't understand accessor name");
+        if (!acc_gv) croak("Can't have pkg accessor in anon sub");
         stash = GvSTASH(acc_gv);
 
         const char* stash_name = HvNAME(stash);
