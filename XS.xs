@@ -63,12 +63,13 @@ XS(CAIXS_inherited_accessor)
     if (SvROK(self)) {
         HV* obj = (HV*)SvRV(self);
         if (SvTYPE((SV*)obj) != SVt_PVHV) {
-            croak("Inherited accessor can work only with object instance that is hash-based");
+            croak("Inherited accessors can only work with object instances that is hash-based");
         }
 
         if (items > 1) {
             SV* new_value  = newSVsv(ST(1));
             if (!hv_store_flags((HV*)SvRV(self), DHEK_KEY(hent), DHEK_LEN(hent), new_value, DHEK_HASH(hent), DHEK_UTF8(hent))) {
+                SvREFCNT_dec_NN(new_value);
                 croak("Can't store new hash value");
             }
             PUSHs(new_value);
@@ -121,7 +122,10 @@ XS(CAIXS_inherited_accessor)
                 *svp = (SV*)glob;
                 SvREFCNT_inc_simple_NN((SV*)glob);
             } else {
-                hv_store_flags(stash, DHEK_PKG_KEY(hent), DHEK_PKG_LEN(hent), (SV*)glob, DHEK_PKG_HASH(hent), DHEK_UTF8(hent));
+                if (!hv_store_flags(stash, DHEK_PKG_KEY(hent), DHEK_PKG_LEN(hent), (SV*)glob, DHEK_PKG_HASH(hent), DHEK_UTF8(hent))) {
+                    SvREFCNT_dec_NN(glob);
+                    croak("Can't add a glob to package");
+                }
             }
         } else {
             glob = (GV*)*svp;
