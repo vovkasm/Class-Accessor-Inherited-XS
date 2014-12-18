@@ -62,8 +62,9 @@ XS(CAIXS_inherited_accessor)
 
     if (SvROK(self)) {
         HV* obj = (HV*)SvRV(self);
-        if (SvTYPE((SV*)obj) != SVt_PVHV)
+        if (SvTYPE((SV*)obj) != SVt_PVHV) {
             croak("Inherited accessor can work only with object instance that is hash-based");
+        }
 
         if (items > 1) {
             SV* new_value  = newSVsv(ST(1));
