@@ -66,8 +66,7 @@ XS(CAIXS_inherited_accessor)
             croak("Inherited accessor can work only with object instance that is hash-based");
 
         if (items > 1) {
-            SV* orig_value = ST(1);
-            SV* new_value  = newSVsv(orig_value);
+            SV* new_value  = newSVsv(ST(1));
             if (!hv_store_flags((HV*)SvRV(self), DHEK_KEY(hent), DHEK_LEN(hent), new_value, DHEK_HASH(hent), DHEK_UTF8(hent))) {
                 croak("Can't store new hash value");
             }
@@ -104,8 +103,6 @@ XS(CAIXS_inherited_accessor)
 
     SV** svp;
     if (items > 1) {
-        SV* orig_value = ST(1);
-
         //SV* acc_fullname = newSVpvf("%s::%"SVf, HvNAME(stash), acc);
         //CAIXS_install_accessor(aTHX_ c_acc_name, c_acc_name);
 
@@ -130,7 +127,7 @@ XS(CAIXS_inherited_accessor)
         }
 
         SV* new_value = GvSVn(glob);
-        sv_setsv(new_value, orig_value);
+        sv_setsv(new_value, ST(1));
         PUSHs(new_value);
 
         XSRETURN(1);
