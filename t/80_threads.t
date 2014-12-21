@@ -26,7 +26,7 @@ sub same_name {
 sub same_name_recreate {
     my $val = $_;
     return sub {
-        Class::Accessor::Inherited::XS::install_inherited_accessor("Jopa::foo", "bar");
+        Class::Accessor::Inherited::XS::install_inherited_accessor("Jopa::foo", "bar", "__cag_bar");
         die if Jopa->foo($val) != $val;
         die if $Jopa::__cag_bar != $val;
         die if Jopa->foo != $val;
@@ -39,7 +39,7 @@ sub same_name_recreate {
 sub diff_name_over {
     my $val = $_;
     return sub {
-        Class::Accessor::Inherited::XS::install_inherited_accessor("Jopa::foo", "bar_$val");
+        Class::Accessor::Inherited::XS::install_inherited_accessor("Jopa::foo", "bar_$val", "__cag_bar_$val");
         die if Jopa->foo($val) != $val;
         {
             no strict 'refs';

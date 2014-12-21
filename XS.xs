@@ -10,10 +10,15 @@
 
 static MGVTBL sv_payload_marker;
 
+typedef struct dshared {
+    SV* hash_key;
+    SV* pkg_key;
+} dshared;
+
 XS(CAIXS_inherited_accessor);
 
 static void
-CAIXS_install_accessor(pTHX_ SV* full_name, SV* hash_key)
+CAIXS_install_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key)
 {
     STRLEN len;
 
@@ -21,29 +26,29 @@ CAIXS_install_accessor(pTHX_ SV* full_name, SV* hash_key)
     CV* cv = newXS_flags(full_name_buf, CAIXS_inherited_accessor, __FILE__, NULL, SvUTF8(full_name));
     if (!cv) croak("Can't install XS accessor");
 
-    const char* hash_key_buf = SvPV(hash_key, len);
-    SV* keysv = newSV(sizeof(double_hek) + len + 3);
-    double_hek* hent = (double_hek*)SvPVX(keysv);
+    const char* hash_key_buf = SvPV_const(hash_key, len);
+    SV* s_hash_key = newSVpvn_share(hash_key_buf, SvUTF8(hash_key) ? -len : len, 0);
 
-    DHEK_LEN(hent) = len;
-    memcpy(DHEK_PKG_KEY(hent), CAIXS_PKG_PREFIX, sizeof(CAIXS_PKG_PREFIX) - 1);
-    memcpy(DHEK_KEY(hent), hash_key_buf, len + 1);
-    PERL_HASH(DHEK_HASH(hent), hash_key_buf, len);
-    len += sizeof(CAIXS_PKG_PREFIX) - 1;
-    PERL_HASH(DHEK_PKG_HASH(hent), DHEK_PKG_KEY(hent), len);
+    const char* pkg_key_buf = SvPV_const(pkg_key, len);
+    SV* s_pkg_key = newSVpvn_share(pkg_key_buf, SvUTF8(pkg_key) ? -len : len, 0);
 
-    if (SvUTF8(hash_key)) {
-        DHEK_FLAGS(hent) = HVhek_UTF8;
-    } else {
-        DHEK_FLAGS(hent) = 0;
-    }
+    dshared* keys;
+    Newx(keys, 1, dshared);
+    keys->hash_key = s_hash_key;
+    keys->pkg_key = s_pkg_key;
+    CvXSUBANY(cv).any_ptr = (void*)keys;
 
-    MAGIC* mg = sv_magicext((SV*)cv, keysv, PERL_MAGIC_ext, &sv_payload_marker, NULL, 0);
-    mg->mg_flags |= MGf_REFCOUNTED;
+    #define MAGICALIZE(sv) STMT_START { \
+    MAGIC* mg = sv_magicext((SV*)cv, sv, PERL_MAGIC_ext, &sv_payload_marker, NULL, 0); \
+    mg->mg_flags |= MGf_REFCOUNTED; \
+    SvREFCNT_dec_NN(sv); \
+    } STMT_END
+
+//sv_dump(s_hash_key);
+
+    MAGICALIZE(s_hash_key);
+    MAGICALIZE(s_pkg_key);
     SvRMAGICAL_off((SV*)cv);
-    SvREFCNT_dec_NN(keysv);
-
-    CvXSUBANY(cv).any_ptr = (void*)keysv;
 }
 
 XS(CAIXS_inherited_accessor)
@@ -55,20 +60,20 @@ XS(CAIXS_inherited_accessor)
 
     SV* self = ST(0);
 
-    SV* keysv = (SV*)(CvXSUBANY(cv).any_ptr);
-    if (!keysv) croak("Can't find hash key information");
-
-    double_hek* hent = (double_hek*)SvPVX(keysv);
+    dshared* keys = (dshared*)(CvXSUBANY(cv).any_ptr);
+    if (!keys) croak("Can't find hash key information");
 
     if (SvROK(self)) {
         HV* obj = (HV*)SvRV(self);
         if (SvTYPE((SV*)obj) != SVt_PVHV) {
             croak("Inherited accessors can only work with object instances that is hash-based");
         }
+sv_dump(keys->hash_key);
+if (SvIsCOW_shared_hash(keys->hash_key)) warn("  SHARED ^");
 
         if (items > 1) {
             SV* new_value  = newSVsv(ST(1));
-            if (!hv_store_flags((HV*)SvRV(self), DHEK_KEY(hent), DHEK_LEN(hent), new_value, DHEK_HASH(hent), DHEK_UTF8(hent))) {
+            if (!hv_common(obj, keys->hash_key, NULL, 0, 0, HV_FETCH_ISSTORE|HV_FETCH_JUST_SV, new_value, 0)) {
                 SvREFCNT_dec_NN(new_value);
                 croak("Can't store new hash value");
             }
@@ -76,7 +81,7 @@ XS(CAIXS_inherited_accessor)
             XSRETURN(1);
                     
         } else {
-            SV** svp = CAIXS_FETCH_HASH_HEK(obj, hent);
+            SV** svp = hv_common(obj, keys->hash_key, NULL, 0, 0, HV_FETCH_JUST_SV, NULL, 0);
             if (svp) {
                 PUSHs(*svp);
                 XSRETURN(1);
@@ -102,19 +107,20 @@ XS(CAIXS_inherited_accessor)
             if (!stash) croak("Couldn't get required stash");
         }
     }
+sv_dump(keys->pkg_key);
+if (SvIsCOW_shared_hash(keys->pkg_key)) warn("  SHARED ^");
 
     SV** svp;
     if (items > 1) {
         //SV* acc_fullname = newSVpvf("%s::%"SVf, HvNAME(stash), acc);
         //CAIXS_install_accessor(aTHX_ c_acc_name, c_acc_name);
 
-        svp = CAIXS_FETCH_PKG_HEK(stash, hent);
+        svp = hv_common(stash, keys->pkg_key, NULL, 0, 0, HV_FETCH_JUST_SV, NULL, 0);
         GV* glob;
         if (!svp || !isGV(*svp) || SvFAKE(*svp)) {
             glob = svp ? (GV*)*svp : (GV*)newSV(0);
 
-            U32 uflag = DHEK_UTF8(hent) ? SVf_UTF8 : 0;
-            gv_init_pvn(glob, stash, DHEK_PKG_KEY(hent), DHEK_PKG_LEN(hent), uflag);
+            gv_init_sv(glob, stash, keys->pkg_key, 0);
 
             if (svp) {
                 /* not sure when this can happen - remains untested */
@@ -122,7 +128,7 @@ XS(CAIXS_inherited_accessor)
                 *svp = (SV*)glob;
                 SvREFCNT_inc_simple_NN((SV*)glob);
             } else {
-                if (!hv_store_flags(stash, DHEK_PKG_KEY(hent), DHEK_PKG_LEN(hent), (SV*)glob, DHEK_PKG_HASH(hent), DHEK_UTF8(hent))) {
+                if (!hv_common(stash, keys->pkg_key, NULL, 0, 0, HV_FETCH_ISSTORE|HV_FETCH_JUST_SV, (SV*)glob, 0)) {
                     SvREFCNT_dec_NN(glob);
                     croak("Can't add a glob to package");
                 }
@@ -139,7 +145,7 @@ XS(CAIXS_inherited_accessor)
     }
     
     #define TRY_FETCH_PKG_VALUE(stash, hent, svp)               \
-    if (stash && (svp = CAIXS_FETCH_PKG_HEK(stash, hent))) {    \
+    if (stash && (svp = hv_common(stash, keys->pkg_key, NULL, 0, 0, HV_FETCH_JUST_SV, NULL, 0))) {    \
         SV* sv = GvSV(*svp);                                    \
         if (sv && SvOK(sv)) {                                   \
             PUSHs(sv);                                          \
@@ -171,10 +177,10 @@ MODULE = Class::Accessor::Inherited::XS		PACKAGE = Class::Accessor::Inherited::X
 PROTOTYPES: DISABLE
 
 void
-install_inherited_accessor(SV* full_name, SV* hash_key)
+install_inherited_accessor(SV* full_name, SV* hash_key, SV* pkg_key)
 PPCODE: 
 {
-    CAIXS_install_accessor(aTHX_ full_name, hash_key);
+    CAIXS_install_accessor(aTHX_ full_name, hash_key, pkg_key);
     XSRETURN_UNDEF;
 }
 

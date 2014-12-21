@@ -2,7 +2,7 @@ use Test::More;
 use Class::Accessor::Inherited::XS;
 use strict;
 
-Class::Accessor::Inherited::XS::install_inherited_accessor("Jopa::foo", "foo");
+Class::Accessor::Inherited::XS::install_inherited_accessor("Jopa::foo", "foo", "__cag_foo");
 my $obj = bless {}, 'Jopa';
 
 my $bar = \($obj->foo(24));

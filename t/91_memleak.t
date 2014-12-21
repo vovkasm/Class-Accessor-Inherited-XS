@@ -3,17 +3,17 @@ use Test::More HAS_LEAKTRACE ? (no_plan) : (skip_all => 'require Test::LeakTrace
 use Test::LeakTrace;
 use Class::Accessor::Inherited::XS;
 
-Class::Accessor::Inherited::XS::install_inherited_accessor("Jopa::foo", "foo");
+Class::Accessor::Inherited::XS::install_inherited_accessor("Jopa::foo", "foo", "__cag_foo");
 
 no_leaks_ok {
     for (1..100) {
-        Class::Accessor::Inherited::XS::install_inherited_accessor("Jopa::foo", "foo");
+        Class::Accessor::Inherited::XS::install_inherited_accessor("Jopa::foo", "foo", "__cag_foo");
     }
 };
 
 no_leaks_ok {
     for (1..100) {
-        Class::Accessor::Inherited::XS::install_inherited_accessor("Jopa::foo_$_", "foo_$_");
+        Class::Accessor::Inherited::XS::install_inherited_accessor("Jopa::foo_$_", "foo_$_", "__cag_foo_$_");
         undef *{"Jopa::foo_$_"};
     }
 };
@@ -44,7 +44,7 @@ no_leaks_ok {
     Jopa->foo('bar');
 };
 
-Class::Accessor::Inherited::XS::install_inherited_accessor("Jopa::foobaz", "foobaz");
+Class::Accessor::Inherited::XS::install_inherited_accessor("Jopa::foobaz", "foobaz", "__cag_foobaz");
 
 no_leaks_ok {
     Jopa->foobaz('bar');
