@@ -71,7 +71,7 @@ XS(CAIXS_inherited_accessor)
 
         if (items > 1) {
             SV* new_value  = newSVsv(ST(1));
-            if (!hv_common(obj, keys->hash_key, NULL, 0, 0, HV_FETCH_ISSTORE|HV_FETCH_JUST_SV, new_value, 0)) {
+            if (!hv_store_ent(obj, keys->hash_key, new_value, 0)) {
                 SvREFCNT_dec_NN(new_value);
                 croak("Can't store new hash value");
             }
@@ -79,9 +79,9 @@ XS(CAIXS_inherited_accessor)
             XSRETURN(1);
                     
         } else {
-            SV** svp = hv_common(obj, keys->hash_key, NULL, 0, 0, HV_FETCH_JUST_SV, NULL, 0);
-            if (svp) {
-                PUSHs(*svp);
+            HE* hent = hv_fetch_ent(obj, keys->hash_key, 0, 0);
+            if (hent) {
+                PUSHs(HeVAL(hent));
                 XSRETURN(1);
             }
         }
@@ -124,7 +124,7 @@ XS(CAIXS_inherited_accessor)
                 *svp = (SV*)glob;
                 SvREFCNT_inc_simple_NN((SV*)glob);
             } else {
-                if (!hv_common(stash, keys->pkg_key, NULL, 0, 0, HV_FETCH_ISSTORE|HV_FETCH_JUST_SV, (SV*)glob, 0)) {
+                if (!hv_store_ent(stash, keys->pkg_key, (SV*)glob, 0)) {
                     SvREFCNT_dec_NN(glob);
                     croak("Can't add a glob to package");
                 }
