@@ -4,8 +4,7 @@ use strict;
 use warnings;
 
 our $VERSION = '0.04';
-
-our $PREFIX = '__cag_';
+our $PREFIX  = '__cag_';
 
 require XSLoader;
 XSLoader::load('Class::Accessor::Inherited::XS', $VERSION);
@@ -45,6 +44,7 @@ XSLoader::load('Class::Accessor::Inherited::XS', $VERSION);
         }
     }
 
+    #this function is NOT part of the public API
     sub mk_inherited_accessor {
         my($class, $name, $field) = @_;
 
