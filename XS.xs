@@ -10,10 +10,10 @@
 
 static MGVTBL sv_payload_marker;
 
-typedef struct dshared {
+typedef struct shared_keys {
     SV* hash_key;
     SV* pkg_key;
-} dshared;
+} shared_keys;
 
 XS(CAIXS_inherited_accessor);
 
@@ -32,8 +32,8 @@ CAIXS_install_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key)
     const char* pkg_key_buf = SvPV_const(pkg_key, len);
     SV* s_pkg_key = newSVpvn_share(pkg_key_buf, SvUTF8(pkg_key) ? -len : len, 0);
 
-    SV* keys_sv = newSV(sizeof(dshared));
-    dshared* keys = (dshared*)SvPVX(keys_sv);
+    SV* keys_sv = newSV(sizeof(shared_keys));
+    shared_keys* keys = (shared_keys*)SvPVX(keys_sv);
     keys->hash_key = s_hash_key;
     keys->pkg_key = s_pkg_key;
     CvXSUBANY(cv).any_ptr = (void*)keys;
@@ -60,7 +60,7 @@ XS(CAIXS_inherited_accessor)
 
     SV* self = ST(0);
 
-    dshared* keys = (dshared*)(CvXSUBANY(cv).any_ptr);
+    shared_keys* keys = (shared_keys*)(CvXSUBANY(cv).any_ptr);
     if (!keys) croak("Can't find hash key information");
 
     if (SvROK(self)) {
