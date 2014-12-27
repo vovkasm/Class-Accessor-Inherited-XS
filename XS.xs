@@ -151,11 +151,13 @@ XS(CAIXS_inherited_accessor)
     // Now try all superclasses
     AV* supers = mro_get_linear_isa(stash);
 
-    SV* elem;
-    SSize_t fill = AvFILLp(supers) + 1;
+    // first entry has already been tested, so skip 1st and has count one less
+    SSize_t fill = AvFILLp(supers);
     SV** supers_list = AvARRAY(supers);
+
+    SV* elem;
     while (--fill >= 0) {
-        elem = *supers_list++;
+        elem = *(++supers_list);
 
         if (elem) {
             stash = gv_stashsv(elem, 0);
