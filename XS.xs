@@ -44,8 +44,6 @@ CAIXS_install_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key)
     SvREFCNT_dec_NN(sv); \
     } STMT_END
 
-//sv_dump(s_hash_key);
-
     MAGICALIZE(s_hash_key);
     MAGICALIZE(s_pkg_key);
     SvRMAGICAL_off((SV*)cv);
@@ -68,8 +66,6 @@ XS(CAIXS_inherited_accessor)
         if (SvTYPE((SV*)obj) != SVt_PVHV) {
             croak("Inherited accessors can only work with object instances that is hash-based");
         }
-sv_dump(keys->hash_key);
-if (SvIsCOW_shared_hash(keys->hash_key)) warn("  SHARED ^");
 
         if (items > 1) {
             SV* new_value  = newSVsv(ST(1));
@@ -107,8 +103,6 @@ if (SvIsCOW_shared_hash(keys->hash_key)) warn("  SHARED ^");
             if (!stash) croak("Couldn't get required stash");
         }
     }
-sv_dump(keys->pkg_key);
-if (SvIsCOW_shared_hash(keys->pkg_key)) warn("  SHARED ^");
 
     SV** svp;
     if (items > 1) {
