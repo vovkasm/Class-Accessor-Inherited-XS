@@ -6,7 +6,6 @@
 #include "ppport.h"
 
 #include "xs/compat.h"
-#include "xs/double_hek.h"
 
 static MGVTBL sv_payload_marker;
 
