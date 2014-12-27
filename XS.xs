@@ -106,31 +106,29 @@ XS(CAIXS_inherited_accessor)
         }
     }
 
-    SV** svp;
+    HE* hent;
     if (items > 1) {
         //SV* acc_fullname = newSVpvf("%s::%"SVf, HvNAME(stash), acc);
         //CAIXS_install_accessor(aTHX_ c_acc_name, c_acc_name);
 
-        svp = hv_common(stash, keys->pkg_key, NULL, 0, 0, HV_FETCH_JUST_SV, NULL, 0);
-        GV* glob;
-        if (!svp || !isGV(*svp) || SvFAKE(*svp)) {
-            glob = svp ? (GV*)*svp : (GV*)newSV(0);
+        hent = hv_fetch_ent(stash, keys->pkg_key, 0, 0);
+        GV* glob = hent ? (GV*)HeVAL(hent) : NULL;
+        if (!glob || !isGV(glob) || SvFAKE(glob)) {
+            if (!glob) glob = (GV*)newSV(0);
 
             gv_init_sv(glob, stash, keys->pkg_key, 0);
 
-            if (svp) {
+            if (hent) {
                 /* not sure when this can happen - remains untested */
-                SvREFCNT_dec_NN(*svp);
-                *svp = (SV*)glob;
                 SvREFCNT_inc_simple_NN((SV*)glob);
+                SvREFCNT_dec_NN(HeVAL(hent));
+                HeVAL(hent) = (SV*)glob;
             } else {
                 if (!hv_store_ent(stash, keys->pkg_key, (SV*)glob, 0)) {
                     SvREFCNT_dec_NN(glob);
                     croak("Can't add a glob to package");
                 }
             }
-        } else {
-            glob = (GV*)*svp;
         }
 
         SV* new_value = GvSVn(glob);
@@ -140,16 +138,16 @@ XS(CAIXS_inherited_accessor)
         XSRETURN(1);
     }
     
-    #define TRY_FETCH_PKG_VALUE(stash, hent, svp)               \
-    if (stash && (svp = hv_common(stash, keys->pkg_key, NULL, 0, 0, HV_FETCH_JUST_SV, NULL, 0))) {    \
-        SV* sv = GvSV(*svp);                                    \
-        if (sv && SvOK(sv)) {                                   \
-            PUSHs(sv);                                          \
-            XSRETURN(1);                                        \
-        }                                                       \
+    #define TRY_FETCH_PKG_VALUE(stash, keys, hent)                      \
+    if (stash && (hent = hv_fetch_ent(stash, keys->pkg_key, 0, 0))) {   \
+        SV* sv = GvSV(HeVAL(hent));                                     \
+        if (sv && SvOK(sv)) {                                           \
+            PUSHs(sv);                                                  \
+            XSRETURN(1);                                                \
+        }                                                               \
     }
 
-    TRY_FETCH_PKG_VALUE(stash, hent, svp);
+    TRY_FETCH_PKG_VALUE(stash, keys, hent);
 
     // Now try all superclasses
     AV* supers = mro_get_linear_isa(stash);
@@ -162,7 +160,7 @@ XS(CAIXS_inherited_accessor)
 
         if (elem) {
             stash = gv_stashsv(elem, 0);
-            TRY_FETCH_PKG_VALUE(stash, hent, svp);
+            TRY_FETCH_PKG_VALUE(stash, keys, hent);
         }
     }
 
