@@ -32,20 +32,22 @@ CAIXS_install_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key)
     const char* pkg_key_buf = SvPV_const(pkg_key, len);
     SV* s_pkg_key = newSVpvn_share(pkg_key_buf, SvUTF8(pkg_key) ? -len : len, 0);
 
-    dshared* keys;
-    Newx(keys, 1, dshared);
+    SV* keys_sv = newSV(sizeof(dshared));
+    dshared* keys = (dshared*)SvPVX(keys_sv);
     keys->hash_key = s_hash_key;
     keys->pkg_key = s_pkg_key;
     CvXSUBANY(cv).any_ptr = (void*)keys;
 
-    #define MAGICALIZE(sv) STMT_START { \
-    MAGIC* mg = sv_magicext((SV*)cv, sv, PERL_MAGIC_ext, &sv_payload_marker, NULL, 0); \
-    mg->mg_flags |= MGf_REFCOUNTED; \
-    SvREFCNT_dec_NN(sv); \
+    #define ATTACH_MAGIC(target, sv) STMT_START {                                           \
+    MAGIC* mg = sv_magicext((SV*)target, sv, PERL_MAGIC_ext, &sv_payload_marker, NULL, 0);  \
+    mg->mg_flags |= MGf_REFCOUNTED;                                                         \
+    SvREFCNT_dec_NN(sv);                                                                    \
     } STMT_END
 
-    MAGICALIZE(s_hash_key);
-    MAGICALIZE(s_pkg_key);
+    ATTACH_MAGIC(cv, s_hash_key);
+    ATTACH_MAGIC(cv, s_pkg_key);
+    ATTACH_MAGIC(cv, keys_sv);
+
     SvRMAGICAL_off((SV*)cv);
 }
 
