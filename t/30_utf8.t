@@ -1,5 +1,6 @@
+package Jopa;
 use Test::More ($] < 5.016) ? (skip_all => 'utf8 support on this perl is broken') : (no_plan);
-use Class::Accessor::Inherited::XS;
+use parent 'Class::Accessor::Inherited::XS';
 use strict;
 use utf8;
 
@@ -11,8 +12,7 @@ my $utf8_acc = "тест";
 my $nonutf_acc = "тест";
 utf8::encode($nonutf_acc);
 
-Class::Accessor::Inherited::XS::install_inherited_accessor("Jopa::$utf8_acc", $utf8_key, "__cag_$utf8_key");
-Class::Accessor::Inherited::XS::install_inherited_accessor("Jopa::$nonutf_acc", $nonutf_key, "__cag_$nonutf_key");
+__PACKAGE__->mk_inherited_accessors([$utf8_acc, $utf8_key], [$nonutf_acc, $nonutf_key]);
 my $obj = bless {}, 'Jopa';
 
 is $obj->тест, undef;

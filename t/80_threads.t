@@ -6,11 +6,14 @@ BEGIN {
 use Test::More ($have_threads) ? ('no_plan') : (skip_all => 'for threaded perls only');
 
 package Test;
-
 use parent qw/Class::Accessor::Inherited::XS/;
 __PACKAGE__->mk_inherited_accessor(qw/foo foo/);
 
+package Jopa;
+use parent qw/Class::Accessor::Inherited::XS/;
+
 package main;
+use strict;
 my @threads;
 
 Test->foo(3);
@@ -26,26 +29,27 @@ sub same_name {
 sub same_name_recreate {
     my $val = $_;
     return sub {
-        Class::Accessor::Inherited::XS::install_inherited_accessor("Jopa::foo", "bar", "__cag_bar");
+        Jopa->mk_inherited_accessors(['foo', 'bar']);
         die if Jopa->foo($val) != $val;
         die if $Jopa::__cag_bar != $val;
         die if Jopa->foo != $val;
 
-        no strict 'refs';
-        undef *{"Jopa::foo"};
+        undef *{Jopa::foo};
     };
 }
 
 sub diff_name_over {
     my $val = $_;
     return sub {
-        Class::Accessor::Inherited::XS::install_inherited_accessor("Jopa::foo", "bar_$val", "__cag_bar_$val");
+        Jopa->mk_inherited_accessors(["foo", "bar_$val"]);
         die if Jopa->foo($val) != $val;
         {
             no strict 'refs';
             die if ${"Jopa::__cag_bar_$val"} != $val;
         }
         die if Jopa->foo != $val;
+
+        undef *{Jopa::foo};
     };
 }
 
