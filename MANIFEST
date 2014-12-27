@@ -27,4 +27,3 @@ t/lib/ExtraInheritedGroups.pm
 t/lib/SuperInheritedGroups.pm
 XS.xs
 xs/compat.h
-xs/double_hek.h

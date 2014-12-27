@@ -1,5 +1,10 @@
 Revision history for Class::Accessor::Inherited::XS.
 
+0.05 Sat Dec 27 19:18:19 MSK 2014
+    - use newSVpvn_share to hold hash keys, thus avoiding one strcmp() in hash lookup
+    - avoid unnecessary double-fetch for own pkg when descending into hierarchy chain
+    - better errors handling
+
 0.04 Mon Dec  8 11:36:27 MSK 2014
     - use even less memory for accessor data
     - correct tests for 5.16.0
