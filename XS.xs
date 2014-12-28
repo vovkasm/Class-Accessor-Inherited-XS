@@ -3,6 +3,8 @@
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
+
+#define NEED_mg_findext
 #include "ppport.h"
 
 #include "xs/compat.h"
@@ -31,11 +33,16 @@ CAIXS_install_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key)
     const char* pkg_key_buf = SvPV_const(pkg_key, len);
     SV* s_pkg_key = newSVpvn_share(pkg_key_buf, SvUTF8(pkg_key) ? -len : len, 0);
 
-    SV* keys_sv = newSV(sizeof(shared_keys));
-    shared_keys* keys = (shared_keys*)SvPVX(keys_sv);
-    keys->hash_key = s_hash_key;
-    keys->pkg_key = s_pkg_key;
-    CvXSUBANY(cv).any_ptr = (void*)keys;
+    AV* keys_av = newAV();
+    av_extend_guts(keys_av, 1, &AvMAX(keys_av), &AvALLOC(keys_av), &AvARRAY(keys_av));
+    SV** keys_array = AvARRAY(keys_av);
+    keys_array[0] = s_hash_key;
+    keys_array[1] = s_pkg_key;
+    AvFILLp(keys_av) = 1;
+
+#ifndef MULTIPLICITY
+    CvXSUBANY(cv).any_ptr = (void*)keys_array;
+#endif
 
     #define ATTACH_MAGIC(target, sv) STMT_START {                                           \
     MAGIC* mg = sv_magicext((SV*)target, sv, PERL_MAGIC_ext, &sv_payload_marker, NULL, 0);  \
@@ -43,10 +50,7 @@ CAIXS_install_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key)
     SvREFCNT_dec_NN(sv);                                                                    \
     } STMT_END
 
-    ATTACH_MAGIC(cv, s_hash_key);
-    ATTACH_MAGIC(cv, s_pkg_key);
-    ATTACH_MAGIC(cv, keys_sv);
-
+    ATTACH_MAGIC(cv, (SV*)keys_av);
     SvRMAGICAL_off((SV*)cv);
 }
 
@@ -57,11 +61,18 @@ XS(CAIXS_inherited_accessor)
 
     if (!items) croak("Usage: $obj->accessor or __PACKAGE__->accessor");
 
-    SV* self = ST(0);
-
-    shared_keys* keys = (shared_keys*)(CvXSUBANY(cv).any_ptr);
+    shared_keys* keys;
+#ifndef MULTIPLICITY
+    keys = (shared_keys*)(CvXSUBANY(cv).any_ptr);
     if (!keys) croak("Can't find hash key information");
+#else
+    MAGIC* mg = mg_findext((SV*)cv, PERL_MAGIC_ext, &sv_payload_marker);
+    if (!mg) croak("Can't find hash key information");
 
+    keys = (shared_keys*)AvARRAY((AV*)(mg->mg_obj));
+#endif
+
+    SV* self = ST(0);
     if (SvROK(self)) {
         HV* obj = (HV*)SvRV(self);
         if (SvTYPE((SV*)obj) != SVt_PVHV) {

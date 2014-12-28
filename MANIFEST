@@ -19,6 +19,7 @@ t/10_gparent_found.t
 t/30_utf8.t
 t/31_utf8_pkg.t
 t/80_threads.t
+t/81_threads_anyptr.t
 t/90_leaktrace.t
 t/91_memleak.t
 t/lib/AccessorInstaller.pm
