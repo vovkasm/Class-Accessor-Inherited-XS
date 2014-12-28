@@ -1,5 +1,10 @@
 Revision history for Class::Accessor::Inherited::XS.
 
+0.06 Sun Dec 28 14:17:08 MSK 2014
+    - fix coredump under threaded builds, when accessor was created in parent thread
+        and then destoryed in it after child creation
+    - change internal refs accounting scheme
+
 0.05 Sat Dec 27 19:18:19 MSK 2014
     - use newSVpvn_share to hold hash keys, thus avoiding one strcmp() in hash lookup
     - avoid unnecessary double-fetch for own pkg when descending into hierarchy chain
