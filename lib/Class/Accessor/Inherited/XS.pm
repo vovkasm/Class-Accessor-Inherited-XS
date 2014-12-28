@@ -105,7 +105,7 @@ L<Class::Accessor::Inherited::XS> is 5-12x times faster than L<Class::Accessor::
 on your usage pattern. Accessing data from a parent in large inheritance chain is still the worst case,
 but even there L<Class::Accessor::Inherited::XS> beats L<Class::Accessor::Grouped> best-case.
 
-Here are results from the benchmark run on perl 5.20.1 (see bench folder):
+Here are results from a benchmark run on perl 5.20.1 (see bench folder):
 
                           Rate pkg_gparent_cag pkg_cag obj_cag pkg_set_cag pkg_gparent_caixs pkg_caix pkg_set_caix obj_caix obj_cxa obj_direct
   pkg_gparent_cag     238597/s              --    -76%    -80%        -82%              -91%     -97%         -97%     -98%    -99%       -99%
