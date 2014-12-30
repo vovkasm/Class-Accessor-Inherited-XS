@@ -44,13 +44,8 @@ CAIXS_install_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key)
     CvXSUBANY(cv).any_ptr = (void*)keys_array;
 #endif
 
-    #define ATTACH_MAGIC(target, sv) STMT_START {                                           \
-    MAGIC* mg = sv_magicext((SV*)target, sv, PERL_MAGIC_ext, &sv_payload_marker, NULL, 0);  \
-    mg->mg_flags |= MGf_REFCOUNTED;                                                         \
-    SvREFCNT_dec_NN(sv);                                                                    \
-    } STMT_END
-
-    ATTACH_MAGIC(cv, (SV*)keys_av);
+    sv_magicext((SV*)cv, (SV*)keys_av, PERL_MAGIC_ext, &sv_payload_marker, NULL, 0);
+    SvREFCNT_dec_NN((SV*)keys_av);
     SvRMAGICAL_off((SV*)cv);
 }
 
