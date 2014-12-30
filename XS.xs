@@ -10,7 +10,7 @@
 #include "xs/compat.h"
 
 static MGVTBL sv_payload_marker;
-static bool optimize_entersub = true;
+static bool optimize_entersub = 1;
 
 typedef struct shared_keys {
     SV* hash_key;
@@ -220,7 +220,7 @@ PROTOTYPES: DISABLE
 BOOT:
 {
     SV** check_env = hv_fetch(GvHV(PL_envgv), "CAIXS_DISABLE_ENTERSUB", 22, 0);
-    if (check_env && SvTRUE(*check_env)) optimize_entersub = false;
+    if (check_env && SvTRUE(*check_env)) optimize_entersub = 0;
 }
 
 void
