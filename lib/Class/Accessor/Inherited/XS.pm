@@ -101,7 +101,7 @@ no known conceptual leaks.
 
 =head1 PERFORMANCE
 
-L<Class::Accessor::Inherited::XS> is 5-12x times faster than L<Class::Accessor::Grouped>, depending
+L<Class::Accessor::Inherited::XS> is at least 10x times faster than L<Class::Accessor::Grouped>, depending
 on your usage pattern. Accessing data from a parent in large inheritance chain is still the worst case,
 but even there L<Class::Accessor::Inherited::XS> beats L<Class::Accessor::Grouped> best-case.
 
