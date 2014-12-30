@@ -10,6 +10,7 @@
 #include "xs/compat.h"
 
 static MGVTBL sv_payload_marker;
+static bool optimize_entersub = true;
 
 typedef struct shared_keys {
     SV* hash_key;
@@ -86,7 +87,7 @@ XS(CAIXS_inherited_accessor)
         sorry, Devel::NYTProf
     */
     OP* op = PL_op;
-    if ((op->op_spare & 1) != 1 && op->op_ppaddr == PL_ppaddr[OP_ENTERSUB]) {
+    if ((op->op_spare & 1) != 1 && op->op_ppaddr == PL_ppaddr[OP_ENTERSUB] && optimize_entersub) {
         op->op_spare |= 1;
         op->op_ppaddr = CAIXS_entersub;
     }
@@ -215,6 +216,12 @@ XS(CAIXS_inherited_accessor)
 
 MODULE = Class::Accessor::Inherited::XS		PACKAGE = Class::Accessor::Inherited::XS
 PROTOTYPES: DISABLE
+
+BOOT:
+{
+    SV** check_env = hv_fetch(GvHV(PL_envgv), "CAIXS_DISABLE_ENTERSUB", 22, 0);
+    if (check_env && SvTRUE(*check_env)) optimize_entersub = false;
+}
 
 void
 install_inherited_accessor(SV* full_name, SV* hash_key, SV* pkg_key)
