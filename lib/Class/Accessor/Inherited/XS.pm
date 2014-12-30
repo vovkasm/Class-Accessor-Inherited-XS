@@ -107,17 +107,17 @@ but even there L<Class::Accessor::Inherited::XS> beats L<Class::Accessor::Groupe
 
 Here are results from a benchmark run on perl 5.20.1 (see bench folder):
 
-                          Rate pkg_gparent_cag pkg_cag obj_cag pkg_set_cag pkg_gparent_caixs pkg_caix pkg_set_caix obj_caix obj_cxa obj_direct
-  pkg_gparent_cag     238597/s              --    -76%    -80%        -82%              -91%     -97%         -97%     -98%    -99%       -99%
-  pkg_cag             998731/s            319%      --    -18%        -25%              -64%     -86%         -86%     -92%    -94%       -95%
-  obj_cag            1223277/s            413%     22%      --         -8%              -56%     -83%         -83%     -91%    -93%       -94%
-  pkg_set_cag        1323322/s            455%     33%      8%          --              -52%     -82%         -82%     -90%    -92%       -93%
-  pkg_gparent_caixs  2752510/s           1054%    176%    125%        108%                --     -62%         -63%     -79%    -84%       -86%
-  pkg_caix           7281773/s           2952%    629%    495%        450%              165%       --          -1%     -44%    -56%       -64%
-  pkg_set_caix       7349827/s           2980%    636%    501%        455%              167%       1%           --     -44%    -56%       -64%
-  obj_caix          13008746/s           5352%   1203%    963%        883%              373%      79%          77%       --    -22%       -36%
-  obj_cxa           16733631/s           6913%   1575%   1268%       1165%              508%     130%         128%      29%      --       -17%
-  obj_direct        20201922/s           8367%   1923%   1551%       1427%              634%     177%         175%      55%     21%         --
+                          Rate pkg_gparent_cag pkg_cag obj_cag pkg_set_cag pkg_gparent_caixs pkg_caix pkg_set_caix obj_cxa obj_caix obj_direct
+  pkg_gparent_cag     237444/s              --    -77%    -79%        -82%              -92%     -97%         -97%    -99%     -99%       -99%
+  pkg_cag            1013067/s            327%      --    -11%        -21%              -66%     -88%         -89%    -94%     -95%       -96%
+  obj_cag            1137400/s            379%     12%      --        -12%              -62%     -87%         -87%    -93%     -94%       -95%
+  pkg_set_cag        1286220/s            442%     27%     13%          --              -57%     -85%         -86%    -92%     -93%       -95%
+  pkg_gparent_caixs  2995865/s           1162%    196%    163%        133%                --     -65%         -66%    -82%     -84%       -88%
+  pkg_caix           8602691/s           3523%    749%    656%        569%              187%       --          -3%    -49%     -54%       -65%
+  pkg_set_caix       8907800/s           3652%    779%    683%        593%              197%       4%           --    -47%     -52%       -64%
+  obj_cxa           16781840/s           6968%   1557%   1375%       1205%              460%      95%          88%      --     -10%       -32%
+  obj_caix          18642286/s           7751%   1740%   1539%       1349%              522%     117%         109%     11%       --       -25%
+  obj_direct        24807382/s          10348%   2349%   2081%       1829%              728%     188%         178%     48%      33%         --
 
 =head1 PROFILING WITH Devel::NYTProf
 
