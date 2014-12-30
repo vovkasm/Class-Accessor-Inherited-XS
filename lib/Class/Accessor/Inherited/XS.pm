@@ -66,7 +66,7 @@ Class::Accessor::Inherited::XS - fast XS inherited accessors
       inherited => [qw/foo bar/], # here key names are equal to accessor names
   ;
   
-  use Class::Accessor::Inherited::XS {
+  use Class::Accessor::Inherited::XS { # optional braces
       inherited => {
         bar => 'bar_key',
         foo => 'foo_key',
