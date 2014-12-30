@@ -34,6 +34,9 @@ CAIXS_install_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key)
     SV* s_pkg_key = newSVpvn_share(pkg_key_buf, SvUTF8(pkg_key) ? -len : len, 0);
 
     AV* keys_av = newAV();
+    /*
+        this is a pristine AV, so skip as much checks as possible on whichever perls we can grab it
+    */
     av_extend_guts(keys_av, 1, &AvMAX(keys_av), &AvALLOC(keys_av), &AvARRAY(keys_av));
     SV** keys_array = AvARRAY(keys_av);
     keys_array[0] = s_hash_key;
@@ -79,7 +82,7 @@ XS(CAIXS_inherited_accessor)
 
     /*
         check whether we can replace opcode executor with our own variant
-        but it guards only against local changes, not when someone steals PL_ppaddr[OP_ENTERSUB] globally
+        but this guards only against local changes, not when someone steals PL_ppaddr[OP_ENTERSUB] globally
         sorry, Devel::NYTProf
     */
     OP* op = PL_op;
@@ -90,9 +93,15 @@ XS(CAIXS_inherited_accessor)
 
     shared_keys* keys;
 #ifndef MULTIPLICITY
+    /* blessed are ye and get a fastpath */
     keys = (shared_keys*)(CvXSUBANY(cv).any_ptr);
     if (!keys) croak("Can't find hash key information");
 #else
+    /*
+        can't look to CvXSUBANY under threads, as it would have been written in the parent thread
+        and might go away at any time without prior notice, so instead have to scan
+        our magical refcnt storage - there's always a proper thread-local SV*, cloned for us by perl itself
+    */
     MAGIC* mg = mg_findext((SV*)cv, PERL_MAGIC_ext, &sv_payload_marker);
     if (!mg) croak("Can't find hash key information");
 
@@ -124,7 +133,7 @@ XS(CAIXS_inherited_accessor)
         }
     }
 
-    // Can't find in object, so try self package
+    /* can't find in object, so initite a package lookup */
 
     HV* stash;
     if (SvROK(self)) {
@@ -145,9 +154,6 @@ XS(CAIXS_inherited_accessor)
 
     HE* hent;
     if (items > 1) {
-        //SV* acc_fullname = newSVpvf("%s::%"SVf, HvNAME(stash), acc);
-        //CAIXS_install_accessor(aTHX_ c_acc_name, c_acc_name);
-
         hent = hv_fetch_ent(stash, keys->pkg_key, 0, 0);
         GV* glob = hent ? (GV*)HeVAL(hent) : NULL;
         if (!glob || !isGV(glob) || SvFAKE(glob)) {
@@ -186,11 +192,12 @@ XS(CAIXS_inherited_accessor)
 
     TRY_FETCH_PKG_VALUE(stash, keys, hent);
 
-    // Now try all superclasses
     AV* supers = mro_get_linear_isa(stash);
-
-    // first entry has already been tested, so skip 1st and has count one less
-    SSize_t fill = AvFILLp(supers);
+    /*
+        first entry in 'mro_get_linear_isa' list is a 'stash' itself
+        it's already been tested, so ajust counter and iterator to skip over it
+    */
+    SSize_t fill     = AvFILLp(supers);
     SV** supers_list = AvARRAY(supers);
 
     SV* elem;
