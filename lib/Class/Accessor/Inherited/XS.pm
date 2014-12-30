@@ -3,7 +3,7 @@ use 5.010001;
 use strict;
 use warnings;
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 our $PREFIX  = '__cag_';
 
 require XSLoader;

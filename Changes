@@ -1,5 +1,11 @@
 Revision history for Class::Accessor::Inherited::XS.
 
+0.07 Tue Dec 30 23:35:13 MSK 2014
+    - PL_op->op_ppaddr optimization trick
+    - %ENV kill switch
+    - update benchmark results
+    - notes about profiling
+
 0.06 Sun Dec 28 14:17:08 MSK 2014
     - fix coredump under threaded builds, when accessor was created in parent thread
         and then destoryed in it after child creation
