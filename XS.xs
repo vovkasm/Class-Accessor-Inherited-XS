@@ -54,12 +54,44 @@ CAIXS_install_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key)
     SvRMAGICAL_off((SV*)cv);
 }
 
+OP *
+CAIXS_entersub(pTHX) {
+    dSP;
+
+    CV* sv = (CV*)TOPs;
+    if (sv && (SvTYPE(sv) == SVt_PVCV) && (CvXSUB(sv) == CAIXS_inherited_accessor)) {
+        /*
+            assert against future XPVCV layout change - as for now, xcv_xsub shares space with xcv_root
+            which are both pointers, so address check is enough, and there's no need to look for CvISXSUB
+        */
+        assert(CvISXSUB(sv));
+
+        POPs; PUTBACK;
+        CAIXS_inherited_accessor(aTHX_ sv);
+        return NORMAL;
+    } else {
+        PL_op->op_ppaddr = PL_ppaddr[OP_ENTERSUB];
+        return PL_ppaddr[OP_ENTERSUB](aTHX);
+    }
+}
+
 XS(CAIXS_inherited_accessor)
 {
     dXSARGS;
     SP -= items;
 
     if (!items) croak("Usage: $obj->accessor or __PACKAGE__->accessor");
+
+    /*
+        check whether we can replace opcode executor with our own variant
+        but it guards only against local changes, not when someone steals PL_ppaddr[OP_ENTERSUB] globally
+        sorry, Devel::NYTProf
+    */
+    OP* op = PL_op;
+    if ((op->op_spare & 1) != 1 && op->op_ppaddr == PL_ppaddr[OP_ENTERSUB]) {
+        op->op_spare |= 1;
+        op->op_ppaddr = CAIXS_entersub;
+    }
 
     shared_keys* keys;
 #ifndef MULTIPLICITY
