@@ -121,13 +121,13 @@ Here are results from a benchmark run on perl 5.20.1 (see bench folder):
 
 =head1 PROFILING WITH Devel::NYTProf
 
-To perform it's work, L<Devel::NYTProf> hooks into perl interpreter by replacing default behaviour for calling subroutines
+To perform it's job, L<Devel::NYTProf> hooks into perl interpreter by replacing default behaviour for calling subroutines
 on the opcode level. To squeeze last bits of performance, L<Class::Accessor::Inherited::XS> does the same, but separately
-on each call site of it's accessors. It turns out into CAIX favor - L<Devel::NYTProf> sees only first call to CAIX
-accessor sub, but then those calls become 'invisible' for subs profiler.
+on each call site of its accessors. It turns out into CAIX favor - L<Devel::NYTProf> sees only the first call to CAIX
+accessor, but all subsequent ones become invisible to subs profiler.
 
 Note that, statement profiler still correctly accounts time spent on the line, you just don't see time spent in accessors'
-calls separately. That's sometimes OK, sometimes not - you get profile with all possible optimizations on, but not very easy to be read.
+calls separately. That's sometimes OK, sometimes not - you get profile with all possible optimizations on, but it's not very reader-friendly.
 
 Since it's hard to detect L<Devel::NYTProf> (and any other module doing such magic) in a portable way (all hail Win32), there's
 an %ENV switch available - you can set CAIXS_DISABLE_ENTERSUB to true value to disable call site optimization and get full subs profile.
