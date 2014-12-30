@@ -96,7 +96,7 @@ hash keys. You have been warned.
 =head1 THREADS
 
 Though highly discouraged, perl threads are supported by L<Class::Accessor::Inherited::XS>. You may
-have accessors with the same names pointing to differents keys in different threads, etc. There are 
+have accessors with the same names pointing to different keys in different threads, etc. There are
 no known conceptual leaks.
 
 =head1 PERFORMANCE
@@ -118,6 +118,19 @@ Here are results from a benchmark run on perl 5.20.1 (see bench folder):
   obj_caix          13008746/s           5352%   1203%    963%        883%              373%      79%          77%       --    -22%       -36%
   obj_cxa           16733631/s           6913%   1575%   1268%       1165%              508%     130%         128%      29%      --       -17%
   obj_direct        20201922/s           8367%   1923%   1551%       1427%              634%     177%         175%      55%     21%         --
+
+=head1 PROFILING WITH Devel::NYTProf
+
+To perform it's work, L<Devel::NYTProf> hooks into perl interpreter by replacing default behaviour for calling subroutines
+on the opcode level. To squeeze last bits of performance, L<Class::Accessor::Inherited::XS> does the same, but separately
+on each call site of it's accessors. It turns out into CAIX favor - L<Devel::NYTProf> sees only first call to CAIX
+accessor sub, but then those calls become 'invisible' for subs profiler.
+
+Note that, statement profiler still correctly accounts time spent on the line, you just don't see time spent in accessors'
+calls separately. That's sometimes OK, sometimes not - you get profile with all possible optimizations on, but not very easy to be read.
+
+Since it's hard to detect L<Devel::NYTProf> (and any other module doing such magic) in a portable way (all hail Win32), there's
+an %ENV switch available - you can set CAIXS_DISABLE_ENTERSUB to true value to disable call site optimization and get full subs profile.
 
 =head1 SEE ALSO
 
