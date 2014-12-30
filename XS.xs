@@ -36,7 +36,7 @@ CAIXS_install_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key)
 
     AV* keys_av = newAV();
     /*
-        this is a pristine AV, so skip as much checks as possible on whichever perls we can grab it
+        This is a pristine AV, so skip as much checks as possible on whichever perls we can grab it.
     */
     av_extend_guts(keys_av, 1, &AvMAX(keys_av), &AvALLOC(keys_av), &AvARRAY(keys_av));
     SV** keys_array = AvARRAY(keys_av);
@@ -60,8 +60,8 @@ CAIXS_entersub(pTHX) {
     CV* sv = (CV*)TOPs;
     if (sv && (SvTYPE(sv) == SVt_PVCV) && (CvXSUB(sv) == CAIXS_inherited_accessor)) {
         /*
-            assert against future XPVCV layout change - as for now, xcv_xsub shares space with xcv_root
-            which are both pointers, so address check is enough, and there's no need to look for CvISXSUB
+            Assert against future XPVCV layout change - as for now, xcv_xsub shares space with xcv_root
+            which are both pointers, so address check is enough, and there's no need to look into op_flags for CvISXSUB.
         */
         assert(CvISXSUB(sv));
 
@@ -82,9 +82,9 @@ XS(CAIXS_inherited_accessor)
     if (!items) croak("Usage: $obj->accessor or __PACKAGE__->accessor");
 
     /*
-        check whether we can replace opcode executor with our own variant
-        but this guards only against local changes, not when someone steals PL_ppaddr[OP_ENTERSUB] globally
-        sorry, Devel::NYTProf
+        Check whether we can replace opcode executor with our own variant. Unfortunatelly, this guards
+        only against local changes, not when someone steals PL_ppaddr[OP_ENTERSUB] globally.
+        Sorry, Devel::NYTProf.
     */
     OP* op = PL_op;
     if ((op->op_spare & 1) != 1 && op->op_ppaddr == PL_ppaddr[OP_ENTERSUB] && optimize_entersub) {
@@ -94,14 +94,14 @@ XS(CAIXS_inherited_accessor)
 
     shared_keys* keys;
 #ifndef MULTIPLICITY
-    /* blessed are ye and get a fastpath */
+    /* Blessed are ye and get a fastpath */
     keys = (shared_keys*)(CvXSUBANY(cv).any_ptr);
     if (!keys) croak("Can't find hash key information");
 #else
     /*
-        can't look to CvXSUBANY under threads, as it would have been written in the parent thread
-        and might go away at any time without prior notice, so instead have to scan
-        our magical refcnt storage - there's always a proper thread-local SV*, cloned for us by perl itself
+        We can't look into CvXSUBANY under threads, as it would have been written in the parent thread
+        and might go away at any time without prior notice. So, instead, we have to scan our magical 
+        refcnt storage - there's always a proper thread-local SV*, cloned for us by perl itself.
     */
     MAGIC* mg = mg_findext((SV*)cv, PERL_MAGIC_ext, &sv_payload_marker);
     if (!mg) croak("Can't find hash key information");
@@ -134,7 +134,7 @@ XS(CAIXS_inherited_accessor)
         }
     }
 
-    /* can't find in object, so initite a package lookup */
+    /* Couldn't find value in object, so initiate a package lookup. */
 
     HV* stash;
     if (SvROK(self)) {
@@ -163,7 +163,7 @@ XS(CAIXS_inherited_accessor)
             gv_init_sv(glob, stash, keys->pkg_key, 0);
 
             if (hent) {
-                /* not sure when this can happen - remains untested */
+                /* Not sure when this can happen - remains untested */
                 SvREFCNT_inc_simple_NN((SV*)glob);
                 SvREFCNT_dec_NN(HeVAL(hent));
                 HeVAL(hent) = (SV*)glob;
@@ -195,8 +195,8 @@ XS(CAIXS_inherited_accessor)
 
     AV* supers = mro_get_linear_isa(stash);
     /*
-        first entry in 'mro_get_linear_isa' list is a 'stash' itself
-        it's already been tested, so ajust counter and iterator to skip over it
+        First entry in 'mro_get_linear_isa' list is a 'stash' itself.
+        It's already been tested, so ajust counter and iterator to skip over it.
     */
     SSize_t fill     = AvFILLp(supers);
     SV** supers_list = AvARRAY(supers);
