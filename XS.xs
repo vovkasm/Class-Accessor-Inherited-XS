@@ -29,10 +29,10 @@ CAIXS_install_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key)
     if (!cv) croak("Can't install XS accessor");
 
     const char* hash_key_buf = SvPV_const(hash_key, len);
-    SV* s_hash_key = newSVpvn_share(hash_key_buf, SvUTF8(hash_key) ? -len : len, 0);
+    SV* s_hash_key = newSVpvn_share(hash_key_buf, SvUTF8(hash_key) ? -(I32)len : (I32)len, 0);
 
     const char* pkg_key_buf = SvPV_const(pkg_key, len);
-    SV* s_pkg_key = newSVpvn_share(pkg_key_buf, SvUTF8(pkg_key) ? -len : len, 0);
+    SV* s_pkg_key = newSVpvn_share(pkg_key_buf, SvUTF8(pkg_key) ? -(I32)len : (I32)len, 0);
 
     AV* keys_av = newAV();
     /*
