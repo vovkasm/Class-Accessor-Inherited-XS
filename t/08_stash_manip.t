@@ -17,4 +17,7 @@ is(Test->foo, 17);
 undef *{Test::foo};
 is(Test->bar, 17);
 
+undef *{Test::__cag_foo};
+is(Test->bar, undef);
+
 done_testing;
