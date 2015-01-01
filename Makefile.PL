@@ -23,3 +23,9 @@ WriteMakefile(
     MIN_PERL_VERSION=> 5.010001,
 );
 
+{
+    package MY;
+
+    sub postamble { '$(OBJECT) : xs/compat.h' }
+}
+
