@@ -1,4 +1,4 @@
-use Test::More tests => 42;
+use Test::More 'no_plan';
 use strict;
 use warnings;
 use lib 't/lib';
@@ -94,3 +94,5 @@ unshift @SuperInheritedGroups::ISA, qw/ExtraInheritedGroups/;
 
 # this comes from ExtraInheritedGroups
 is(SuperInheritedGroups->basefield, 'your extra base!');
+
+done_testing;
