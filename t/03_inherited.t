@@ -1,4 +1,4 @@
-use Test::More 'no_plan';
+use Test::More;
 use strict;
 use warnings;
 use lib 't/lib';
