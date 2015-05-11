@@ -163,10 +163,11 @@ XS(CAIXS_inherited_accessor)
             gv_init_sv(glob, stash, keys->pkg_key, 0);
 
             if (hent) {
-                /* Not sure when this can happen - remains untested */
+                /* there was just a stub instead of a full glob */
                 SvREFCNT_inc_simple_NN((SV*)glob);
                 SvREFCNT_dec_NN(HeVAL(hent));
                 HeVAL(hent) = (SV*)glob;
+
             } else {
                 if (!hv_store_ent(stash, keys->pkg_key, (SV*)glob, 0)) {
                     SvREFCNT_dec_NN(glob);
