@@ -73,15 +73,15 @@ Class::Accessor::Inherited::XS - fast XS inherited accessors
       },
   };
   
-  #or in a Class::Accessor::Grouped-like fashion
+  #or in the Class::Accessor::Grouped-like fashion
   use parent 'Class::Accessor::Inherited::XS';
   __PACKAGE__->mk_inherited_accessors('foo', ['bar', 'bar_key']);
 
 =head1 DESCRIPTION
 
 This module provides very fast implementation for 'inherited' accessors, that were introduced 
-in L<Class::Accessor::Grouped>. They give you capability to override values set in a parent
-class with values set in childs or object instances. Generated accessors are compatible with
+by the L<Class::Accessor::Grouped> module. They give you capability to override values set in 
+a parent class with values set in childs or object instances. Generated accessors are compatible with
 L<Class::Accessor::Grouped> generated ones.
 
 Since this module focuses primary on speed, it provides no capability to have your own per-class
@@ -89,20 +89,20 @@ getters/setters logic (like overriding L<get_inherited>/L<set_inherited> in L<Cl
 
 =head1 UTF-8
 
-Starting with perl 5.16.0, this module provides full support for UTF-8 method names and hash 
+Starting with the perl 5.16.0, this module provides full support for UTF-8 method names and hash 
 keys. Before that, you can't distinguish UTF-8 strings from bytes string in method names, only in 
 hash keys. You have been warned.
 
 =head1 THREADS
 
 Though highly discouraged, perl threads are supported by L<Class::Accessor::Inherited::XS>. You may
-have accessors with the same names pointing to different keys in different threads, etc. There are
+have accessors with same names pointing to different keys in different threads, etc. There are
 no known conceptual leaks.
 
 =head1 PERFORMANCE
 
 L<Class::Accessor::Inherited::XS> is at least 10x times faster than L<Class::Accessor::Grouped>, depending
-on your usage pattern. Accessing data from a parent in large inheritance chain is still the worst case,
+on your usage pattern. Accessing data from a parent in a large inheritance chain is still the worst case,
 but even there L<Class::Accessor::Inherited::XS> beats L<Class::Accessor::Grouped> best-case.
 
 Here are results from a benchmark run on perl 5.20.1 (see bench folder):
@@ -121,16 +121,16 @@ Here are results from a benchmark run on perl 5.20.1 (see bench folder):
 
 =head1 PROFILING WITH Devel::NYTProf
 
-To perform it's job, L<Devel::NYTProf> hooks into perl interpreter by replacing default behaviour for calling subroutines
+To perform it's task, L<Devel::NYTProf> hooks into perl interpreter by replacing default behaviour for calling subroutines
 on the opcode level. To squeeze last bits of performance, L<Class::Accessor::Inherited::XS> does the same, but separately
-on each call site of its accessors. It turns out into CAIX favor - L<Devel::NYTProf> sees only the first call to CAIX
-accessor, but all subsequent ones become invisible to subs profiler.
+on each call site of its accessors. It turns out into CAIX favor - L<Devel::NYTProf> sees only first call to CAIX
+accessor, but all subsequent ones become invisible to the subs profiler.
 
-Note that, statement profiler still correctly accounts time spent on the line, you just don't see time spent in accessors'
-calls separately. That's sometimes OK, sometimes not - you get profile with all possible optimizations on, but it's not very reader-friendly.
+Note that statement profiler still correctly accounts time spent on a line, you just don't see time spent in accessors'
+calls separately. That's sometimes OK, sometimes not - you get profile with all possible optimizations on, but it's hard for understanding.
 
 Since it's hard to detect L<Devel::NYTProf> (and any other module doing such magic) in a portable way (all hail Win32), there's
-an %ENV switch available - you can set CAIXS_DISABLE_ENTERSUB to true value to disable call site optimization and get full subs profile.
+an %ENV switch available - you can set CAIXS_DISABLE_ENTERSUB to a true value to disable call site optimization and get full subs profile.
 
 =head1 SEE ALSO
 
