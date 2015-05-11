@@ -26,6 +26,6 @@ WriteMakefile(
 {
     package MY;
 
-    sub postamble { '$(OBJECT) : xs/compat.h' }
+    sub postamble { '$(OBJECT) : xs/*.h' }
 }
 
