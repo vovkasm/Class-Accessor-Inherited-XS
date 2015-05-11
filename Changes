@@ -1,5 +1,9 @@
 Revision history for Class::Accessor::Inherited::XS.
 
+0.08 Mon May 11 19:56:33 MSK 2015
+    - fix compilation on VC and some older perls
+    - more tests and docs
+
 0.07 Tue Dec 30 23:35:13 MSK 2014
     - PL_op->op_ppaddr optimization trick
     - %ENV kill switch
