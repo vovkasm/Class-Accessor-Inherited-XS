@@ -3,11 +3,16 @@ use 5.010001;
 use strict;
 use warnings;
 
+use Carp ();
+
 our $VERSION = '0.08';
 our $PREFIX  = '__cag_';
 
 require XSLoader;
 XSLoader::load('Class::Accessor::Inherited::XS', $VERSION);
+
+my $REGISTERED_TYPES = {};
+register_type(inherited => {no_cb => 1});
 
 sub import {
     my $pkg = shift;
@@ -16,15 +21,22 @@ sub import {
     my $class = caller;
     my %opts = ref($_[0]) eq 'HASH' ? %{ $_[0] } : @_;
 
-    if (my $inherited = $opts{inherited}) {
-        if (ref($inherited) eq 'HASH') {
-            mk_inherited_accessor($class, $_, $inherited->{$_}) for keys %$inherited;
+    for my $type (keys %opts) {
+        my $type_info = $REGISTERED_TYPES->{$type};
 
-        } elsif (ref($inherited) eq 'ARRAY') {
-            mk_inherited_accessor($class, $_, $_) for @$inherited;
+        if (!defined $type_info) {
+            Carp::confess("Don't know how to install '$type' accessors");
+        }
+
+        my $accessors = $opts{$type};
+        if (ref($accessors) eq 'HASH') {
+            _mk_inherited_accessor($class, $_, $accessors->{$_}) for keys %$accessors;
+
+        } elsif (ref($accessors) eq 'ARRAY') {
+            _mk_inherited_accessor($class, $_, $_) for @$accessors;
 
         } else {
-            warn "Can't understand format for inherited accessors initializer for class $class";
+            Carp::confess("Can't understand format for '$type' accessors initializer");
         }
     }
 }
@@ -34,15 +46,28 @@ sub mk_inherited_accessors {
 
     for my $entry (@_) {
         if (ref($entry) eq 'ARRAY') {
-            mk_inherited_accessor($class, @$entry);
+            _mk_inherited_accessor($class, @$entry);
         } else {
-            mk_inherited_accessor($class, $entry, $entry);
+            _mk_inherited_accessor($class, $entry, $entry);
         }
     }
 }
 
-#this function is NOT part of the public API
-sub mk_inherited_accessor {
+sub register_type {
+    my ($type, $args) = @_;
+
+    if (exists $REGISTERED_TYPES->{$type}) {
+        Carp::confess("Type '$type' has already been registered");
+    }
+
+    $REGISTERED_TYPES->{$type} = $args;
+}
+
+=cut
+    Functions below are NOT part of the public API
+=cut
+
+sub _mk_inherited_accessor {
     my($class, $name, $field) = @_;
 
     Class::Accessor::Inherited::XS::install_inherited_accessor("${class}::${name}", $field, $PREFIX.$field);

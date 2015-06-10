@@ -8,7 +8,8 @@ WriteMakefile(
     VERSION_FROM    => 'lib/Class/Accessor/Inherited/XS.pm',
     AUTHOR          => ['Vladimir Timofeev <vovkasm@crazypanda.ru>', 'Sergey Aleynikov <randir@cpan.org>'],
     PREREQ_PM       => {
-        'XSLoader'                  => 0,
+        'XSLoader'    => 0,
+        'Carp'        => 0,
     },
     TEST_REQUIRES   => {
         'Test::More'  => 0,
