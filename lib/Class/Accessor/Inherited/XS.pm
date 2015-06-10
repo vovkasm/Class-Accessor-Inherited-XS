@@ -30,10 +30,10 @@ sub import {
 
         my $accessors = $opts{$type};
         if (ref($accessors) eq 'HASH') {
-            _mk_inherited_accessor($class, $_, $accessors->{$_}) for keys %$accessors;
+            $type_info->{installer}->($class, $_, $accessors->{$_}) for keys %$accessors;
 
         } elsif (ref($accessors) eq 'ARRAY') {
-            _mk_inherited_accessor($class, $_, $_) for @$accessors;
+            $type_info->{installer}->($class, $_, $_) for @$accessors;
 
         } else {
             Carp::confess("Can't understand format for '$type' accessors initializer");
@@ -60,6 +60,10 @@ sub register_type {
         Carp::confess("Type '$type' has already been registered");
     }
 
+    if (exists $args->{no_cb}) {
+        $args->{installer} = \&_mk_inherited_accessor;
+    }
+
     $REGISTERED_TYPES->{$type} = $args;
 }
 
@@ -68,9 +72,9 @@ sub register_type {
 =cut
 
 sub _mk_inherited_accessor {
-    my($class, $name, $field) = @_;
+    my ($class, $name, $field) = @_;
 
-    Class::Accessor::Inherited::XS::install_inherited_accessor("${class}::${name}", $field, $PREFIX.$field);
+    install_inherited_accessor("${class}::${name}", $field, $PREFIX.$field);
 }
 
 1;
