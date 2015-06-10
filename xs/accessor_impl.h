@@ -42,8 +42,6 @@ XSPROTO(CAIXS_inherited_accessor)
 
     if (!items) croak("Usage: $obj->accessor or __PACKAGE__->accessor");
 
-    if (need_cb) warn("Callback = true\n");
-
     /*
         Check whether we can replace opcode executor with our own variant. Unfortunatelly, this guards
         only against local changes, not when someone steals PL_ppaddr[OP_ENTERSUB] globally.
