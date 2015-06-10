@@ -20,4 +20,4 @@
 #define av_extend_guts(hv, idx, max, alloc, array) Perl_av_extend_guts(aTHX_ hv, idx, max, alloc, array)
 #endif
 
-#endif
+#endif /* __INHERITED_XS_COMPAT_H_ */
