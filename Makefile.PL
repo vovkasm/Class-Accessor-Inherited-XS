@@ -1,7 +1,10 @@
 use 5.010001;
+use Config;
 use ExtUtils::MakeMaker;
 
 #system 'pod2text lib/Class/Accessor/Inherited/XS.pm > README';
+
+my $CCFLAGS = join(' ',$Config{ccflags},'-x c++');
 
 WriteMakefile(
     NAME            => 'Class::Accessor::Inherited::XS',
@@ -22,6 +25,9 @@ WriteMakefile(
     ABSTRACT_FROM   => 'lib/Class/Accessor/Inherited/XS.pm',
     LICENSE         => 'perl',
     MIN_PERL_VERSION=> 5.010001,
+    CCFLAGS         => $CCFLAGS,
+    #LIBS            => ['-lstdc++'],
+    #XSOPT           => '-C++',
 );
 
 {

@@ -62,6 +62,12 @@ sub register_type {
 
     if (exists $args->{no_cb}) {
         $args->{installer} = \&_mk_inherited_accessor;
+
+    } else {
+        $args->{installer} = sub {
+            my ($class, $name, $field) = @_;
+            install_inherited_cb_accessor("${class}::${name}", $field, $PREFIX.$field, $args->{read_cb}, $args->{write_cb});
+        };
     }
 
     $REGISTERED_TYPES->{$type} = $args;
