@@ -3,7 +3,7 @@ use Test::More;
 package Test;
 
 use parent qw/Class::Accessor::Inherited::XS/;
-__PACKAGE__->mk_inherited_accessor(qw/foo foo/);
+__PACKAGE__->mk_inherited_accessors('foo');
 
 *bar = *foo;
 

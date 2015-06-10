@@ -7,7 +7,7 @@ use Test::More ($have_threads) ? ('no_plan') : (skip_all => 'for threaded perls 
 
 package Test;
 use parent qw/Class::Accessor::Inherited::XS/;
-__PACKAGE__->mk_inherited_accessor(qw/foo foo/);
+__PACKAGE__->mk_inherited_accessors('foo');
 
 package Jopa;
 use parent qw/Class::Accessor::Inherited::XS/;
