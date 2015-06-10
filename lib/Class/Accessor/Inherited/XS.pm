@@ -9,47 +9,43 @@ our $PREFIX  = '__cag_';
 require XSLoader;
 XSLoader::load('Class::Accessor::Inherited::XS', $VERSION);
 
-{
-    no strict 'refs';
-    
-    sub import {
-        my $pkg = shift;
-        return unless scalar @_;
+sub import {
+    my $pkg = shift;
+    return unless scalar @_;
 
-        my $class = caller;
-        my %opts = ref($_[0]) eq 'HASH' ? %{ $_[0] } : @_;
+    my $class = caller;
+    my %opts = ref($_[0]) eq 'HASH' ? %{ $_[0] } : @_;
 
-        if (my $inherited = $opts{inherited}) {
-            if (ref($inherited) eq 'HASH') {
-                mk_inherited_accessor($class, $_, $inherited->{$_}) for keys %$inherited;
+    if (my $inherited = $opts{inherited}) {
+        if (ref($inherited) eq 'HASH') {
+            mk_inherited_accessor($class, $_, $inherited->{$_}) for keys %$inherited;
 
-            } elsif (ref($inherited) eq 'ARRAY') {
-                mk_inherited_accessor($class, $_, $_) for @$inherited;
+        } elsif (ref($inherited) eq 'ARRAY') {
+            mk_inherited_accessor($class, $_, $_) for @$inherited;
 
-            } else {
-                warn "Can't understand format for inherited accessors initializer for class $class";
-            }
+        } else {
+            warn "Can't understand format for inherited accessors initializer for class $class";
         }
     }
+}
 
-    sub mk_inherited_accessors {
-        my $class = shift;
+sub mk_inherited_accessors {
+    my $class = shift;
 
-        for my $entry (@_) {
-            if (ref($entry) eq 'ARRAY') {
-                mk_inherited_accessor($class, @$entry);
-            } else {
-                mk_inherited_accessor($class, $entry, $entry);
-            }
+    for my $entry (@_) {
+        if (ref($entry) eq 'ARRAY') {
+            mk_inherited_accessor($class, @$entry);
+        } else {
+            mk_inherited_accessor($class, $entry, $entry);
         }
     }
+}
 
-    #this function is NOT part of the public API
-    sub mk_inherited_accessor {
-        my($class, $name, $field) = @_;
+#this function is NOT part of the public API
+sub mk_inherited_accessor {
+    my($class, $name, $field) = @_;
 
-        Class::Accessor::Inherited::XS::install_inherited_accessor("${class}::${name}", $field, $PREFIX.$field);
-    }
+    Class::Accessor::Inherited::XS::install_inherited_accessor("${class}::${name}", $field, $PREFIX.$field);
 }
 
 1;
