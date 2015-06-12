@@ -8,6 +8,21 @@ typedef struct shared_keys {
     SV* write_cb;
 } shared_keys;
 
+#define CALL_READ_CB(result, cb)\
+    STMT_START {                \
+        ST(0) = result;         \
+                                \
+        if (need_cb && cb) {    \
+            ENTER;              \
+            PUSHMARK(SP);       \
+            ++SP;               \
+            PUTBACK;            \
+            call_sv(cb, G_SCALAR);\
+            LEAVE;              \
+        }                       \
+    } STMT_END                  \
+
+
 template <bool need_cb> static
 XSPROTO(CAIXS_inherited_accessor);
 
@@ -89,7 +104,7 @@ XSPROTO(CAIXS_inherited_accessor)
         } else {
             HE* hent = hv_fetch_ent(obj, keys->hash_key, 0, 0);
             if (hent) {
-                PUSHs(HeVAL(hent));
+                CALL_READ_CB(HeVAL(hent), keys->read_cb);
                 XSRETURN(1);
             }
         }
@@ -148,7 +163,7 @@ XSPROTO(CAIXS_inherited_accessor)
     if (stash && (hent = hv_fetch_ent(stash, keys->pkg_key, 0, 0))) {   \
         SV* sv = GvSV(HeVAL(hent));                                     \
         if (sv && SvOK(sv)) {                                           \
-            PUSHs(sv);                                                  \
+            CALL_READ_CB(sv, keys->read_cb);                            \
             XSRETURN(1);                                                \
         }                                                               \
     }
@@ -173,7 +188,9 @@ XSPROTO(CAIXS_inherited_accessor)
         }
     }
 
-    XSRETURN_UNDEF;
+    /* XSRETURN_UNDEF */
+    CALL_READ_CB(&PL_sv_undef, keys->read_cb);
+    XSRETURN(1);
 }
 
 #endif /* __INHERITED_XS_IMPL_H_ */
