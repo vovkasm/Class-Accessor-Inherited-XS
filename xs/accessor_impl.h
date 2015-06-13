@@ -1,6 +1,11 @@
 #ifndef __INHERITED_XS_IMPL_H_
 #define __INHERITED_XS_IMPL_H_
 
+/*
+    av_extend() always gives us at least 4 elements, so don't bother with
+    saving memory for need_cb = false version until this struct grows larger
+*/
+
 typedef struct shared_keys {
     SV* hash_key;
     SV* pkg_key;
