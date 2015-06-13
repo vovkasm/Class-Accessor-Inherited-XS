@@ -19,15 +19,18 @@ use Class::Accessor::Inherited::XS
     die       => ['fire'],
 ;
 
+our @ISA = qw/Foo Bar/;
+
 is(main->foo, 1);
 is(main->foo, 1);
 is(main->foo, 1) for (1..3);
 
-#is(main->foo(1), 3);
-#is(main->foo(1), 3);
-#is(main->foo(1), 3) for (1..3);
+is(main->foo(1), 3);
+is(main->foo(1), 3);
+is(main->foo(1), 3) for (1..3);
 
-main->foo(3);
+my $ret = \(main->foo(20));
+$$ret = 3;
 
 is(main->foo, 4);
 is(main->foo, 4);
@@ -38,11 +41,17 @@ eval {
     ok 0;
 } for (1..3);
 
+eval {
+    main->fire("ok");
+    ok 0;
+} for (1..3);
+
 my $obj = bless {};
 
-#is($obj->foo(4), 6) for (1..4);
+is($obj->foo(4), 6);
+is($obj->foo(4), 6);
+is($obj->foo(4), 6) for (1..4);
 
-$obj->foo(6);
 is($obj->foo, 7);
 is($obj->foo, 7);
 is($obj->foo, 7) for (1..4);

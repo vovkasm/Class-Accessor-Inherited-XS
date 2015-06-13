@@ -22,6 +22,19 @@ typedef struct shared_keys {
         }                       \
     } STMT_END                  \
 
+#define CALL_WRITE_CB(slot, cb) \
+    if (need_cb && cb) {        \
+        ENTER;                  \
+        PUSHMARK(SP);           \
+        call_sv(cb, G_SCALAR);  \
+        SPAGAIN;                \
+        LEAVE;                  \
+        sv_setsv(slot, ST(0));  \
+        ST(0) = slot;           \
+    } else {                    \
+        sv_setsv(slot, ST(1));  \
+        PUSHs(slot);            \
+    }                           \
 
 template <bool need_cb> static
 XSPROTO(CAIXS_inherited_accessor);
@@ -93,12 +106,12 @@ XSPROTO(CAIXS_inherited_accessor)
         }
 
         if (items > 1) {
-            SV* new_value  = newSVsv(ST(1));
+            SV* new_value = newSV(0);
             if (!hv_store_ent(obj, keys->hash_key, new_value, 0)) {
                 SvREFCNT_dec_NN(new_value);
                 croak("Can't store new hash value");
             }
-            PUSHs(new_value);
+            CALL_WRITE_CB(new_value, keys->write_cb);
             XSRETURN(1);
                     
         } else {
@@ -153,8 +166,7 @@ XSPROTO(CAIXS_inherited_accessor)
         }
 
         SV* new_value = GvSVn(glob);
-        sv_setsv(new_value, ST(1));
-        PUSHs(new_value);
+        CALL_WRITE_CB(new_value, keys->write_cb);
 
         XSRETURN(1);
     }
