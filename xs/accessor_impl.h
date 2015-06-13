@@ -8,19 +8,26 @@ typedef struct shared_keys {
     SV* write_cb;
 } shared_keys;
 
+/*
+    Those macroses heavily rely on SP not being touched inside the
+    CAIXS_inherited_accessor body expect for the start shift to the top of the stack.
+
+    They also expect nothing but XSRETURN(1) after them (or, at least,
+    nothing touching stack). They're left as two statements for the reader's sanity.
+
+    call_sv() surrounding is stripped as much as I could get.
+*/
+
 #define CALL_READ_CB(result, cb)\
-    STMT_START {                \
-        ST(0) = result;         \
-                                \
-        if (need_cb && cb) {    \
-            ENTER;              \
-            PUSHMARK(SP);       \
-            ++SP;               \
-            PUTBACK;            \
-            call_sv(cb, G_SCALAR);\
-            LEAVE;              \
-        }                       \
-    } STMT_END                  \
+    if (need_cb && cb) {        \
+        ENTER;                  \
+        PUSHMARK(SP);           \
+        *(SP+1) = result;       \
+        call_sv(cb, G_SCALAR);  \
+        LEAVE;                  \
+    } else {                    \
+        *(SP+1) = result;       \
+    }                           \
 
 #define CALL_WRITE_CB(slot, cb) \
     if (need_cb && cb) {        \
@@ -29,11 +36,11 @@ typedef struct shared_keys {
         call_sv(cb, G_SCALAR);  \
         SPAGAIN;                \
         LEAVE;                  \
-        sv_setsv(slot, ST(0));  \
-        ST(0) = slot;           \
+        sv_setsv(slot, *SP);    \
+        *SP = slot;             \
     } else {                    \
-        sv_setsv(slot, ST(1));  \
-        PUSHs(slot);            \
+        sv_setsv(slot, *(SP+2));\
+        *(SP+1) = slot;         \
     }                           \
 
 template <bool need_cb> static
@@ -98,7 +105,7 @@ XSPROTO(CAIXS_inherited_accessor)
     keys = (shared_keys*)AvARRAY((AV*)(mg->mg_obj));
 #endif
 
-    SV* self = ST(0);
+    SV* self = *(SP+1);
     if (SvROK(self)) {
         HV* obj = (HV*)SvRV(self);
         if (SvTYPE((SV*)obj) != SVt_PVHV) {
