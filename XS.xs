@@ -38,10 +38,7 @@ CAIXS_install_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key, SV* read_
     SV* s_pkg_key = newSVpvn_share(pkg_key_buf, SvUTF8(pkg_key) ? -(I32)len : (I32)len, 0);
 
     AV* keys_av = newAV();
-    /*
-        This is a pristine AV, so skip as much checks as possible on whichever perls we can grab it.
-    */
-    av_extend_guts(keys_av, 3, &AvMAX(keys_av), &AvALLOC(keys_av), &AvARRAY(keys_av));
+    av_extend(keys_av, 3);
     SV** keys_array = AvARRAY(keys_av);
     keys_array[0] = s_hash_key;
     keys_array[1] = s_pkg_key;
