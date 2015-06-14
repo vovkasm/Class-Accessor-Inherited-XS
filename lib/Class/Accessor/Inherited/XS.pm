@@ -73,9 +73,9 @@ sub register_type {
     $REGISTERED_TYPES->{$type} = $args;
 }
 
-=cut
-    Functions below are NOT part of the public API
-=cut
+#
+#   Functions below are NOT part of the public API
+#
 
 sub _mk_inherited_accessor {
     my ($class, $name, $field) = @_;
@@ -88,7 +88,7 @@ __END__
 
 =head1 NAME
 
-Class::Accessor::Inherited::XS - fast XS inherited accessors
+Class::Accessor::Inherited::XS - Fast XS inherited accessors
 
 =head1 SYNOPSIS
 
@@ -167,11 +167,11 @@ Here are results from a benchmark run on perl 5.20.1 (see bench folder):
     };
 
 You can register new inherited accessor types with associated read/write callbacks. They're still
-'inherited', but you have a chance to perform additional operations. Those new types can be used
-in the L<Class::Accessor::Inherited::XS> import() call. Unlike L<Class::Accessor::Grouped>,
+'inherited', but you can modify return values. Those new types can be installed using
+the L<Class::Accessor::Inherited::XS> import() call. Unlike L<Class::Accessor::Grouped>,
 here's a single callback per accessor type, without any inheritance lookups for get_*/set_* functions.
 
-B<on_read> callback gets a single argument - fetched by the 'inherited' rules. It's return value is a new
+B<on_read> callback gets a single argument - from a normal 'inherited' accessor. It's return value is a new
 accessor's return value (and is not stored anywhere).
 
 B<on_write> callback gets two arguments - original args from the accessor call. It's return value is saved

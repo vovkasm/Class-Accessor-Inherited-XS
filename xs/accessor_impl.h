@@ -14,8 +14,8 @@ typedef struct shared_keys {
 } shared_keys;
 
 /*
-    Those macroses heavily rely on SP not being touched inside the
-    CAIXS_inherited_accessor body expect for the start shift to the top of the stack.
+    These macroses rely heavily on SP not being touched inside the
+    CAIXS_inherited_accessor function body expect for the start shift to the top of the stack.
 
     They also expect nothing but XSRETURN(1) after them (or, at least,
     nothing touching stack). They're left as two statements for the reader's sanity.

@@ -1,5 +1,5 @@
 NAME
-    Class::Accessor::Inherited::XS - fast XS inherited accessors
+    Class::Accessor::Inherited::XS - Fast XS inherited accessors
 
 SYNOPSIS
       #install accessors at compile time
@@ -14,59 +14,89 @@ SYNOPSIS
           },
       };
   
-      #or in a Class::Accessor::Grouped-like fashion
+      #or in the Class::Accessor::Grouped-like fashion
       use parent 'Class::Accessor::Inherited::XS';
       __PACKAGE__->mk_inherited_accessors('foo', ['bar', 'bar_key']);
 
 DESCRIPTION
-    This module provides very fast implementation for 'inherited' accessors,
-    that were introduced in Class::Accessor::Grouped. They give you
-    capability to override values set in a parent class with values set in
-    childs or object instances. Generated accessors are compatible with
-    Class::Accessor::Grouped generated ones.
+    This module provides a very fast implementation for 'inherited'
+    accessors, that were introduced by the Class::Accessor::Grouped module.
+    They give you a capability to override values set in a parent class with
+    values set in childs or object instances. Generated accessors are
+    compatible with Class::Accessor::Grouped generated ones.
 
     Since this module focuses primary on speed, it provides no capability to
     have your own per-class getters/setters logic (like overriding
-    get_inherited/set_inherited in Class::Accessor::Grouped).
+    get_inherited/set_inherited in Class::Accessor::Grouped), but it gives
+    you an ability to register a single get/set callback for you own
+    accessor types.
 
 UTF-8
-    Starting with perl 5.16.0, this module provides full support for UTF-8
-    method names and hash keys. Before that, you can't distinguish UTF-8
-    strings from bytes string in method names, only in hash keys. You have
-    been warned.
+    Starting with the perl 5.16.0, this module provides full support for
+    UTF-8 method names and hash keys. Before that, you can't distinguish
+    UTF-8 strings from bytes string in method names, only in hash keys. You
+    have been warned.
 
 THREADS
     Though highly discouraged, perl threads are supported by
-    Class::Accessor::Inherited::XS. You may have accessors with the same
-    names pointing to different keys in different threads, etc. There are no
-    known conceptual leaks.
+    Class::Accessor::Inherited::XS. You may have accessors with same names
+    pointing to different keys in different threads, etc. There are no known
+    conceptual leaks.
 
 PERFORMANCE
     Class::Accessor::Inherited::XS is at least 10x times faster than
     Class::Accessor::Grouped, depending on your usage pattern. Accessing
-    data from a parent in large inheritance chain is still the worst case,
+    data from a parent in a large inheritance chain is still the worst case,
     but even there Class::Accessor::Inherited::XS beats
     Class::Accessor::Grouped best-case.
 
     You can see some benchmarks by running bench/bench.pl
 
+EXTENDING
+        package MyAccessor;
+        # 'register_type' isn't exported
+        Class::Accessor::Inherited::XS::register_type(
+            inherited_cb => {on_read => sub {}, on_write => sub{}},
+        );
+
+        package MyClass;
+        use MyAccessor;
+        use Class::Accessor::Inherited::XS {
+            inherited    => ['foo'],
+            inherited_cb => ['bar'],
+        };
+
+    You can register new inherited accessor types with associated read/write
+    callbacks. They're still 'inherited', but you can modify return values.
+    Those new types can be installed using the
+    Class::Accessor::Inherited::XS import() call. Unlike
+    Class::Accessor::Grouped, here's a single callback per accessor type,
+    without any inheritance lookups for get_*/set_* functions.
+
+    on_read callback gets a single argument - from a normal 'inherited'
+    accessor. It's return value is a new accessor's return value (and is not
+    stored anywhere).
+
+    on_write callback gets two arguments - original args from the accessor
+    call. It's return value is saved instead of the user's supplied one.
+
 PROFILING WITH Devel::NYTProf
-    To perform it's work, Devel::NYTProf hooks into perl interpreter by
+    To perform it's task, Devel::NYTProf hooks into the perl interpreter by
     replacing default behaviour for calling subroutines on the opcode level.
     To squeeze last bits of performance, Class::Accessor::Inherited::XS does
-    the same, but separately on each call site of it's accessors. It turns
+    the same, but separately on each call site of its accessors. It turns
     out into CAIX favor - Devel::NYTProf sees only first call to CAIX
-    accessor sub, but then those calls become 'invisible' for subs profiler.
+    accessor, but all subsequent ones become invisible to the subs profiler.
 
-    Note that, statement profiler still correctly accounts time spent on the
+    Note that statement profiler still correctly accounts time spent on a
     line, you just don't see time spent in accessors' calls separately.
     That's sometimes OK, sometimes not - you get profile with all possible
-    optimizations on, but not very easy to be read.
+    optimizations on, but it's hard for understanding.
 
     Since it's hard to detect Devel::NYTProf (and any other module doing
     such magic) in a portable way (all hail Win32), there's an %ENV switch
-    available - you can set CAIXS_DISABLE_ENTERSUB to true value to disable
-    call site optimization and get full subs profile.
+    available - you can set CAIXS_DISABLE_ENTERSUB to a true value to
+    disable call site optimization and get full subs profile.
 
 SEE ALSO
     *   Class::Accessor::Grouped
