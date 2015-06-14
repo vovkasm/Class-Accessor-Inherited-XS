@@ -110,13 +110,14 @@ Class::Accessor::Inherited::XS - fast XS inherited accessors
 
 =head1 DESCRIPTION
 
-This module provides very fast implementation for 'inherited' accessors, that were introduced 
-by the L<Class::Accessor::Grouped> module. They give you capability to override values set in 
+This module provides a very fast implementation for 'inherited' accessors, that were introduced
+by the L<Class::Accessor::Grouped> module. They give you a capability to override values set in
 a parent class with values set in childs or object instances. Generated accessors are compatible with
 L<Class::Accessor::Grouped> generated ones.
 
 Since this module focuses primary on speed, it provides no capability to have your own per-class
-getters/setters logic (like overriding L<get_inherited>/L<set_inherited> in L<Class::Accessor::Grouped>).
+getters/setters logic (like overriding L<get_inherited>/L<set_inherited> in L<Class::Accessor::Grouped>),
+but it gives you an ability to register a single get/set callback for you own accessor types.
 
 =head1 UTF-8
 
@@ -150,9 +151,35 @@ Here are results from a benchmark run on perl 5.20.1 (see bench folder):
   obj_caix          18642286/s           7751%   1740%   1539%       1349%              522%     117%         109%     11%       --       -25%
   obj_direct        24807382/s          10348%   2349%   2081%       1829%              728%     188%         178%     48%      33%         --
 
+=head1 EXTENDING
+
+    package MyAccessor;
+    # 'register_type' isn't exported
+    Class::Accessor::Inherited::XS::register_type(
+        inherited_cb => {on_read => sub {}, on_write => sub{}},
+    );
+
+    package MyClass;
+    use MyAccessor;
+    use Class::Accessor::Inherited::XS {
+        inherited    => ['foo'],
+        inherited_cb => ['bar'],
+    };
+
+You can register new inherited accessor types with associated read/write callbacks. They're still
+'inherited', but you have a chance to perform additional operations. Those new types can be used
+in the L<Class::Accessor::Inherited::XS> import() call. Unlike L<Class::Accessor::Grouped>,
+here's a single callback per accessor type, without any inheritance lookups for get_*/set_* functions.
+
+B<on_read> callback gets a single argument - fetched by the 'inherited' rules. It's return value is a new
+accessor's return value (and is not stored anywhere).
+
+B<on_write> callback gets two arguments - original args from the accessor call. It's return value is saved
+instead of the user's supplied one.
+
 =head1 PROFILING WITH Devel::NYTProf
 
-To perform it's task, L<Devel::NYTProf> hooks into perl interpreter by replacing default behaviour for calling subroutines
+To perform it's task, L<Devel::NYTProf> hooks into the perl interpreter by replacing default behaviour for calling subroutines
 on the opcode level. To squeeze last bits of performance, L<Class::Accessor::Inherited::XS> does the same, but separately
 on each call site of its accessors. It turns out into CAIX favor - L<Devel::NYTProf> sees only first call to CAIX
 accessor, but all subsequent ones become invisible to the subs profiler.
