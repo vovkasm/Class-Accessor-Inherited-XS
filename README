@@ -77,8 +77,9 @@ EXTENDING
     accessor. It's return value is a new accessor's return value (and is not
     stored anywhere).
 
-    on_write callback gets two arguments - original args from the accessor
+    on_write callback gets two arguments - original args from the accessor's
     call. It's return value is saved instead of the user's supplied one.
+    Exceptions thrown from this callback will cancel store.
 
 PROFILING WITH Devel::NYTProf
     To perform it's task, Devel::NYTProf hooks into the perl interpreter by

@@ -17,10 +17,10 @@ typedef struct shared_keys {
     These macroses rely heavily on SP not being touched inside the
     CAIXS_inherited_accessor function body expect for the start shift to the top of the stack.
 
-    They also expect nothing but XSRETURN(1) after them (or, at least,
-    nothing touching stack). They're left as two statements for the reader's sanity.
+    They also expect nothing but XSRETURN(1) after them (or, at least, nothing touching stack,
+    as in the 1st CALL_WRITE_CB() call). They're left as two statements for the reader's sanity.
 
-    call_sv() surrounding is stripped as much as I could get.
+    call_sv() is stripped off the most of a normal call sequence.
 */
 
 #define CALL_READ_CB(result, cb)\
@@ -34,19 +34,21 @@ typedef struct shared_keys {
         *(SP+1) = result;       \
     }                           \
 
-#define CALL_WRITE_CB(slot, cb) \
-    if (need_cb && cb) {        \
-        ENTER;                  \
-        PUSHMARK(SP);           \
-        call_sv(cb, G_SCALAR);  \
-        SPAGAIN;                \
-        LEAVE;                  \
-        sv_setsv(slot, *SP);    \
-        *SP = slot;             \
-    } else {                    \
-        sv_setsv(slot, *(SP+2));\
-        *(SP+1) = slot;         \
-    }                           \
+#define CALL_WRITE_CB(slot, cb, need_alloc) \
+    if (need_cb && cb) {                    \
+        ENTER;                              \
+        PUSHMARK(SP);                       \
+        call_sv(cb, G_SCALAR);              \
+        SPAGAIN;                            \
+        LEAVE;                              \
+        if (need_alloc) slot = newSV(0);    \
+        sv_setsv(slot, *SP);                \
+        *SP = slot;                         \
+    } else {                                \
+        if (need_alloc) slot = newSV(0);    \
+        sv_setsv(slot, *(SP+2));            \
+        *(SP+1) = slot;                     \
+    }                                       \
 
 template <bool need_cb> static
 XSPROTO(CAIXS_inherited_accessor);
@@ -118,12 +120,12 @@ XSPROTO(CAIXS_inherited_accessor)
         }
 
         if (items > 1) {
-            SV* new_value = newSV(0);
+            SV* new_value;
+            CALL_WRITE_CB(new_value, keys->write_cb, 1);
             if (!hv_store_ent(obj, keys->hash_key, new_value, 0)) {
                 SvREFCNT_dec_NN(new_value);
                 croak("Can't store new hash value");
             }
-            CALL_WRITE_CB(new_value, keys->write_cb);
             XSRETURN(1);
                     
         } else {
@@ -178,7 +180,7 @@ XSPROTO(CAIXS_inherited_accessor)
         }
 
         SV* new_value = GvSVn(glob);
-        CALL_WRITE_CB(new_value, keys->write_cb);
+        CALL_WRITE_CB(new_value, keys->write_cb, 0);
 
         XSRETURN(1);
     }
