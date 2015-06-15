@@ -165,7 +165,7 @@ XSPROTO(CAIXS_inherited_accessor)
 
             if (hent) {
                 /* there was just a stub instead of a full glob */
-                SvREFCNT_inc_simple_NN((SV*)glob);
+                SvREFCNT_inc_simple_void_NN((SV*)glob);
                 SvREFCNT_dec_NN(HeVAL(hent));
                 HeVAL(hent) = (SV*)glob;
 
