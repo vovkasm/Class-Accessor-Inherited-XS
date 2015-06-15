@@ -1,5 +1,10 @@
 Revision history for Class::Accessor::Inherited::XS.
 
+0.09 Mon Jun 15 22:28:01 MSK 2015
+    - add hooks to set callback for an accessor call
+    - switch to c++ compiler
+    - add 'register_type' API
+
 0.08 Mon May 11 19:56:33 MSK 2015
     - fix compilation on VC and some older perls
     - more tests and docs
