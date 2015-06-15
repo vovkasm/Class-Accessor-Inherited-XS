@@ -42,8 +42,14 @@ CAIXS_install_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key, SV* read_
     SV** keys_array = AvARRAY(keys_av);
     keys_array[0] = s_hash_key;
     keys_array[1] = s_pkg_key;
-    keys_array[2] = SvREFCNT_inc(read_cb);
-    keys_array[3] = SvREFCNT_inc(write_cb);
+    if (need_cb) {
+        if (SvROK(read_cb) && SvTYPE(SvRV(read_cb)) == SVt_PVCV) {
+            keys_array[2] = SvREFCNT_inc_NN(SvRV(read_cb));
+        }
+        if (SvROK(write_cb) && SvTYPE(SvRV(write_cb)) == SVt_PVCV) {
+            keys_array[3] = SvREFCNT_inc_NN(SvRV(write_cb));
+        }
+    }
     AvFILLp(keys_av) = 3;
 
 #ifndef MULTIPLICITY
