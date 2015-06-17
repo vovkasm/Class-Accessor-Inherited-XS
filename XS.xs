@@ -25,9 +25,9 @@ CAIXS_install_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key, SV* read_
 
     CV* cv;
     if (need_cb) {
-        cv = newXS_flags(full_name_buf, &CAIXS_inherited_accessor<true>, __FILE__, NULL, SvUTF8(full_name));
+        cv = newXS_flags(full_name_buf, &CAIXS_accessor<InheritedCb>, __FILE__, NULL, SvUTF8(full_name));
     } else {
-        cv = newXS_flags(full_name_buf, &CAIXS_inherited_accessor<false>, __FILE__, NULL, SvUTF8(full_name));
+        cv = newXS_flags(full_name_buf, &CAIXS_accessor<Inherited>, __FILE__, NULL, SvUTF8(full_name));
     }
     if (!cv) croak("Can't install XS accessor");
 

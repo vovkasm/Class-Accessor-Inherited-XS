@@ -13,6 +13,12 @@ typedef struct shared_keys {
     SV* write_cb;
 } shared_keys;
 
+enum AccessorTypes {
+    Inherited,
+    InheritedCb,
+    PrivateClass
+};
+
 /*
     These macroses rely heavily on SP not being touched inside the
     CAIXS_inherited_accessor function body expect for the start shift to the top of the stack.
@@ -23,19 +29,19 @@ typedef struct shared_keys {
     call_sv() is stripped off the most of a normal call sequence.
 */
 
-#define CALL_READ_CB(result, cb)\
-    if (need_cb && cb) {        \
-        ENTER;                  \
-        PUSHMARK(SP);           \
-        *(SP+1) = result;       \
-        call_sv(cb, G_SCALAR);  \
-        LEAVE;                  \
-    } else {                    \
-        *(SP+1) = result;       \
-    }                           \
+#define CALL_READ_CB(result, cb)        \
+    if ((type == InheritedCb) && cb) {  \
+        ENTER;                          \
+        PUSHMARK(SP);                   \
+        *(SP+1) = result;               \
+        call_sv(cb, G_SCALAR);          \
+        LEAVE;                          \
+    } else {                            \
+        *(SP+1) = result;               \
+    }                                   \
 
 #define CALL_WRITE_CB(slot, cb, need_alloc) \
-    if (need_cb && cb) {                    \
+    if ((type == InheritedCb) && cb) {      \
         ENTER;                              \
         PUSHMARK(SP);                       \
         call_sv(cb, G_SCALAR);              \
@@ -50,16 +56,16 @@ typedef struct shared_keys {
         *(SP+1) = slot;                     \
     }                                       \
 
-template <bool need_cb> static
-XSPROTO(CAIXS_inherited_accessor);
+template <AccessorTypes type> static
+XSPROTO(CAIXS_accessor);
 
-template <bool need_cb> static
+template <AccessorTypes type> static
 OP *
 CAIXS_entersub(pTHX) {
     dSP;
 
     CV* sv = (CV*)TOPs;
-    if (sv && (SvTYPE(sv) == SVt_PVCV) && (CvXSUB(sv) == &CAIXS_inherited_accessor<need_cb>)) {
+    if (sv && (SvTYPE(sv) == SVt_PVCV) && (CvXSUB(sv) == &CAIXS_accessor<type>)) {
         /*
             Assert against future XPVCV layout change - as for now, xcv_xsub shares space with xcv_root
             which are both pointers, so address check is enough, and there's no need to look into op_flags for CvISXSUB.
@@ -67,7 +73,8 @@ CAIXS_entersub(pTHX) {
         assert(CvISXSUB(sv));
 
         POPs; PUTBACK;
-        CAIXS_inherited_accessor<need_cb>(aTHX_ sv);
+        CAIXS_accessor<type>(aTHX_ sv);
+
         return NORMAL;
 
     } else {
@@ -76,41 +83,59 @@ CAIXS_entersub(pTHX) {
     }
 }
 
-template <bool need_cb> static
-XSPROTO(CAIXS_inherited_accessor)
-{
-    dXSARGS;
-    SP -= items;
-
-    if (!items) croak("Usage: $obj->accessor or __PACKAGE__->accessor");
-
+template <AccessorTypes type> inline
+void
+CAIXS_install_entersub(pTHX) {
     /*
         Check whether we can replace opcode executor with our own variant. Unfortunatelly, this guards
         only against local changes, not when someone steals PL_ppaddr[OP_ENTERSUB] globally.
         Sorry, Devel::NYTProf.
     */
+
     OP* op = PL_op;
     if ((op->op_spare & 1) != 1 && op->op_ppaddr == PL_ppaddr[OP_ENTERSUB] && optimize_entersub) {
         op->op_spare |= 1;
-        op->op_ppaddr = &CAIXS_entersub<need_cb>;
+        op->op_ppaddr = &CAIXS_entersub<type>;
     }
+}
 
-    shared_keys* keys;
+inline void*
+CAIXS_find_keys(CV* cv) {
+    void* keys;
+
 #ifndef MULTIPLICITY
     /* Blessed are ye and get a fastpath */
-    keys = (shared_keys*)(CvXSUBANY(cv).any_ptr);
+    keys = (CvXSUBANY(cv).any_ptr);
     if (!keys) croak("Can't find hash key information");
 #else
     /*
         We can't look into CvXSUBANY under threads, as it would have been written in the parent thread
-        and might go away at any time without prior notice. So, instead, we have to scan our magical 
+        and might go away at any time without prior notice. So, instead, we have to scan our magical
         refcnt storage - there's always a proper thread-local SV*, cloned for us by perl itself.
     */
     MAGIC* mg = mg_findext((SV*)cv, PERL_MAGIC_ext, &sv_payload_marker);
     if (!mg) croak("Can't find hash key information");
 
-    keys = (shared_keys*)AvARRAY((AV*)(mg->mg_obj));
+    keys = AvARRAY((AV*)(mg->mg_obj));
 #endif
+
+    return keys;
+}
+
+template <>
+XSPROTO(CAIXS_accessor<PrivateClass>) {
+    assert(0);
+}
+
+template <AccessorTypes type> static
+XSPROTO(CAIXS_accessor) {
+    dXSARGS;
+    SP -= items;
+
+    if (!items) croak("Usage: $obj->accessor or __PACKAGE__->accessor");
+
+    CAIXS_install_entersub<type>(aTHX);
+    shared_keys* keys = (shared_keys*)CAIXS_find_keys(cv);
 
     SV* self = *(SP+1);
     if (SvROK(self)) {
