@@ -6,12 +6,15 @@
     saving memory for need_cb = false version until this struct grows larger
 */
 
-typedef struct shared_keys {
-    SV* hash_key;
+struct shared_keys {
+    union {
+        SV* hash_key;
+        SV* storage;
+    };
     SV* pkg_key;
     SV* read_cb;
     SV* write_cb;
-} shared_keys;
+};
 
 enum AccessorTypes {
     Inherited,
@@ -99,13 +102,13 @@ CAIXS_install_entersub(pTHX) {
     }
 }
 
-inline void*
+inline shared_keys*
 CAIXS_find_keys(CV* cv) {
-    void* keys;
+    shared_keys* keys;
 
 #ifndef MULTIPLICITY
     /* Blessed are ye and get a fastpath */
-    keys = (CvXSUBANY(cv).any_ptr);
+    keys = (shared_keys*)(CvXSUBANY(cv).any_ptr);
     if (!keys) croak("Can't find hash key information");
 #else
     /*
@@ -116,7 +119,7 @@ CAIXS_find_keys(CV* cv) {
     MAGIC* mg = mg_findext((SV*)cv, PERL_MAGIC_ext, &sv_payload_marker);
     if (!mg) croak("Can't find hash key information");
 
-    keys = AvARRAY((AV*)(mg->mg_obj));
+    keys = (shared_keys*)AvARRAY((AV*)(mg->mg_obj));
 #endif
 
     return keys;
@@ -124,7 +127,20 @@ CAIXS_find_keys(CV* cv) {
 
 template <>
 XSPROTO(CAIXS_accessor<PrivateClass>) {
-    assert(0);
+    dXSARGS;
+    SP -= items;
+
+    if (!items) croak("Usage: $obj->accessor or __PACKAGE__->accessor");
+
+    CAIXS_install_entersub<PrivateClass>(aTHX);
+    shared_keys* keys = (shared_keys*)CAIXS_find_keys(cv);
+
+    if (items > 1) {
+        sv_setsv(keys->storage, *(SP+2));
+    }
+
+    *(SP+1) = keys->storage;
+    XSRETURN(1);
 }
 
 template <AccessorTypes type> static
@@ -135,7 +151,7 @@ XSPROTO(CAIXS_accessor) {
     if (!items) croak("Usage: $obj->accessor or __PACKAGE__->accessor");
 
     CAIXS_install_entersub<type>(aTHX);
-    shared_keys* keys = (shared_keys*)CAIXS_find_keys(cv);
+    shared_keys* keys = CAIXS_find_keys(cv);
 
     SV* self = *(SP+1);
     if (SvROK(self)) {
