@@ -12,7 +12,11 @@ require XSLoader;
 XSLoader::load('Class::Accessor::Inherited::XS', $VERSION);
 
 my $REGISTERED_TYPES = {};
-register_type(inherited => {no_cb => 1});
+register_types(
+    inherited => {installer => \&_mk_inherited_accessor},
+    class     => {installer => \&_mk_class_accessor},
+    varclass  => {installer => \&_mk_varclass_accessor},
+);
 
 sub import {
     my $pkg = shift;
@@ -53,6 +57,18 @@ sub mk_inherited_accessors {
     }
 }
 
+sub mk_class_accessors {
+    my $class = shift;
+
+    _mk_class_accessor($class, $_) for (@_);
+}
+
+sub mk_varclass_accessors {
+    my $class = shift;
+
+    _mk_varclass_accessor($class, $_) for (@_);
+}
+
 sub register_types {
     my %args = @_;
 
@@ -68,10 +84,7 @@ sub register_type {
         Carp::confess("Type '$type' has already been registered");
     }
 
-    if (exists $args->{no_cb}) {
-        $args->{installer} = \&_mk_inherited_accessor;
-
-    } else {
+    if (!exists $args->{installer}) {
         $args->{installer} = sub {
             my ($class, $name, $field) = @_;
             install_inherited_cb_accessor("${class}::${name}", $field, $PREFIX.$field, $args->{read_cb}, $args->{write_cb});
@@ -89,6 +102,18 @@ sub _mk_inherited_accessor {
     my ($class, $name, $field) = @_;
 
     install_inherited_accessor("${class}::${name}", $field, $PREFIX.$field);
+}
+
+sub _mk_class_accessor {
+    my ($class, $name) = @_;
+
+    install_class_accessor("${class}::${name}", 0);
+}
+
+sub _mk_varclass_accessor {
+    my ($class, $name) = @_;
+
+    install_class_accessor("${class}::${name}", 1);
 }
 
 1;

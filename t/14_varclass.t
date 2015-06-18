@@ -3,11 +3,11 @@ use strict;
 
 {
     package Jopa;
-    use Class::Accessor::Inherited::XS;# inherited => {
-#        foo => 'bar',
-#    };
-
-    Class::Accessor::Inherited::XS::install_class_accessor("Jopa::foo", 1);
+    use base qw/Class::Accessor::Inherited::XS/;
+    use Class::Accessor::Inherited::XS varclass => {
+        foo => 'bar',
+    };
+    __PACKAGE__->mk_class_accessors('baz');
 
     sub new { return bless {}, shift }
 }
@@ -32,5 +32,7 @@ is(Jopa->foo, 42);
 
 $Jopa::foo = -1;
 is(Jopa->foo, -1);
+
+is(Jopa->baz(80), 80);
 
 done_testing;
