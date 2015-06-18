@@ -7,7 +7,7 @@ use strict;
 #        foo => 'bar',
 #    };
 
-    Class::Accessor::Inherited::XS::install_class_accessor("Jopa::foo", 0);
+    Class::Accessor::Inherited::XS::install_class_accessor("Jopa::foo", 1);
 
     sub new { return bless {}, shift }
 }
@@ -31,6 +31,6 @@ $foo++;
 is(Jopa->foo, 42);
 
 $Jopa::foo = -1;
-is(Jopa->foo, 42);
+is(Jopa->foo, -1);
 
 done_testing;

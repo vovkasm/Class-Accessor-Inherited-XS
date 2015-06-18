@@ -66,7 +66,7 @@ CAIXS_install_inherited_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key,
 }
 
 static void
-CAIXS_install_class_accessor(pTHX_ SV* full_name) {
+CAIXS_install_class_accessor(pTHX_ SV* full_name, bool is_varclass) {
     const char* full_name_buf = SvPV_nolen(full_name);
     CV* cv = newXS_flags(full_name_buf, &CAIXS_accessor<PrivateClass>, __FILE__, NULL, SvUTF8(full_name));
     if (!cv) croak("Can't install XS accessor");
@@ -74,7 +74,12 @@ CAIXS_install_class_accessor(pTHX_ SV* full_name) {
     AV* keys_av = newAV();
     av_extend(keys_av, 1);
     SV** keys_array = AvARRAY(keys_av);
-    keys_array[0] = newSV(0);
+    if (is_varclass) {
+        keys_array[0] = get_sv(full_name_buf, GV_ADD);
+        SvREFCNT_inc_simple_void_NN(keys_array[0]);
+    } else {
+        keys_array[0] = newSV(0);
+    }
     AvFILLp(keys_av) = 0;
 
 #ifndef MULTIPLICITY
@@ -112,10 +117,10 @@ PPCODE:
 }
 
 void
-install_class_accessor(SV* full_name)
+install_class_accessor(SV* full_name, SV* is_varclass)
 PPCODE:
 {
-    CAIXS_install_class_accessor(aTHX_ full_name);
+    CAIXS_install_class_accessor(aTHX_ full_name, SvTRUE(is_varclass));
     XSRETURN_UNDEF;
 }
 
