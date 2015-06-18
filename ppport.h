@@ -6382,22 +6382,22 @@ DPPP_(my_warner)(U32 err, const char *pat, ...)
 
 #if !defined(mg_findext)
 #if defined(NEED_mg_findext)
-static MAGIC * DPPP_(my_mg_findext)(pTHX_ SV * sv, int type, const MGVTBL *vtbl);
+static MAGIC * DPPP_(my_mg_findext)(SV * sv, int type, const MGVTBL *vtbl);
 static
 #else
-extern MAGIC * DPPP_(my_mg_findext)(pTHX_ SV * sv, int type, const MGVTBL *vtbl);
+extern MAGIC * DPPP_(my_mg_findext)(SV * sv, int type, const MGVTBL *vtbl);
 #endif
 
 #ifdef mg_findext
 #  undef mg_findext
 #endif
-#define mg_findext(a,b,c) DPPP_(my_mg_findext)(aTHX_ a,b,c)
+#define mg_findext(a,b,c) DPPP_(my_mg_findext)(a,b,c)
 #define Perl_mg_findext DPPP_(my_mg_findext)
 
 #if defined(NEED_mg_findext) || defined(NEED_mg_findext_GLOBAL)
 
 MAGIC *
-DPPP_(my_mg_findext)(pTHX_ SV * sv, int type, const MGVTBL *vtbl) {
+DPPP_(my_mg_findext)(SV * sv, int type, const MGVTBL *vtbl) {
     if (sv) {
         MAGIC *mg;
 
