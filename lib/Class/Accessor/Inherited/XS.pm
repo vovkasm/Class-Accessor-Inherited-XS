@@ -53,6 +53,14 @@ sub mk_inherited_accessors {
     }
 }
 
+sub register_types {
+    my %args = @_;
+
+    while (my ($key, $val) = each %args) {
+        register_type($key, $val);
+    }
+}
+
 sub register_type {
     my ($type, $args) = @_;
 
