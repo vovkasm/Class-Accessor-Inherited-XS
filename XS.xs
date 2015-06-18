@@ -15,9 +15,19 @@ static bool optimize_entersub = 1;
 #include "xs/compat.h"
 #include "xs/accessor_impl.h"
 
+inline void
+CAIXS_payload_attach(pTHX_ CV* cv, AV* keys_av) {
+#ifndef MULTIPLICITY
+    CvXSUBANY(cv).any_ptr = (void*)AvARRAY(keys_av);
+#endif
+
+    sv_magicext((SV*)cv, (SV*)keys_av, PERL_MAGIC_ext, &sv_payload_marker, NULL, 0);
+    SvREFCNT_dec_NN((SV*)keys_av);
+    SvRMAGICAL_off((SV*)cv);
+}
+
 static void
-CAIXS_install_inherited_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key, SV* read_cb, SV* write_cb)
-{
+CAIXS_install_inherited_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key, SV* read_cb, SV* write_cb) {
     STRLEN len;
 
     const char* full_name_buf = SvPV_nolen(full_name);
@@ -56,13 +66,7 @@ CAIXS_install_inherited_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key,
     }
     AvFILLp(keys_av) = 3;
 
-#ifndef MULTIPLICITY
-    CvXSUBANY(cv).any_ptr = (void*)keys_array;
-#endif
-
-    sv_magicext((SV*)cv, (SV*)keys_av, PERL_MAGIC_ext, &sv_payload_marker, NULL, 0);
-    SvREFCNT_dec_NN((SV*)keys_av);
-    SvRMAGICAL_off((SV*)cv);
+    CAIXS_payload_attach(aTHX_ cv, keys_av);
 }
 
 static void
@@ -82,13 +86,7 @@ CAIXS_install_class_accessor(pTHX_ SV* full_name, bool is_varclass) {
     }
     AvFILLp(keys_av) = 0;
 
-#ifndef MULTIPLICITY
-    CvXSUBANY(cv).any_ptr = (void*)keys_array;
-#endif
-
-    sv_magicext((SV*)cv, (SV*)keys_av, PERL_MAGIC_ext, &sv_payload_marker, NULL, 0);
-    SvREFCNT_dec_NN((SV*)keys_av);
-    SvRMAGICAL_off((SV*)cv);
+    CAIXS_payload_attach(aTHX_ cv, keys_av);
 }
 
 MODULE = Class::Accessor::Inherited::XS		PACKAGE = Class::Accessor::Inherited::XS
