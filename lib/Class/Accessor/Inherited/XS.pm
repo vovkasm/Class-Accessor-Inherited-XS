@@ -121,13 +121,15 @@ __END__
 
 =head1 NAME
 
-Class::Accessor::Inherited::XS - Fast XS inherited accessors
+Class::Accessor::Inherited::XS - Fast XS inherited and class accessors
 
 =head1 SYNOPSIS
 
   #install accessors at compile time
   use Class::Accessor::Inherited::XS 
-      inherited => [qw/foo bar/], # here key names are equal to accessor names
+      inherited => [qw/foo bar/], # inherited accessors with key names equal to accessor names
+      class     => [qw/baz/],     # an anonymous non-inherited accessor for __PACKAGE__
+      varclass  => [qw/boo/],     # non-inherited accessor for __PACKAGE__,  aliased with 'our $boo' variable
   ;
   
   use Class::Accessor::Inherited::XS { # optional braces
@@ -135,11 +137,16 @@ Class::Accessor::Inherited::XS - Fast XS inherited accessors
         bar => 'bar_key',
         foo => 'foo_key',
       },
+      class     => ['baz'],
+      varclass  => ['boo'],
   };
   
-  #or in the Class::Accessor::Grouped-like fashion
+  #or in a Class::Accessor::Grouped-like fashion
   use parent 'Class::Accessor::Inherited::XS';
+  
   __PACKAGE__->mk_inherited_accessors('foo', ['bar', 'bar_key']);
+  __PACKAGE__->mk_class_accessors('baz');
+  __PACKAGE__->mk_varclass_accessors('boo');
 
 =head1 DESCRIPTION
 
@@ -151,6 +158,10 @@ L<Class::Accessor::Grouped> generated ones.
 Since this module focuses primary on speed, it provides no capability to have your own per-class
 getters/setters logic (like overriding L<get_inherited>/L<set_inherited> in L<Class::Accessor::Grouped>),
 but it gives you an ability to register a single get/set callback for you own accessor types.
+
+It also provides two types of non-inherited accessors - 'class' and 'varclass' with the only difference
+that 'varclass' internal storage is an alias to a package variable of the same name. They always give you
+package value, even when called on an object.
 
 =head1 UTF-8
 
