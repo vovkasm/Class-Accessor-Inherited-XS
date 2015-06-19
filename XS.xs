@@ -6,13 +6,11 @@ extern "C" {
 #include "XSUB.h"
 }
 
-#define NEED_mg_findext
-#include "ppport.h"
-
 static MGVTBL sv_payload_marker;
 static bool optimize_entersub = 1;
 
 #include "xs/compat.h"
+#include "ppport.h"
 #include "xs/accessor_impl.h"
 
 inline void

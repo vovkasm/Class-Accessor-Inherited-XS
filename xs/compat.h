@@ -1,6 +1,11 @@
 #ifndef __INHERITED_XS_COMPAT_H_
 #define __INHERITED_XS_COMPAT_H_
 
+#if (PERL_VERSION < 21)
+#undef mg_findext
+#define NEED_mg_findext
+#endif
+
 #ifndef SvREFCNT_dec_NN
 #define SvREFCNT_dec_NN SvREFCNT_dec
 #endif
