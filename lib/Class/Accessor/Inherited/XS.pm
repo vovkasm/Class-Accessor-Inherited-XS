@@ -219,7 +219,7 @@ B<on_read> callback gets a single argument - from a normal 'inherited' accessor.
 accessor's return value (and is not stored anywhere).
 
 B<on_write> callback gets two arguments - original args from the accessor's call. It's return value is saved
-instead of the user's supplied one. Exceptions thrown from this callback will cancel store.
+instead of the user's supplied one. Exceptions thrown from this callback will cancel store and leave old value unchanged.
 
 =head1 PROFILING WITH Devel::NYTProf
 
