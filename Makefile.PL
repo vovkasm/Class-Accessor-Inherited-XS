@@ -33,6 +33,6 @@ WriteMakefile(
 {
     package MY;
 
-    sub postamble { '$(OBJECT) : xs/*.h' }
+    sub postamble { '$(OBJECT) : '.join(' ', glob('xs/*.h')) }
 }
 
