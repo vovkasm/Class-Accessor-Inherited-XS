@@ -67,8 +67,11 @@ OP *
 CAIXS_entersub(pTHX) {
     dSP;
 
+    /* some older gcc's can't deduce correct function - have to add explicit cast  */
+    typedef void (*XSPROTO_CB)(pTHX_ CV*);
+
     CV* sv = (CV*)TOPs;
-    if (sv && (SvTYPE(sv) == SVt_PVCV) && (CvXSUB(sv) == &CAIXS_accessor<type>)) {
+    if (sv && (SvTYPE(sv) == SVt_PVCV) && (CvXSUB(sv) == (XSPROTO_CB)&CAIXS_accessor<type>)) {
         /*
             Assert against future XPVCV layout change - as for now, xcv_xsub shares space with xcv_root
             which are both pointers, so address check is enough, and there's no need to look into op_flags for CvISXSUB.
