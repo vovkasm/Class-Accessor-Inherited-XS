@@ -4,7 +4,7 @@ use ExtUtils::MakeMaker;
 
 #system 'pod2text lib/Class/Accessor/Inherited/XS.pm > README';
 
-my $CCFLAGS = join(' ',$Config{ccflags},'-x c++');
+my $CCFLAGS = join(' ',$Config{ccflags},'-x c++', '-fno-exceptions', '-fno-rtti');
 
 WriteMakefile(
     NAME            => 'Class::Accessor::Inherited::XS',
