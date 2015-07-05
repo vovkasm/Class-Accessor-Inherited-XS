@@ -1,5 +1,9 @@
 Revision history for Class::Accessor::Inherited::XS.
 
+0.11 Mon Jul  6 01:28:49 MSK 2015
+    - fix compilation on Strawberry
+    - fix compilation on FreeBSD 9.x with gcc 4.2
+
 0.10 Fri Jun 19 13:46:53 MSK 2015
     - add class/varclass accessors
 
