@@ -155,19 +155,20 @@ by the L<Class::Accessor::Grouped> module. They give you a capability to overrid
 a parent class with values set in childs or object instances. Generated accessors are compatible with
 L<Class::Accessor::Grouped> generated ones.
 
-Since this module focuses primary on speed, it provides no capability to have your own per-class
+Since this module focuses primary on speed, it provides no means to have your own per-class
 getters/setters logic (like overriding L<get_inherited>/L<set_inherited> in L<Class::Accessor::Grouped>),
-but it gives you an ability to register a single get/set callback for you own accessor types.
+but it allows you to register a single get/set callback per accessor type.
 
-It also provides two types of non-inherited accessors - 'class' and 'varclass' with the only difference
-that 'varclass' internal storage is an alias to a package variable of the same name. They always give you
-package value, even when called on an object.
+It also provides two types of non-inherited accessors, 'class' and 'varclass', which give you values
+from a package they were defined in, even when called on objects. The difference between them is that
+the 'varclass' internal storage is a package variable with the same name, while 'class' stores it's value
+in an anonymous variable.
 
 =head1 UTF-8
 
-Starting with the perl 5.16.0, this module provides full support for UTF-8 method names and hash 
-keys. Before that, you can't distinguish UTF-8 strings from bytes string in method names, only in 
-hash keys. You have been warned.
+Starting with the perl 5.16.0, this module provides full support for UTF-8 (and binary) method names and hash
+keys. But in previous perls you can't distinguish UTF-8 strings from bytes string in method names, so accessors
+with UTF-8 names can end up getting a wrong value. You have been warned.
 
 =head1 THREADS
 
@@ -180,6 +181,8 @@ no known conceptual leaks.
 L<Class::Accessor::Inherited::XS> is at least 10x times faster than L<Class::Accessor::Grouped>, depending
 on your usage pattern. Accessing data from a parent in a large inheritance chain is still the worst case,
 but even there L<Class::Accessor::Inherited::XS> beats L<Class::Accessor::Grouped> best-case.
+
+Accessors with just an empty sub callback are ~3x times slower then normal ones, so use them only when you definitely need them.
 
 Here are results from a benchmark run on perl 5.20.1 (see bench folder):
 
@@ -215,11 +218,11 @@ You can register new inherited accessor types with associated read/write callbac
 the L<Class::Accessor::Inherited::XS> import() call. Unlike L<Class::Accessor::Grouped>,
 here's a single callback per accessor type, without any inheritance lookups for get_*/set_* functions.
 
-B<on_read> callback gets a single argument - from a normal 'inherited' accessor. It's return value is a new
+B<on_read> callback gets a single argument - from a normal 'inherited' accessor. It's return value is the new
 accessor's return value (and is not stored anywhere).
 
 B<on_write> callback gets two arguments - original args from the accessor's call. It's return value is saved
-instead of the user's supplied one. Exceptions thrown from this callback will cancel store and leave old value unchanged.
+instead of the user's supplied one. Exceptions thrown from this callback will cancel store and leave the old value unchanged.
 
 =head1 PROFILING WITH Devel::NYTProf
 
@@ -228,11 +231,11 @@ on the opcode level. To squeeze last bits of performance, L<Class::Accessor::Inh
 on each call site of its accessors. It turns out into CAIX favor - L<Devel::NYTProf> sees only first call to CAIX
 accessor, but all subsequent ones become invisible to the subs profiler.
 
-Note that statement profiler still correctly accounts time spent on a line, you just don't see time spent in accessors'
-calls separately. That's sometimes OK, sometimes not - you get profile with all possible optimizations on, but it's hard for understanding.
+Note that the statement profiler still correctly accounts for the time spent on each line, you just don't see time spent in accessors'
+calls separately. That's sometimes OK, sometimes not - you get profile with all possible optimizations on, but it's not easy to comprehend.
 
 Since it's hard to detect L<Devel::NYTProf> (and any other module doing such magic) in a portable way (all hail Win32), there's
-an %ENV switch available - you can set CAIXS_DISABLE_ENTERSUB to a true value to disable call site optimization and get full subs profile.
+an %ENV switch available - you can set CAIXS_DISABLE_ENTERSUB to a true value to disable opcode optimization and get a full subs profile.
 
 =head1 SEE ALSO
 
