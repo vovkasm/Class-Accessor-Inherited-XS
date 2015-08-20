@@ -186,17 +186,18 @@ Accessors with just an empty sub callback are ~3x times slower then normal ones,
 
 Here are results from a benchmark run on perl 5.20.1 (see bench folder):
 
-                          Rate pkg_gparent_cag pkg_cag obj_cag pkg_set_cag pkg_gparent_caixs pkg_caix pkg_set_caix obj_cxa obj_caix obj_direct
-  pkg_gparent_cag     237444/s              --    -77%    -79%        -82%              -92%     -97%         -97%    -99%     -99%       -99%
-  pkg_cag            1013067/s            327%      --    -11%        -21%              -66%     -88%         -89%    -94%     -95%       -96%
-  obj_cag            1137400/s            379%     12%      --        -12%              -62%     -87%         -87%    -93%     -94%       -95%
-  pkg_set_cag        1286220/s            442%     27%     13%          --              -57%     -85%         -86%    -92%     -93%       -95%
-  pkg_gparent_caixs  2995865/s           1162%    196%    163%        133%                --     -65%         -66%    -82%     -84%       -88%
-  pkg_caix           8602691/s           3523%    749%    656%        569%              187%       --          -3%    -49%     -54%       -65%
-  pkg_set_caix       8907800/s           3652%    779%    683%        593%              197%       4%           --    -47%     -52%       -64%
-  obj_cxa           16781840/s           6968%   1557%   1375%       1205%              460%      95%          88%      --     -10%       -32%
-  obj_caix          18642286/s           7751%   1740%   1539%       1349%              522%     117%         109%     11%       --       -25%
-  obj_direct        24807382/s          10348%   2349%   2081%       1829%              728%     188%         178%     48%      33%         --
+                        Rate pkg_gparent_cag pkg_cag obj_cag pkg_set_cag pkg_gparent_caixs obj_caix_cb pkg_caix pkg_set_caix obj_cxa obj_caix obj_direct
+pkg_gparent_cag     228862/s              --    -76%    -80%        -82%              -92%        -96%     -97%         -98%    -99%     -99%       -99%
+pkg_cag             942636/s            312%      --    -19%        -27%              -68%        -85%     -88%         -90%    -94%     -95%       -97%
+obj_cag            1158463/s            406%     23%      --        -10%              -61%        -81%     -86%         -87%    -93%     -94%       -96%
+pkg_set_cag        1287939/s            463%     37%     11%          --              -56%        -79%     -84%         -86%    -92%     -93%       -95%
+pkg_gparent_caixs  2958598/s           1193%    214%    155%        130%                --        -52%     -64%         -68%    -82%     -84%       -89%
+obj_caix_cb        6138858/s           2582%    551%    430%        377%              107%          --     -25%         -33%    -63%     -67%       -77%
+pkg_caix           8159797/s           3465%    766%    604%        534%              176%         33%       --         -11%    -51%     -56%       -70%
+pkg_set_caix       9162566/s           3904%    872%    691%        611%              210%         49%      12%           --    -45%     -51%       -66%
+obj_cxa           16699964/s           7197%   1672%   1342%       1197%              464%        172%     105%          82%      --     -10%       -39%
+obj_caix          18616018/s           8034%   1875%   1507%       1345%              529%        203%     128%         103%     11%       --       -32%
+obj_direct        27185300/s          11778%   2784%   2247%       2011%              819%        343%     233%         197%     63%      46%         --
 
 =head1 EXTENDING
 
