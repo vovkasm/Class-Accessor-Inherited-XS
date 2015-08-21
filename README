@@ -82,12 +82,12 @@ EXTENDING
             inherited_cb => ['bar'],
         };
 
+        #or in a Class::Accessor::Grouped-like fashion
+        __PACKAGE__->mk_type_accessors(inherited_cb => 'foo', 'bar');
+
     You can register new inherited accessor types with associated read/write
-    callbacks. They're still 'inherited', but you can modify return values.
-    Those new types can be installed using the
-    Class::Accessor::Inherited::XS import() call. Unlike
-    Class::Accessor::Grouped, here's a single callback per accessor type,
-    without any inheritance lookups for get_*/set_* functions.
+    callbacks. Unlike Class::Accessor::Grouped, only a single callback is
+    set for a type, without per-class get_*/set_* lookups.
 
     on_read callback gets a single argument - from a normal 'inherited'
     accessor. It's return value is the new accessor's return value (and is

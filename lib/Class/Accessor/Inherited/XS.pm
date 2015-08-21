@@ -219,10 +219,12 @@ obj_direct        27185300/s          11778%   2784%   2247%       2011%        
         inherited_cb => ['bar'],
     };
 
-You can register new inherited accessor types with associated read/write callbacks. They're still
-'inherited', but you can modify return values. Those new types can be installed using
-the L<Class::Accessor::Inherited::XS> import() call. Unlike L<Class::Accessor::Grouped>,
-here's a single callback per accessor type, without any inheritance lookups for get_*/set_* functions.
+    #or in a Class::Accessor::Grouped-like fashion
+    __PACKAGE__->mk_type_accessors(inherited_cb => 'foo', 'bar');
+
+You can register new inherited accessor types with associated read/write callbacks. Unlike
+L<Class::Accessor::Grouped>, only a single callback is set for a type, without per-class
+ get_*/set_* lookups.
 
 B<on_read> callback gets a single argument - from a normal 'inherited' accessor. It's return value is the new
 accessor's return value (and is not stored anywhere).
