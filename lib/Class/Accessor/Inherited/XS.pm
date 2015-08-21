@@ -26,18 +26,14 @@ sub import {
     my %opts = ref($_[0]) eq 'HASH' ? %{ $_[0] } : @_;
 
     for my $type (keys %opts) {
-        my $type_info = $REGISTERED_TYPES->{$type};
-
-        if (!defined $type_info) {
-            Carp::confess("Don't know how to install '$type' accessors");
-        }
-
         my $accessors = $opts{$type};
+        my $installer = _type_installer($type);
+
         if (ref($accessors) eq 'HASH') {
-            $type_info->{installer}->($class, $_, $accessors->{$_}) for keys %$accessors;
+            $installer->($class, $_, $accessors->{$_}) for keys %$accessors;
 
         } elsif (ref($accessors) eq 'ARRAY') {
-            $type_info->{installer}->($class, $_, $_) for @$accessors;
+            $installer->($class, $_, $_) for @$accessors;
 
         } else {
             Carp::confess("Can't understand format for '$type' accessors initializer");
@@ -47,35 +43,37 @@ sub import {
 
 sub mk_inherited_accessors {
     my $class = shift;
-
-    for my $entry (@_) {
-        if (ref($entry) eq 'ARRAY') {
-            _mk_inherited_accessor($class, @$entry);
-        } else {
-            _mk_inherited_accessor($class, $entry, $entry);
-        }
-    }
+    mk_type_accessors($class, 'inherited', @_);
 }
 
 sub mk_class_accessors {
     my $class = shift;
-
-    _mk_class_accessor($class, $_) for (@_);
+    mk_type_accessors($class, 'class', @_);
 }
 
 sub mk_varclass_accessors {
     my $class = shift;
+    mk_type_accessors($class, 'varclass', @_);
+}
 
-    _mk_varclass_accessor($class, $_) for (@_);
+sub mk_type_accessors {
+    my ($class, $type) = (shift, shift);
+
+    my $installer = _type_installer($type);
+    for my $entry (@_) {
+        if (ref($entry) eq 'ARRAY') {
+            $installer->($class, @$entry);
+        } else {
+            $installer->($class, $entry, $entry);
+        }
+    }
 }
 
 sub register_types {
-    my %args = @_;
-
-    while (my ($key, $val) = each %args) {
-        register_type($key, $val);
-    }
+    register_type(shift, shift) while scalar @_;
 }
+
+sub is_type_registered { exists $REGISTERED_TYPES->{$_[0]} }
 
 sub register_type {
     my ($type, $args) = @_;
@@ -97,6 +95,13 @@ sub register_type {
 #
 #   Functions below are NOT part of the public API
 #
+
+sub _type_installer {
+    my $type = shift;
+
+    my $type_info = $REGISTERED_TYPES->{$type} or Carp::confess("Don't know how to install '$type' accessors");
+    return $type_info->{installer};
+}
 
 sub _mk_inherited_accessor {
     my ($class, $name, $field) = @_;
