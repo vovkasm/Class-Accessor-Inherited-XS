@@ -259,7 +259,7 @@ an %ENV switch available - you can set CAIXS_DISABLE_ENTERSUB to a true value to
 
 Copyright (C) 2009 by Vladimir Timofeev
 
-Copyright (C) 2014 by Sergey Aleynikov
+Copyright (C) 2014-2015 by Sergey Aleynikov
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.10.1 or,
