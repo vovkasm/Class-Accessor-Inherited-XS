@@ -23,6 +23,7 @@ t/14_varclass.t
 t/30_utf8.t
 t/31_utf8_pkg_normal.t
 t/32_utf8_pkg_broken.t
+t/33_binary.t
 t/40_invalid_types.t
 t/41_register_type.t
 t/42_partial.t

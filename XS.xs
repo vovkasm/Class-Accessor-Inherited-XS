@@ -28,14 +28,14 @@ static void
 CAIXS_install_inherited_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key, SV* read_cb, SV* write_cb) {
     STRLEN len;
 
-    const char* full_name_buf = SvPV_nolen(full_name);
+    const char* full_name_buf = SvPV_const(full_name, len);
     bool need_cb = read_cb && write_cb;
 
     CV* cv;
     if (need_cb) {
-        cv = newXS_flags(full_name_buf, &CAIXS_accessor<InheritedCb>, __FILE__, NULL, SvUTF8(full_name));
+        cv = Perl_newXS_len_flags(aTHX_ full_name_buf, len, &CAIXS_accessor<InheritedCb>, __FILE__, NULL, NULL, SvUTF8(full_name));
     } else {
-        cv = newXS_flags(full_name_buf, &CAIXS_accessor<Inherited>, __FILE__, NULL, SvUTF8(full_name));
+        cv = Perl_newXS_len_flags(aTHX_ full_name_buf, len, &CAIXS_accessor<Inherited>, __FILE__, NULL, NULL, SvUTF8(full_name));
     }
     if (!cv) croak("Can't install XS accessor");
 
