@@ -1,5 +1,8 @@
 Revision history for Class::Accessor::Inherited::XS.
 
+0.13 Fri Aug 28 17:27:37 MSK 2015
+    - fix installing accessors with \0 in names
+
 0.12 Sat Aug 22 13:15:04 MSK 2015
     - enhanced interface for callback accessors
     - add benchmark results for callback accessors
