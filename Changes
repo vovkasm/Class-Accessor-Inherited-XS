@@ -1,5 +1,10 @@
 Revision history for Class::Accessor::Inherited::XS.
 
+0.14 Tue Sep  8 00:42:01 MSK 2015
+    - fix Windows compilation
+    - export BINARY_UNSAFE constant
+    - croak on BINARY_UNSAFE platforms for binary input
+
 0.13 Fri Aug 28 17:27:37 MSK 2015
     - fix installing accessors with \0 in names
 
