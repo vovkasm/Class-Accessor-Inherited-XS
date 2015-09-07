@@ -169,11 +169,14 @@ from a package they were defined in, even when called on objects. The difference
 the 'varclass' internal storage is a package variable with the same name, while 'class' stores it's value
 in an anonymous variable.
 
-=head1 UTF-8
+=head1 UTF-8 AND BINARY SAFETY
 
-Starting with the perl 5.16.0, this module provides full support for UTF-8 (and binary) method names and hash
-keys. But in previous perls you can't distinguish UTF-8 strings from bytes string in method names, so accessors
+Starting with the perl 5.16.0, this module provides full support for UTF-8 method names and hash keys.
+But on older perls you can't distinguish UTF-8 strings from bytes string in method names, so accessors
 with UTF-8 names can end up getting a wrong value. You have been warned.
+
+From 5.16.0 and onwards, accessors installation is also binary safe, except for the Windows platform.
+This module croaks on attempts to install binary accessors on unsupported platforms.
 
 =head1 THREADS
 
