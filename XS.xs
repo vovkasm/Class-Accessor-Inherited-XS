@@ -31,6 +31,12 @@ CAIXS_install_inherited_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key,
     const char* full_name_buf = SvPV_const(full_name, len);
     bool need_cb = read_cb && write_cb;
 
+#ifdef CAIX_BINARY_UNSAFE
+    if (strnlen(full_name_buf, len) < len) {
+        croak("Attempted to install binary accessor, but they're not supported on this perl");
+    }
+#endif
+
     CV* cv;
     if (need_cb) {
         cv = Perl_newXS_len_flags(aTHX_ full_name_buf, len, &CAIXS_accessor<InheritedCb>, __FILE__, NULL, NULL, SvUTF8(full_name));
@@ -94,6 +100,9 @@ BOOT:
 {
     SV** check_env = hv_fetch(GvHV(PL_envgv), "CAIXS_DISABLE_ENTERSUB", 22, 0);
     if (check_env && SvTRUE(*check_env)) optimize_entersub = 0;
+
+    HV* stash = gv_stashpv("Class::Accessor::Inherited::XS", 0);
+    newCONSTSUB(stash, "BINARY_UNSAFE", CAIX_BINARY_UNSAFE_RESULT);
 }
 
 void

@@ -1,6 +1,6 @@
 package Jopa;
-use Test::More ($] < 5.016) ? (skip_all => 'binary support on this perl is broken') : (no_plan);
 use parent 'Class::Accessor::Inherited::XS';
+use Test::More (Class::Accessor::Inherited::XS::BINARY_UNSAFE) ? (skip_all => 'binary support on this perl is broken') : (no_plan);
 use utf8;
 
 my $binary_key = "foo\0bar";
