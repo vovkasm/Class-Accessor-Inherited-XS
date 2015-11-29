@@ -173,7 +173,7 @@ CAIXS_entersub(pTHX) {
         assert(CvISXSUB(sv));
 
         POPs; PUTBACK;
-        CAIXS_entersub_wrapper<type>(aTHX_ sv);
+        CAIXS_accessor<type>(aTHX_ SP, sv, NULL);
 
         return NORMAL;
 
