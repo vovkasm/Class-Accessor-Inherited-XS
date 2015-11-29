@@ -56,11 +56,105 @@ enum AccessorTypes {
     } else {                                \
         if (need_alloc) slot = newSV(0);    \
         sv_setsv(slot, *(SP+2));            \
-        *(SP+1) = slot;                     \
+        PUSHs(slot);                        \
+        PUTBACK;                            \
     }                                       \
 
+template <AccessorTypes type>
+inline void
+CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash);
+
 template <AccessorTypes type> static
-XSPROTO(CAIXS_accessor);
+XSPROTO(CAIXS_entersub_wrapper) {
+    dSP;
+
+    CAIXS_accessor<type>(aTHX_ SP, cv, NULL);
+
+    return;
+}
+
+#ifdef OPTIMIZE_OPMETHOD
+
+#define METHOD_FALLEN STMT_START {                      \
+        PL_op->op_ppaddr = PL_ppaddr[OP_METHOD_NAMED];  \
+        return PL_ppaddr[OP_METHOD_NAMED](aTHX);        \
+    } STMT_END
+
+template <AccessorTypes type> static
+OP *
+CAIXS_opmethod_wrapper(pTHX) {
+    dSP;
+
+    SV* self = PL_stack_base + TOPMARK == SP ? (SV*)NULL : *(PL_stack_base + TOPMARK + 1);
+    HV* stash = NULL;
+
+#ifndef GV_CACHE_ONLY
+    if (LIKELY(self != NULL)) {
+        SvGETMAGIC(self);
+#else
+    if (LIKELY(self && !SvGMAGICAL(self))) {
+        if (SvIsCOW_shared_hash(self)) {
+            stash = gv_stashsv(self, GV_CACHE_ONLY);
+        } else
+#endif
+        if (SvROK(self)) {
+            SV* ob = SvRV(self);
+            if (SvOBJECT(ob)) stash = SvSTASH(ob);
+
+        } else if (SvPOK(self)) {
+            const char* packname = SvPVX_const(self);
+            const STRLEN packlen = SvCUR(self);
+            const int is_utf8 = SvUTF8(self);
+
+#ifndef GV_CACHE_ONLY
+            const HE* const he = (const HE *)hv_common(PL_stashcache, NULL, packname, packlen, is_utf8, 0, NULL, 0);
+            if (he) stash = INT2PTR(HV*, SvIV(HeVAL(he)));
+            else
+#endif
+            stash = gv_stashpvn(packname, packlen, is_utf8);
+        }
+    }
+
+    if (UNLIKELY(!stash || SvTYPE(stash) != SVt_PVHV)) {
+        METHOD_FALLEN;
+    }
+
+    CV* cv = NULL;
+    GV* gv;
+    SV* meth = cSVOPx_sv(PL_op);
+
+#ifndef GV_CACHE_ONLY
+    const U32 hash = SvSHARED_HASH(meth);
+#else
+    const U32 hash = 0;
+#endif
+    HE* he = hv_fetch_ent(stash, meth, 0, hash);
+    if (he) {
+        gv = (GV*)(HeVAL(he));
+        if (isGV(gv) && GvCV(gv) && (!GvCVGEN(gv) || GvCVGEN(gv) == (PL_sub_generation + HvMROMETA(stash)->cache_gen))) {
+            cv = GvCV(gv);
+        }
+    }
+
+    if (UNLIKELY(!cv)) {
+        gv = gv_fetchmethod_sv_flags(stash, meth, GV_AUTOLOAD|GV_CROAK);
+        assert(gv);
+
+        cv = isGV(gv) ? GvCV(gv) : (CV*)gv;
+        assert(cv);
+    }
+
+    if (LIKELY(CvXSUB(cv) == (XSUBADDR_t)&CAIXS_entersub_wrapper<type>)) {
+        assert(CvISXSUB(cv));
+        CAIXS_accessor<type>(aTHX_ SP, cv, stash);
+        return PL_op->op_next->op_next;
+
+    } else {
+        METHOD_FALLEN;
+    }
+}
+
+#endif /* OPTIMIZE_OPMETHOD */
 
 template <AccessorTypes type> static
 OP *
@@ -71,7 +165,7 @@ CAIXS_entersub(pTHX) {
     typedef void (*XSPROTO_CB)(pTHX_ CV*);
 
     CV* sv = (CV*)TOPs;
-    if (sv && (SvTYPE(sv) == SVt_PVCV) && (CvXSUB(sv) == (XSPROTO_CB)&CAIXS_accessor<type>)) {
+    if (sv && (SvTYPE(sv) == SVt_PVCV) && (CvXSUB(sv) == (XSPROTO_CB)&CAIXS_entersub_wrapper<type>)) {
         /*
             Assert against future XPVCV layout change - as for now, xcv_xsub shares space with xcv_root
             which are both pointers, so address check is enough, and there's no need to look into op_flags for CvISXSUB.
@@ -79,7 +173,7 @@ CAIXS_entersub(pTHX) {
         assert(CvISXSUB(sv));
 
         POPs; PUTBACK;
-        CAIXS_accessor<type>(aTHX_ sv);
+        CAIXS_entersub_wrapper<type>(aTHX_ sv);
 
         return NORMAL;
 
@@ -102,6 +196,14 @@ CAIXS_install_entersub(pTHX) {
     if ((op->op_spare & 1) != 1 && op->op_ppaddr == PL_ppaddr[OP_ENTERSUB] && optimize_entersub) {
         op->op_spare |= 1;
         op->op_ppaddr = &CAIXS_entersub<type>;
+
+#ifdef OPTIMIZE_OPMETHOD
+        OP* methop;
+        for (methop = cUNOPx(op)->op_first; methop->op_sibling; methop = methop->op_sibling) ;
+        if (methop->op_next == op && methop->op_type == OP_METHOD_NAMED && methop->op_ppaddr == PL_ppaddr[OP_METHOD_NAMED]) {
+            methop->op_ppaddr = &CAIXS_opmethod_wrapper<type>;
+        }
+#endif
     }
 }
 
@@ -128,9 +230,10 @@ CAIXS_find_keys(CV* cv) {
     return keys;
 }
 
-template <>
-XSPROTO(CAIXS_accessor<PrivateClass>) {
-    dXSARGS;
+template <> inline
+void
+CAIXS_accessor<PrivateClass>(pTHX_ SV** SP, CV* cv, HV* stash) {
+    dAXMARK; dITEMS;
     SP -= items;
 
     if (!items) croak("Usage: $obj->accessor or __PACKAGE__->accessor");
@@ -140,15 +243,20 @@ XSPROTO(CAIXS_accessor<PrivateClass>) {
 
     if (items > 1) {
         sv_setsv(keys->storage, *(SP+2));
-    }
+        PUSHs(keys->storage);
+        PUTBACK;
+        return;
 
-    *(SP+1) = keys->storage;
-    XSRETURN(1);
+    } else {
+        *(SP+1) = keys->storage;
+        return;
+    }
 }
 
-template <AccessorTypes type> static
-XSPROTO(CAIXS_accessor) {
-    dXSARGS;
+template <AccessorTypes type> inline
+void
+CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
+    dAXMARK; dITEMS;
     SP -= items;
 
     if (!items) croak("Usage: $obj->accessor or __PACKAGE__->accessor");
@@ -170,20 +278,22 @@ XSPROTO(CAIXS_accessor) {
                 SvREFCNT_dec_NN(new_value);
                 croak("Can't store new hash value");
             }
-            XSRETURN(1);
+            return;
                     
         } else {
             HE* hent = hv_fetch_ent(obj, keys->hash_key, 0, 0);
             if (hent) {
                 CALL_READ_CB(HeVAL(hent), keys->read_cb);
-                XSRETURN(1);
+                return;
             }
         }
     }
 
     /* Couldn't find value in object, so initiate a package lookup. */
 
-    HV* stash;
+#ifdef OPTIMIZE_OPMETHOD
+    if (!stash) {
+#endif
     if (SvROK(self)) {
         stash = SvSTASH(SvRV(self));
 
@@ -199,6 +309,9 @@ XSPROTO(CAIXS_accessor) {
             if (!stash) croak("Couldn't get required stash");
         }
     }
+#ifdef OPTIMIZE_OPMETHOD
+    }
+#endif
 
     HE* hent;
     if (items > 1) {
@@ -226,7 +339,7 @@ XSPROTO(CAIXS_accessor) {
         SV* new_value = GvSVn(glob);
         CALL_WRITE_CB(new_value, keys->write_cb, 0);
 
-        XSRETURN(1);
+        return;
     }
     
     #define TRY_FETCH_PKG_VALUE(stash, keys, hent)                      \
@@ -234,7 +347,7 @@ XSPROTO(CAIXS_accessor) {
         SV* sv = GvSV(HeVAL(hent));                                     \
         if (sv && SvOK(sv)) {                                           \
             CALL_READ_CB(sv, keys->read_cb);                            \
-            XSRETURN(1);                                                \
+            return;                                                     \
         }                                                               \
     }
 
@@ -260,7 +373,7 @@ XSPROTO(CAIXS_accessor) {
 
     /* XSRETURN_UNDEF */
     CALL_READ_CB(&PL_sv_undef, keys->read_cb);
-    XSRETURN(1);
+    return;
 }
 
 #endif /* __INHERITED_XS_IMPL_H_ */

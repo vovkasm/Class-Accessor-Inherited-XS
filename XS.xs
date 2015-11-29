@@ -39,9 +39,9 @@ CAIXS_install_inherited_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key,
 
     CV* cv;
     if (need_cb) {
-        cv = Perl_newXS_len_flags(aTHX_ full_name_buf, len, &CAIXS_accessor<InheritedCb>, __FILE__, NULL, NULL, SvUTF8(full_name));
+        cv = Perl_newXS_len_flags(aTHX_ full_name_buf, len, &CAIXS_entersub_wrapper<InheritedCb>, __FILE__, NULL, NULL, SvUTF8(full_name));
     } else {
-        cv = Perl_newXS_len_flags(aTHX_ full_name_buf, len, &CAIXS_accessor<Inherited>, __FILE__, NULL, NULL, SvUTF8(full_name));
+        cv = Perl_newXS_len_flags(aTHX_ full_name_buf, len, &CAIXS_entersub_wrapper<Inherited>, __FILE__, NULL, NULL, SvUTF8(full_name));
     }
     if (!cv) croak("Can't install XS accessor");
 
@@ -76,7 +76,7 @@ CAIXS_install_inherited_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key,
 static void
 CAIXS_install_class_accessor(pTHX_ SV* full_name, bool is_varclass) {
     const char* full_name_buf = SvPV_nolen(full_name);
-    CV* cv = newXS_flags(full_name_buf, &CAIXS_accessor<PrivateClass>, __FILE__, NULL, SvUTF8(full_name));
+    CV* cv = newXS_flags(full_name_buf, &CAIXS_entersub_wrapper<PrivateClass>, __FILE__, NULL, SvUTF8(full_name));
     if (!cv) croak("Can't install XS accessor");
 
     AV* keys_av = newAV();

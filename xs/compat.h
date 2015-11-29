@@ -6,6 +6,10 @@
 #define NEED_mg_findext
 #endif
 
+#if (PERL_VERSION >= 12)
+#define OPTIMIZE_OPMETHOD
+#endif
+
 #ifndef SvREFCNT_dec_NN
 #define SvREFCNT_dec_NN SvREFCNT_dec
 #endif
@@ -17,6 +21,10 @@
 
 #ifndef gv_init_sv
 #define gv_init_sv(gv, stash, sv, flags) gv_init(gv, stash, SvPVX(sv), SvLEN(sv), flags | SvUTF8(sv))
+#endif
+
+#ifndef gv_fetchmethod_sv_flags
+#define gv_fetchmethod_sv_flags(stash, name, flags) gv_fetchmethod_flags(stash, SvPV_nolen_const(name), flags)
 #endif
 
 #if (PERL_VERSION < 16) || defined(WIN32)
