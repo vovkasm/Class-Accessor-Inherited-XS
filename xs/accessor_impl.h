@@ -23,13 +23,13 @@ enum AccessorTypes {
 };
 
 /*
-    These macroses rely heavily on SP not being touched inside the
-    CAIXS_inherited_accessor function body expect for the start shift to the top of the stack.
+    These macroses have the following constraints:
+        - SP is at the start of the args list
+        - afterwards SP may become invalid, so don't touch it
+        - PL_stack_sp is updated when needed
 
-    They also expect nothing but XSRETURN(1) after them (or, at least, nothing touching stack,
-    as in the 1st CALL_WRITE_CB() call). They're left as two statements for the reader's sanity.
-
-    call_sv() is stripped off the most of a normal call sequence.
+    The latter may be not that obvious, but it's a result of a callback doing stack work for us.
+    But all non-essential updates are not performed after callbacks.
 */
 
 #define CALL_READ_CB(result, cb)        \
@@ -93,6 +93,7 @@ CAIXS_opmethod_wrapper(pTHX) {
         SvGETMAGIC(self);
 #else
     if (LIKELY(self && !SvGMAGICAL(self))) {
+        /* SvIsCOW_shared_hash is incompatible with SvGMAGICAL, so skip it completely */
         if (SvIsCOW_shared_hash(self)) {
             stash = gv_stashsv(self, GV_CACHE_ONLY);
         } else
@@ -115,6 +116,7 @@ CAIXS_opmethod_wrapper(pTHX) {
         }
     }
 
+    /* SvTYPE comes from 5.22 */
     if (UNLIKELY(!stash || SvTYPE(stash) != SVt_PVHV)) {
         METHOD_FALLEN;
     }
@@ -124,7 +126,7 @@ CAIXS_opmethod_wrapper(pTHX) {
     SV* meth = cSVOPx_sv(PL_op);
 
 #ifndef GV_CACHE_ONLY
-    const U32 hash = SvSHARED_HASH(meth);
+    const U32 hash = SvSHARED_HASH(meth); /* PP_METHOD doesn't have hash and skips this, but only below 5.22 */
 #else
     const U32 hash = 0;
 #endif
@@ -150,6 +152,7 @@ CAIXS_opmethod_wrapper(pTHX) {
         return PL_op->op_next->op_next;
 
     } else {
+        /* we could also lift off CAIXS_entersub here, but that's a one-time action, so let it fail */
         METHOD_FALLEN;
     }
 }
@@ -217,8 +220,8 @@ CAIXS_find_keys(CV* cv) {
     if (!keys) croak("Can't find hash key information");
 #else
     /*
-        We can't look into CvXSUBANY under threads, as it would have been written in the parent thread
-        and might go away at any time without prior notice. So, instead, we have to scan our magical
+        We can't look into CvXSUBANY under threads, as it could have been written in the parent thread
+        and had gone away at any time without prior notice. So, instead, we have to scan our magical
         refcnt storage - there's always a proper thread-local SV*, cloned for us by perl itself.
     */
     MAGIC* mg = mg_findext((SV*)cv, PERL_MAGIC_ext, &sv_payload_marker);
@@ -241,7 +244,8 @@ CAIXS_accessor<PrivateClass>(pTHX_ SV** SP, CV* cv, HV* stash) {
     shared_keys* keys = (shared_keys*)CAIXS_find_keys(cv);
 
     if (items > 1) {
-        SP -= items;
+        SP -= items; /* no need for items == 1 case */
+
         sv_setsv(keys->storage, *(SP+2));
         PUSHs(keys->storage);
         PUTBACK;
