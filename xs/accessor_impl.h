@@ -60,6 +60,11 @@ enum AccessorTypes {
         PUTBACK;                            \
     }                                       \
 
+#define OP_UNSTEAL(name) STMT_START {       \
+        PL_op->op_ppaddr = PL_ppaddr[name]; \
+        return PL_ppaddr[name](aTHX);       \
+    } STMT_END                              \
+
 template <AccessorTypes type>
 inline void
 CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash);
@@ -74,11 +79,6 @@ XSPROTO(CAIXS_entersub_wrapper) {
 }
 
 #ifdef OPTIMIZE_OPMETHOD
-
-#define METHOD_FALLEN STMT_START {                      \
-        PL_op->op_ppaddr = PL_ppaddr[OP_METHOD_NAMED];  \
-        return PL_ppaddr[OP_METHOD_NAMED](aTHX);        \
-    } STMT_END
 
 template <AccessorTypes type> static
 OP *
@@ -118,7 +118,7 @@ CAIXS_opmethod_wrapper(pTHX) {
 
     /* SvTYPE comes from 5.22 */
     if (UNLIKELY(!stash || SvTYPE(stash) != SVt_PVHV)) {
-        METHOD_FALLEN;
+        OP_UNSTEAL(OP_METHOD_NAMED);
     }
 
     CV* cv = NULL;
@@ -126,7 +126,7 @@ CAIXS_opmethod_wrapper(pTHX) {
     SV* meth = cSVOPx_sv(PL_op);
 
 #ifndef GV_CACHE_ONLY
-    const U32 hash = SvSHARED_HASH(meth); /* PP_METHOD doesn't have hash and skips this, but only below 5.22 */
+    const U32 hash = SvSHARED_HASH(meth); /* OP_METHOD doesn't have hash and skips this, but only below 5.22 */
 #else
     const U32 hash = 0;
 #endif
@@ -153,7 +153,7 @@ CAIXS_opmethod_wrapper(pTHX) {
 
     } else {
         /* we could also lift off CAIXS_entersub here, but that's a one-time action, so let it fail */
-        METHOD_FALLEN;
+        OP_UNSTEAL(OP_METHOD_NAMED);
     }
 }
 
@@ -180,8 +180,7 @@ CAIXS_entersub(pTHX) {
         return NORMAL;
 
     } else {
-        PL_op->op_ppaddr = PL_ppaddr[OP_ENTERSUB];
-        return PL_ppaddr[OP_ENTERSUB](aTHX);
+        OP_UNSTEAL(OP_ENTERSUB);
     }
 }
 
