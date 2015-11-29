@@ -234,7 +234,6 @@ template <> inline
 void
 CAIXS_accessor<PrivateClass>(pTHX_ SV** SP, CV* cv, HV* stash) {
     dAXMARK; dITEMS;
-    SP -= items;
 
     if (!items) croak("Usage: $obj->accessor or __PACKAGE__->accessor");
 
@@ -242,13 +241,14 @@ CAIXS_accessor<PrivateClass>(pTHX_ SV** SP, CV* cv, HV* stash) {
     shared_keys* keys = (shared_keys*)CAIXS_find_keys(cv);
 
     if (items > 1) {
+        SP -= items;
         sv_setsv(keys->storage, *(SP+2));
         PUSHs(keys->storage);
         PUTBACK;
         return;
 
     } else {
-        *(SP+1) = keys->storage;
+        *SP = keys->storage;
         return;
     }
 }
