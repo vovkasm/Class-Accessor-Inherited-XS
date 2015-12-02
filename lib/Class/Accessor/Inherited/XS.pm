@@ -194,18 +194,19 @@ Accessors with just an empty sub callback are ~3x times slower then normal ones,
 
 Here are results from a benchmark run on perl 5.20.1 (see bench folder):
 
-                        Rate pkg_gparent_cag pkg_cag obj_cag pkg_set_cag pkg_gparent_caixs obj_caix_cb pkg_caix pkg_set_caix obj_cxa obj_caix obj_direct
-pkg_gparent_cag     228862/s              --    -76%    -80%        -82%              -92%        -96%     -97%         -98%    -99%     -99%       -99%
-pkg_cag             942636/s            312%      --    -19%        -27%              -68%        -85%     -88%         -90%    -94%     -95%       -97%
-obj_cag            1158463/s            406%     23%      --        -10%              -61%        -81%     -86%         -87%    -93%     -94%       -96%
-pkg_set_cag        1287939/s            463%     37%     11%          --              -56%        -79%     -84%         -86%    -92%     -93%       -95%
-pkg_gparent_caixs  2958598/s           1193%    214%    155%        130%                --        -52%     -64%         -68%    -82%     -84%       -89%
-obj_caix_cb        6138858/s           2582%    551%    430%        377%              107%          --     -25%         -33%    -63%     -67%       -77%
-pkg_caix           8159797/s           3465%    766%    604%        534%              176%         33%       --         -11%    -51%     -56%       -70%
-pkg_set_caix       9162566/s           3904%    872%    691%        611%              210%         49%      12%           --    -45%     -51%       -66%
-obj_cxa           16699964/s           7197%   1672%   1342%       1197%              464%        172%     105%          82%      --     -10%       -39%
-obj_caix          18616018/s           8034%   1875%   1507%       1345%              529%        203%     128%         103%     11%       --       -32%
-obj_direct        27185300/s          11778%   2784%   2247%       2011%              819%        343%     233%         197%     63%      46%         --
+                       Rate pkg_gparent_cag pkg_cag obj_cag pkg_gparent_caix obj_caix_cb pkg_set_caix pkg_caix obj_cxa obj_caix obj_direct class_caix
+pkg_gparent_cag    255778/s              --    -77%    -82%             -92%        -97%         -97%     -98%    -98%     -99%       -99%       -99%
+pkg_cag           1092262/s            327%      --    -22%             -68%        -85%         -89%     -89%    -94%     -95%       -96%       -97%
+obj_cag           1409030/s            451%     29%      --             -59%        -81%         -86%     -86%    -92%     -93%       -95%       -96%
+pkg_gparent_caix  3401161/s           1230%    211%    141%               --        -54%         -65%     -67%    -80%     -83%       -88%       -90%
+obj_caix_cb       7384333/s           2787%    576%    424%             117%          --         -24%     -29%    -57%     -63%       -73%       -78%
+pkg_set_caix      9771705/s           3720%    795%    594%             187%         32%           --      -6%    -43%     -52%       -65%       -72%
+pkg_caix         10386837/s           3961%    851%    637%             205%         41%           6%       --    -39%     -49%       -62%       -70%
+obj_cxa          17049394/s           6566%   1461%   1110%             401%        131%          74%      64%      --     -16%       -38%       -50%
+obj_caix         20176934/s           7788%   1747%   1332%             493%        173%         106%      94%     18%       --       -27%       -41%
+obj_direct       27568192/s          10678%   2424%   1857%             711%        273%         182%     165%     62%      37%         --       -20%
+class_caix       34345065/s          13328%   3044%   2337%             910%        365%         251%     231%    101%      70%        25%         --
+
 
 =head1 EXTENDING
 
