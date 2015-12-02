@@ -1,5 +1,8 @@
 Revision history for Class::Accessor::Inherited::XS.
 
+0.15 Wed Dec  2 23:41:14 MSK 2015
+    - use our own OP_METHOD_NAMED to get another ~15% performance boost
+
 0.14 Tue Sep  8 00:42:01 MSK 2015
     - fix Windows compilation
     - export BINARY_UNSAFE constant
