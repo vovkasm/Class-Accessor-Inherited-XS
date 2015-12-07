@@ -20,6 +20,7 @@ t/11_empty_gv.t
 t/12_opcode_stress.t
 t/13_simple_class.t
 t/14_varclass.t
+t/15_call_sv.t
 t/30_utf8.t
 t/31_utf8_pkg_normal.t
 t/32_utf8_pkg_broken.t
