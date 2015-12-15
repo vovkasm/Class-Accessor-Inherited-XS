@@ -201,8 +201,7 @@ CAIXS_install_entersub(pTHX) {
 #ifdef OPTIMIZE_OPMETHOD
         OP* methop = cUNOPx(op)->op_first;
         if (LIKELY(methop != NULL)) {   /* such op can be created by call_sv(G_METHOD_NAMED) */
-            assert(methop->op_sibling);
-            do { methop = methop->op_sibling; } while (methop->op_sibling);
+            while (methop->op_sibling) { methop = methop->op_sibling; }
 
             if (methop->op_next == op && methop->op_type == OP_METHOD_NAMED && methop->op_ppaddr == PL_ppaddr[OP_METHOD_NAMED]) {
                 methop->op_ppaddr = &CAIXS_opmethod_wrapper<type>;
