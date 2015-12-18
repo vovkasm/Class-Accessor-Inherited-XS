@@ -80,7 +80,7 @@ XSPROTO(CAIXS_entersub_wrapper) {
 
 #ifdef OPTIMIZE_OPMETHOD
 
-template <AccessorTypes type> static
+template <AccessorTypes type, int optype> static
 OP *
 CAIXS_opmethod_wrapper(pTHX) {
     dSP;
@@ -88,6 +88,11 @@ CAIXS_opmethod_wrapper(pTHX) {
     SV* self = PL_stack_base + TOPMARK == SP ? (SV*)NULL : *(PL_stack_base + TOPMARK + 1);
     HV* stash = NULL;
 
+    /*
+        this block isn't required for the 'goto gotcv' case below
+        but skipping it (or moving above) will make unstealing there impossible
+        thus requiring additional check in the 'fast' case, and subref is a fail-case anyway most of the times
+    */
 #ifndef GV_CACHE_ONLY
     if (LIKELY(self != NULL)) {
         SvGETMAGIC(self);
@@ -116,44 +121,69 @@ CAIXS_opmethod_wrapper(pTHX) {
         }
     }
 
-    /* SvTYPE comes from 5.22 */
-    if (UNLIKELY(!stash || SvTYPE(stash) != SVt_PVHV)) {
-        OP_UNSTEAL(OP_METHOD_NAMED);
-    }
-
+    SV* meth;
     CV* cv = NULL;
-    GV* gv;
-    SV* meth = cSVOPx_sv(PL_op);
+    U32 hash;
+
+    if (optype == OP_METHOD) {
+        meth = TOPs;
+        if (SvROK(meth)) {
+            SV* const rmeth = SvRV(meth);
+            if (SvTYPE(rmeth) == SVt_PVCV) {
+                cv = (CV*)rmeth; /* undef stash? */
+                goto gotcv;
+            }
+        }
+        hash = 0;
+
+        if (UNLIKELY(!stash || SvTYPE(stash) != SVt_PVHV)) {
+            OP_UNSTEAL(optype);
+        }
+
+    } else if (optype == OP_METHOD_NAMED) {
+        /* SvTYPE comes only from 5.22, but execute it everywhere nevertheless */
+        if (UNLIKELY(!stash || SvTYPE(stash) != SVt_PVHV)) {
+            OP_UNSTEAL(optype);
+        }
+
+        meth = cSVOPx_sv(PL_op);
 
 #ifndef GV_CACHE_ONLY
-    const U32 hash = SvSHARED_HASH(meth); /* OP_METHOD doesn't have hash and skips this, but only below 5.22 */
+        hash = SvSHARED_HASH(meth);
 #else
-    const U32 hash = 0;
+        hash = 0;
 #endif
-    HE* he = hv_fetch_ent(stash, meth, 0, hash);
-    if (he) {
-        gv = (GV*)(HeVAL(he));
+    }
+
+    HE* he; /* to allow 'goto' to jump over this */
+    if ((he = hv_fetch_ent(stash, meth, 0, hash))) {
+        GV* gv = (GV*)(HeVAL(he));
         if (isGV(gv) && GvCV(gv) && (!GvCVGEN(gv) || GvCVGEN(gv) == (PL_sub_generation + HvMROMETA(stash)->cache_gen))) {
             cv = GvCV(gv);
         }
     }
 
     if (UNLIKELY(!cv)) {
-        gv = gv_fetchmethod_sv_flags(stash, meth, GV_AUTOLOAD|GV_CROAK);
+        GV* gv = gv_fetchmethod_sv_flags(stash, meth, GV_AUTOLOAD|GV_CROAK);
         assert(gv);
 
         cv = isGV(gv) ? GvCV(gv) : (CV*)gv;
         assert(cv);
     }
 
+gotcv:
     if (LIKELY(CvXSUB(cv) == (XSUBADDR_t)&CAIXS_entersub_wrapper<type>)) {
         assert(CvISXSUB(cv));
+
+        if (optype == OP_METHOD) {--SP; PUTBACK; }
+
         CAIXS_accessor<type>(aTHX_ SP, cv, stash);
+
         return PL_op->op_next->op_next;
 
     } else {
         /* we could also lift off CAIXS_entersub here, but that's a one-time action, so let it fail */
-        OP_UNSTEAL(OP_METHOD_NAMED);
+        OP_UNSTEAL(optype);
     }
 }
 
@@ -203,6 +233,7 @@ CAIXS_install_entersub(pTHX) {
     */
 
     OP* op = PL_op;
+
     if ((op->op_spare & 1) != 1 && op->op_ppaddr == PL_ppaddr[OP_ENTERSUB] && optimize_entersub) {
         op->op_spare |= 1;
         op->op_ppaddr = &CAIXS_entersub<type>;
@@ -212,11 +243,15 @@ CAIXS_install_entersub(pTHX) {
         if (LIKELY(methop != NULL)) {   /* such op can be created by call_sv(G_METHOD_NAMED) */
             while (methop->op_sibling) { methop = methop->op_sibling; }
 
-            if (methop->op_next == op && methop->op_type == OP_METHOD_NAMED && methop->op_ppaddr == PL_ppaddr[OP_METHOD_NAMED]) {
-                methop->op_ppaddr = &CAIXS_opmethod_wrapper<type>;
+            if (methop->op_next == op) {
+                if (methop->op_type == OP_METHOD_NAMED && methop->op_ppaddr == PL_ppaddr[OP_METHOD_NAMED]) {
+                    methop->op_ppaddr = &CAIXS_opmethod_wrapper<type, OP_METHOD_NAMED>;
+                } else if (methop->op_type == OP_METHOD && methop->op_ppaddr == PL_ppaddr[OP_METHOD]) {
+                    methop->op_ppaddr = &CAIXS_opmethod_wrapper<type, OP_METHOD>;
+                }
             }
         }
-#endif
+#endif /* OPTIMIZE_OPMETHOD */
     }
 }
 
