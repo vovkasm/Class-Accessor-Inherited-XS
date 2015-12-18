@@ -166,22 +166,31 @@ CAIXS_entersub(pTHX) {
 
     CV* sv = (CV*)TOPs;
 
-    /* some older gcc's can't deduce correct function - have to add explicit cast  */
-    if (sv && (SvTYPE(sv) == SVt_PVCV) && (CvXSUB(sv) == (XSUBADDR_t)&CAIXS_entersub_wrapper<type>)) {
-        /*
-            Assert against future XPVCV layout change - as for now, xcv_xsub shares space with xcv_root
-            which are both pointers, so address check is enough, and there's no need to look into op_flags for CvISXSUB.
-        */
-        assert(CvISXSUB(sv));
+    if (LIKELY(sv != NULL)) {
+        if (UNLIKELY(SvTYPE(sv) != SVt_PVCV)) {
+            /* can('acc')->() or (\&acc)->()  */
 
-        POPs; PUTBACK;
-        CAIXS_accessor<type>(aTHX_ SP, sv, NULL);
+            if (LIKELY(SvROK(sv))) sv = (CV*)SvRV(sv);
+            if (UNLIKELY(SvTYPE(sv) != SVt_PVCV)) OP_UNSTEAL(OP_ENTERSUB);
+        }
 
-        return NORMAL;
+        /* some older gcc's can't deduce correct function - have to add explicit cast  */
+        if (LIKELY(CvXSUB(sv) == (XSUBADDR_t)&CAIXS_entersub_wrapper<type>)) {
+            /*
+                Assert against future XPVCV layout change - as for now, xcv_xsub shares space with xcv_root
+                which are both pointers, so address check is enough, and there's no need to look into op_flags for CvISXSUB.
+            */
+            assert(CvISXSUB(sv));
 
-    } else {
-        OP_UNSTEAL(OP_ENTERSUB);
+            POPs; PUTBACK;
+            CAIXS_accessor<type>(aTHX_ SP, sv, NULL);
+
+            return NORMAL;
+        }
+
     }
+
+    OP_UNSTEAL(OP_ENTERSUB);
 }
 
 template <AccessorTypes type> inline
