@@ -1,5 +1,8 @@
 Revision history for Class::Accessor::Inherited::XS.
 
+0.18 Mon Dec 21 02:17:37 MSK 2015
+    - hijack OP_METHOD in addition to OP_METHOD_NAMED
+
 0.17 Fri Dec 18 03:21:05 MSK 2015
     - fix coredump when accessors were called through subref
     - optimize subref call case (for DBIx::Class)

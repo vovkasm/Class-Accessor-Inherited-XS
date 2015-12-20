@@ -5,7 +5,7 @@ use warnings;
 
 use Carp ();
 
-our $VERSION = '0.17';
+our $VERSION = '0.18';
 our $PREFIX  = '__cag_';
 
 require XSLoader;
