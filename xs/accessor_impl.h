@@ -89,9 +89,9 @@ CAIXS_opmethod_wrapper(pTHX) {
     HV* stash = NULL;
 
     /*
-        this block isn't required for the 'goto gotcv' case below
-        but skipping it (or moving above) will make unstealing there impossible
-        thus requiring additional check in the 'fast' case, and subref is a fail-case anyway most of the times
+        this block isn't required for the 'goto gotcv' case, but skipping it
+        (or swapping those blocks) will make unstealing inside 'goto gotcv' block impossible,
+        thus requiring additional check in the fast case, and subref is a failure anyway most of the times
     */
 #ifndef GV_CACHE_ONLY
     if (LIKELY(self != NULL)) {
@@ -131,22 +131,13 @@ CAIXS_opmethod_wrapper(pTHX) {
             SV* const rmeth = SvRV(meth);
             if (SvTYPE(rmeth) == SVt_PVCV) {
                 cv = (CV*)rmeth;
-                goto gotcv;
+                goto gotcv; /* we don't care about the 'stash' var here */
             }
-        }
-
-        if (UNLIKELY(!stash || SvTYPE(stash) != SVt_PVHV)) {
-            OP_UNSTEAL(optype);
         }
 
         hash = 0;
 
     } else if (optype == OP_METHOD_NAMED) {
-        /* SvTYPE comes only from 5.22, but execute it everywhere nevertheless */
-        if (UNLIKELY(!stash || SvTYPE(stash) != SVt_PVHV)) {
-            OP_UNSTEAL(optype);
-        }
-
         meth = cSVOPx_sv(PL_op);
 
 #ifndef GV_CACHE_ONLY
@@ -154,6 +145,11 @@ CAIXS_opmethod_wrapper(pTHX) {
 #else
         hash = 0;
 #endif
+    }
+
+    /* SvTYPE check appeared only since 5.22, but execute it for all perls nevertheless */
+    if (UNLIKELY(!stash || SvTYPE(stash) != SVt_PVHV)) {
+        OP_UNSTEAL(optype);
     }
 
     HE* he; /* to allow 'goto' to jump over this */
@@ -183,7 +179,10 @@ gotcv:
         return PL_op->op_next->op_next;
 
     } else {
-        /* we could also lift off CAIXS_entersub here, but that's a one-time action, so let it fail */
+        /*
+            we could also lift off CAIXS_entersub optimization here, but that's a one-time action,
+            so let it fail on it's own
+        */
         OP_UNSTEAL(optype);
     }
 }
@@ -290,7 +289,7 @@ CAIXS_accessor<PrivateClass>(pTHX_ SV** SP, CV* cv, HV* stash) {
     shared_keys* keys = (shared_keys*)CAIXS_find_keys(cv);
 
     if (items > 1) {
-        SP -= items; /* no need for items == 1 case */
+        SP -= items; /* no need in the 'items == 1' case */
 
         sv_setsv(keys->storage, *(SP+2));
         PUSHs(keys->storage);
@@ -309,7 +308,7 @@ CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
     dAXMARK; dITEMS;
     SP -= items;
 
-    if (!items) croak("Usage: $obj->accessor or __PACKAGE__->accessor");
+    if (UNLIKELY(!items)) croak("Usage: $obj->accessor or __PACKAGE__->accessor");
 
     CAIXS_install_entersub<type>(aTHX);
     shared_keys* keys = CAIXS_find_keys(cv);
@@ -318,7 +317,7 @@ CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
     if (SvROK(self)) {
         HV* obj = (HV*)SvRV(self);
         if (SvTYPE((SV*)obj) != SVt_PVHV) {
-            croak("Inherited accessors can only work with object instances that is hash-based");
+            croak("Inherited accessors work only with hash-based objects");
         }
 
         if (items > 1) {
@@ -349,7 +348,7 @@ CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
 
     } else {
         GV* acc_gv = CvGV(cv);
-        if (!acc_gv) croak("Can't have pkg accessor in anon sub");
+        if (!acc_gv) croak("Can't have package accessor in anon sub");
         stash = GvSTASH(acc_gv);
 
         const char* stash_name = HvNAME(stash);
@@ -381,7 +380,7 @@ CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
             } else {
                 if (!hv_store_ent(stash, keys->pkg_key, (SV*)glob, 0)) {
                     SvREFCNT_dec_NN(glob);
-                    croak("Can't add a glob to package");
+                    croak("Couldn't add a glob to package");
                 }
             }
         }
@@ -405,8 +404,8 @@ CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
 
     AV* supers = mro_get_linear_isa(stash);
     /*
-        First entry in 'mro_get_linear_isa' list is a 'stash' itself.
-        It's already been tested, so ajust counter and iterator to skip over it.
+        First entry in the 'mro_get_linear_isa' list is the 'stash' itself.
+        It's already been tested, so ajust both counter and iterator to skip over it.
     */
     SSize_t fill     = AvFILLp(supers);
     SV** supers_list = AvARRAY(supers);
