@@ -130,15 +130,16 @@ CAIXS_opmethod_wrapper(pTHX) {
         if (SvROK(meth)) {
             SV* const rmeth = SvRV(meth);
             if (SvTYPE(rmeth) == SVt_PVCV) {
-                cv = (CV*)rmeth; /* undef stash? */
+                cv = (CV*)rmeth;
                 goto gotcv;
             }
         }
-        hash = 0;
 
         if (UNLIKELY(!stash || SvTYPE(stash) != SVt_PVHV)) {
             OP_UNSTEAL(optype);
         }
+
+        hash = 0;
 
     } else if (optype == OP_METHOD_NAMED) {
         /* SvTYPE comes only from 5.22, but execute it everywhere nevertheless */
