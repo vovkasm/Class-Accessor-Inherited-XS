@@ -9,7 +9,7 @@ use strict;
     sub new { return bless {}, shift }
     sub foo { 42 }
 
-    Jopa->mk_inherited_accessors(qw/a b/);
+    Jopa->mk_inherited_accessors(qw/a/);
 }
 
 {
@@ -41,29 +41,13 @@ for (1..3) {
     is($o->a(6), 6);
 }
 
-$o->{b} = 12;
-my @res = (6,12,12,12,6,12,6);
-for (qw/a b b b a b a/) {
-    is($o->$_, shift @res);
-}
-
-@res = (12,6,42,12,6,42,6);
-for (qw/b a foo b a foo a/) {
-    is($o->$_, shift @res);
-}
-
-@res = (42,12,42,6,12,42);
-for (qw/foo b foo a b foo/) {
-    is($o->$_, shift @res);
-}
-
 my $u = new Jopa;
 Jopa->a(40);
 $u->a(50);
 
 my $n = new Other;
 
-@res = (6, 6, 50, 6, 123, 6);
+my @res = (6, 6, 50, 6, 123, 6);
 for ($o, $o, $u, $o, $n, $o) {
     is($_->a, shift @res);
 }

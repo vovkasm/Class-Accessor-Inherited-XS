@@ -1,0 +1,58 @@
+use Test::More;
+use strict;
+use base qw/Class::Accessor::Inherited::XS/;
+
+sub new { return bless {}, shift }
+sub foo { 42 }
+
+__PACKAGE__->mk_inherited_accessors(qw/a b/);
+
+my $o = __PACKAGE__->new;
+$o->{a} = 6;
+$o->{b} = 12;
+
+my @res = (6,12,12,12,6,12,6);
+for (qw/a b b b a b a/) {
+    is($o->$_, shift @res);
+}
+
+@res = (12,6,42,12,6,42,6);
+for (qw/b a foo b a foo a/) {
+    is($o->$_, shift @res);
+}
+
+@res = (42,12,42,6,12,42);
+for (qw/foo b foo a b foo/) {
+    is($o->$_, shift @res);
+}
+
+my $a_ref = $o->can('a');
+
+@res = (6,12,6,12);
+for ('a', 'b', $a_ref, 'b') {
+    is($o->$_, shift @res);
+}
+
+__PACKAGE__->a(37);
+
+@res = (undef,37,37,6);
+for ('Jopa', __PACKAGE__, undef, $o) {
+    is($_->$a_ref, shift @res);
+}
+
+@res = (6,42,6,12);
+for ($a_ref, \&foo, $a_ref, 'b') {
+    is($o->$_, shift @res);
+}
+
+@res = (37,37,6);
+my $a_val = 'a';
+for (__PACKAGE__, __PACKAGE__, \12, $o) {
+    eval{ is($_->$a_val, shift @res) };
+}
+
+for (qw/a a a/) {
+    is($o->$_(7), 7);
+}
+
+done_testing;
