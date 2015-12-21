@@ -61,15 +61,13 @@ CAIXS_install_class_accessor(pTHX_ SV* full_name, bool is_varclass) {
     shared_keys* payload = CAIXS_install_accessor<PrivateClass>(aTHX_ full_name);
 
     if (is_varclass) {
-        /*
-            We take ownership on this glob slot, so if someone changes the glob - they're in trouble
-        */
         GV* gv = gv_fetchsv(full_name, GV_ADD, SVt_PV);
         assert(gv);
 
         payload->storage = GvSV(gv);
         assert(payload->storage);
 
+        /* We take ownership on this glob slot, so if someone changes the glob - they're in trouble */
         SvREFCNT_inc_simple_void_NN(payload->storage);
 
     } else {
