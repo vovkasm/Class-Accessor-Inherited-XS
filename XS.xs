@@ -89,8 +89,12 @@ CAIXS_install_class_accessor(pTHX_ SV* full_name, bool is_varclass) {
     SV** keys_array = CAIXS_payload_init(aTHX_ cv, 0);
 
     if (is_varclass) {
+        /*
+            We take ownership on this glob slot, so if someone changes the glob - they're in trouble
+        */
         keys_array[0] = get_sv(full_name_buf, GV_ADD);
         SvREFCNT_inc_simple_void_NN(keys_array[0]);
+
     } else {
         keys_array[0] = newSV(0);
     }
