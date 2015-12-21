@@ -44,3 +44,5 @@ t/lib/SuperInheritedGroups.pm
 XS.xs
 xs/compat.h
 xs/accessor_impl.h
+xs/installer.h
+xs/types.h

@@ -2,27 +2,6 @@
 #define __INHERITED_XS_IMPL_H_
 
 /*
-    av_extend() always gives us at least 4 elements, so don't bother with
-    saving memory for need_cb = false version until this struct grows larger
-*/
-
-struct shared_keys {
-    union {
-        SV* hash_key;
-        SV* storage;
-    };
-    SV* pkg_key;
-    SV* read_cb;
-    SV* write_cb;
-};
-
-enum AccessorTypes {
-    Inherited,
-    InheritedCb,
-    PrivateClass
-};
-
-/*
     These macroses have the following constraints:
         - SP is at the start of the args list
         - afterwards SP may become invalid, so don't touch it

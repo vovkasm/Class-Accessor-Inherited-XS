@@ -11,68 +11,35 @@ static bool optimize_entersub = 1;
 
 #include "xs/compat.h"
 #include "ppport.h"
+
+#include "xs/types.h"
 #include "xs/accessor_impl.h"
-
-inline void
-CAIXS_payload_attach(pTHX_ CV* cv, AV* keys_av) {
-#ifndef MULTIPLICITY
-    CvXSUBANY(cv).any_ptr = (void*)AvARRAY(keys_av);
-#endif
-
-    sv_magicext((SV*)cv, (SV*)keys_av, PERL_MAGIC_ext, &sv_payload_marker, NULL, 0);
-    SvREFCNT_dec_NN((SV*)keys_av);
-    SvRMAGICAL_off((SV*)cv);
-}
-
-inline shared_keys*
-CAIXS_payload_init(pTHX_ CV* cv, int alloc_keys) {
-    AV* keys_av = newAV();
-
-    av_extend(keys_av, alloc_keys);
-    AvFILLp(keys_av) = alloc_keys;
-
-    CAIXS_payload_attach(aTHX_ cv, keys_av);
-    return (shared_keys*)AvARRAY(keys_av);
-}
-
-inline CV*
-CAIXS_install_cv(pTHX_ SV* full_name, XSUBADDR_t accessor) {
-    STRLEN len;
-
-    const char* full_name_buf = SvPV_const(full_name, len);
-#ifdef CAIX_BINARY_UNSAFE
-    if (strnlen(full_name_buf, len) < len) {
-        croak("Attempted to install binary accessor, but they're not supported on this perl");
-    }
-#endif
-
-    CV* cv = Perl_newXS_len_flags(aTHX_ full_name_buf, len, accessor, __FILE__, NULL, NULL, SvUTF8(full_name));
-    if (!cv) croak("Can't install XS accessor");
-
-    return cv;
-}
+#include "xs/installer.h"
 
 static void
 CAIXS_install_inherited_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key, SV* read_cb, SV* write_cb) {
-    CV* cv;
+    shared_keys* payload;
     bool need_cb = read_cb && write_cb;
 
     if (need_cb) {
-        cv = CAIXS_install_cv(aTHX_ full_name, &CAIXS_entersub_wrapper<InheritedCb>);
-    } else {
-        cv = CAIXS_install_cv(aTHX_ full_name,&CAIXS_entersub_wrapper<Inherited>);
+        assert(pkg_key != NULL);
+        payload = CAIXS_install_accessor<InheritedCb>(aTHX_ full_name);
+
+    } else if (pkg_key != NULL) {
+        payload = CAIXS_install_accessor<Inherited>(aTHX_ full_name);
+
     }
 
     STRLEN len;
     const char* hash_key_buf = SvPV_const(hash_key, len);
     SV* s_hash_key = newSVpvn_share(hash_key_buf, SvUTF8(hash_key) ? -(I32)len : (I32)len, 0);
-
-    const char* pkg_key_buf = SvPV_const(pkg_key, len);
-    SV* s_pkg_key = newSVpvn_share(pkg_key_buf, SvUTF8(pkg_key) ? -(I32)len : (I32)len, 0);
-
-    shared_keys* payload = CAIXS_payload_init(aTHX_ cv, 3);
     payload->hash_key = s_hash_key;
-    payload->pkg_key = s_pkg_key;
+
+    if (pkg_key != NULL) {
+        const char* pkg_key_buf = SvPV_const(pkg_key, len);
+        SV* s_pkg_key = newSVpvn_share(pkg_key_buf, SvUTF8(pkg_key) ? -(I32)len : (I32)len, 0);
+        payload->pkg_key = s_pkg_key;
+    }
 
     if (need_cb) {
         if (SvROK(read_cb) && SvTYPE(SvRV(read_cb)) == SVt_PVCV) {
@@ -80,6 +47,7 @@ CAIXS_install_inherited_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key,
         } else {
             payload->read_cb = NULL;
         }
+
         if (SvROK(write_cb) && SvTYPE(SvRV(write_cb)) == SVt_PVCV) {
             payload->write_cb = SvREFCNT_inc_NN(SvRV(write_cb));
         } else {
@@ -90,14 +58,18 @@ CAIXS_install_inherited_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key,
 
 static void
 CAIXS_install_class_accessor(pTHX_ SV* full_name, bool is_varclass) {
-    CV* cv = CAIXS_install_cv(aTHX_ full_name, &CAIXS_entersub_wrapper<PrivateClass>);
-    shared_keys* payload = CAIXS_payload_init(aTHX_ cv, 0);
+    shared_keys* payload = CAIXS_install_accessor<PrivateClass>(aTHX_ full_name);
 
     if (is_varclass) {
         /*
             We take ownership on this glob slot, so if someone changes the glob - they're in trouble
         */
-        payload->storage = get_sv(full_name_buf, GV_ADD);
+        GV* gv = gv_fetchsv(full_name, GV_ADD, SVt_PV);
+        assert(gv);
+
+        payload->storage = GvSV(gv);
+        assert(payload->storage);
+
         SvREFCNT_inc_simple_void_NN(payload->storage);
 
     } else {
