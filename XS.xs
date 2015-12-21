@@ -24,7 +24,7 @@ CAIXS_payload_attach(pTHX_ CV* cv, AV* keys_av) {
     SvRMAGICAL_off((SV*)cv);
 }
 
-inline SV**
+inline shared_keys*
 CAIXS_payload_init(pTHX_ CV* cv, int alloc_keys) {
     AV* keys_av = newAV();
 
@@ -32,7 +32,7 @@ CAIXS_payload_init(pTHX_ CV* cv, int alloc_keys) {
     AvFILLp(keys_av) = alloc_keys;
 
     CAIXS_payload_attach(aTHX_ cv, keys_av);
-    return AvARRAY(keys_av);
+    return (shared_keys*)AvARRAY(keys_av);
 }
 
 static void
@@ -62,20 +62,20 @@ CAIXS_install_inherited_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key,
     const char* pkg_key_buf = SvPV_const(pkg_key, len);
     SV* s_pkg_key = newSVpvn_share(pkg_key_buf, SvUTF8(pkg_key) ? -(I32)len : (I32)len, 0);
 
-    SV** keys_array = CAIXS_payload_init(aTHX_ cv, 3);
-    keys_array[0] = s_hash_key;
-    keys_array[1] = s_pkg_key;
+    shared_keys* payload = CAIXS_payload_init(aTHX_ cv, 3);
+    payload->hash_key = s_hash_key;
+    payload->pkg_key = s_pkg_key;
 
     if (need_cb) {
         if (SvROK(read_cb) && SvTYPE(SvRV(read_cb)) == SVt_PVCV) {
-            keys_array[2] = SvREFCNT_inc_NN(SvRV(read_cb));
+            payload->read_cb = SvREFCNT_inc_NN(SvRV(read_cb));
         } else {
-            keys_array[2] = NULL;
+            payload->read_cb = NULL;
         }
         if (SvROK(write_cb) && SvTYPE(SvRV(write_cb)) == SVt_PVCV) {
-            keys_array[3] = SvREFCNT_inc_NN(SvRV(write_cb));
+            payload->write_cb = SvREFCNT_inc_NN(SvRV(write_cb));
         } else {
-            keys_array[3] = NULL;
+            payload->write_cb = NULL;
         }
     }
 }
@@ -86,17 +86,17 @@ CAIXS_install_class_accessor(pTHX_ SV* full_name, bool is_varclass) {
     CV* cv = newXS_flags(full_name_buf, &CAIXS_entersub_wrapper<PrivateClass>, __FILE__, NULL, SvUTF8(full_name));
     if (!cv) croak("Can't install XS accessor");
 
-    SV** keys_array = CAIXS_payload_init(aTHX_ cv, 0);
+    shared_keys* payload = CAIXS_payload_init(aTHX_ cv, 0);
 
     if (is_varclass) {
         /*
             We take ownership on this glob slot, so if someone changes the glob - they're in trouble
         */
-        keys_array[0] = get_sv(full_name_buf, GV_ADD);
-        SvREFCNT_inc_simple_void_NN(keys_array[0]);
+        payload->storage = get_sv(full_name_buf, GV_ADD);
+        SvREFCNT_inc_simple_void_NN(payload->storage);
 
     } else {
-        keys_array[0] = newSV(0);
+        payload->storage = newSV(0);
     }
 }
 
