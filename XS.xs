@@ -35,27 +35,35 @@ CAIXS_payload_init(pTHX_ CV* cv, int alloc_keys) {
     return (shared_keys*)AvARRAY(keys_av);
 }
 
-static void
-CAIXS_install_inherited_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key, SV* read_cb, SV* write_cb) {
+inline CV*
+CAIXS_install_cv(pTHX_ SV* full_name, XSUBADDR_t accessor) {
     STRLEN len;
 
     const char* full_name_buf = SvPV_const(full_name, len);
-    bool need_cb = read_cb && write_cb;
-
 #ifdef CAIX_BINARY_UNSAFE
     if (strnlen(full_name_buf, len) < len) {
         croak("Attempted to install binary accessor, but they're not supported on this perl");
     }
 #endif
 
-    CV* cv;
-    if (need_cb) {
-        cv = Perl_newXS_len_flags(aTHX_ full_name_buf, len, &CAIXS_entersub_wrapper<InheritedCb>, __FILE__, NULL, NULL, SvUTF8(full_name));
-    } else {
-        cv = Perl_newXS_len_flags(aTHX_ full_name_buf, len, &CAIXS_entersub_wrapper<Inherited>, __FILE__, NULL, NULL, SvUTF8(full_name));
-    }
+    CV* cv = Perl_newXS_len_flags(aTHX_ full_name_buf, len, accessor, __FILE__, NULL, NULL, SvUTF8(full_name));
     if (!cv) croak("Can't install XS accessor");
 
+    return cv;
+}
+
+static void
+CAIXS_install_inherited_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key, SV* read_cb, SV* write_cb) {
+    CV* cv;
+    bool need_cb = read_cb && write_cb;
+
+    if (need_cb) {
+        cv = CAIXS_install_cv(aTHX_ full_name, &CAIXS_entersub_wrapper<InheritedCb>);
+    } else {
+        cv = CAIXS_install_cv(aTHX_ full_name,&CAIXS_entersub_wrapper<Inherited>);
+    }
+
+    STRLEN len;
     const char* hash_key_buf = SvPV_const(hash_key, len);
     SV* s_hash_key = newSVpvn_share(hash_key_buf, SvUTF8(hash_key) ? -(I32)len : (I32)len, 0);
 
@@ -82,10 +90,7 @@ CAIXS_install_inherited_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key,
 
 static void
 CAIXS_install_class_accessor(pTHX_ SV* full_name, bool is_varclass) {
-    const char* full_name_buf = SvPV_nolen(full_name);
-    CV* cv = newXS_flags(full_name_buf, &CAIXS_entersub_wrapper<PrivateClass>, __FILE__, NULL, SvUTF8(full_name));
-    if (!cv) croak("Can't install XS accessor");
-
+    CV* cv = CAIXS_install_cv(aTHX_ full_name, &CAIXS_entersub_wrapper<PrivateClass>);
     shared_keys* payload = CAIXS_payload_init(aTHX_ cv, 0);
 
     if (is_varclass) {
