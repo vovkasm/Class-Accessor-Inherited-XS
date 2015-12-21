@@ -161,7 +161,7 @@ a parent class with values set in childs or object instances. Generated accessor
 L<Class::Accessor::Grouped> generated ones.
 
 Since this module focuses primary on speed, it provides no means to have your own per-class
-getters/setters logic (like overriding L<get_inherited>/L<set_inherited> in L<Class::Accessor::Grouped>),
+getters/setters logic (like overriding L<Class::Accessor::Grouped/get_inherited> / L<Class::Accessor::Grouped/set_inherited>),
 but it allows you to register a single get/set callback per accessor type.
 
 It also provides two types of non-inherited accessors, 'class' and 'varclass', which give you values
