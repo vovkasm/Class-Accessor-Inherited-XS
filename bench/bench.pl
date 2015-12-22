@@ -6,6 +6,7 @@ use strict;
 use Benchmark qw/cmpthese/;
 
 sub __read_caxsi {}
+Class::Accessor::Inherited::XS::install_object_accessor("CCC::caixo", "caixo");
 Class::Accessor::Inherited::XS::install_class_accessor("CCC::caixc", 0);
 Class::Accessor::Inherited::XS::install_inherited_cb_accessor("CCC::caxsi", "caxsi", "__cag_caxsi", \&__read_caxsi, undef);
 
@@ -13,6 +14,7 @@ my $o = CCC->new;
 $o->a(3);
 $o->caixc(42);
 $o->caxsi(43);
+$o->caixo(44);
 
 my $o2 = CCC2->new;
 $o2->a(4);
@@ -32,7 +34,7 @@ cmpthese(
 #        pkg_set_cag       => sub { AAA2->a(42) },
 #        class_set_caix    => sub { $o->caixc(42) },
         class_caix        => sub { $o->caixc },
-        obj_caix          => sub { $o->a },
+        obj_caix          => sub { $o->caixo },
         obj_caix_cb       => sub { $o->caxsi },
         obj_cag           => sub { $o2->a },
         obj_cxa           => sub { $o2->simple },
