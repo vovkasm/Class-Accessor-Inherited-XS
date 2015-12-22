@@ -36,6 +36,9 @@ sub import {
         } elsif (ref($accessors) eq 'ARRAY') {
             $installer->($class, $_, $_) for @$accessors;
 
+        } elsif (!ref($accessors)) {
+            $installer->($class, $accessors, $accessors);
+
         } else {
             Carp::confess("Can't understand format for '$type' accessors initializer");
         }
@@ -146,7 +149,7 @@ Class::Accessor::Inherited::XS - Fast XS inherited and class accessors
   use Class::Accessor::Inherited::XS 
       inherited => [qw/foo bar/], # inherited accessors with key names equal to accessor names
       class     => [qw/baz/],     # an anonymous non-inherited accessor for __PACKAGE__
-      varclass  => [qw/boo/],     # non-inherited accessor for __PACKAGE__,  aliased with 'our $boo' variable
+      varclass  => 'boo',         # non-inherited accessor for __PACKAGE__,  aliased with 'our $boo' variable
   ;
   
   use Class::Accessor::Inherited::XS { # optional braces
@@ -155,7 +158,7 @@ Class::Accessor::Inherited::XS - Fast XS inherited and class accessors
         foo => 'foo_key',
       },
       class     => ['baz'],
-      varclass  => ['boo'],
+      varclass  => 'boo',
   };
   
   #or in a Class::Accessor::Grouped-like fashion
