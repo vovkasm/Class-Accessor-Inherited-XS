@@ -2,13 +2,14 @@
 #define __INHERITED_XS_IMPL_H_
 
 /*
-    These macroses have the following constraints:
+    These macroses impose the following rules:
         - SP is at the start of the args list
-        - afterwards SP may become invalid, so don't touch it
+        - SP may become invalid afterwards, so don't touch it
         - PL_stack_sp is updated when needed
 
-    The latter may be not that obvious, but it's a result of a callback doing stack work for us.
-    But all non-essential updates are not performed after callbacks.
+    The latter may be not that obvious, but it's a result of a callback doing
+    dirty stack work for us. Note that only essential cleanup is done
+    after call_sv().
 */
 
 #define CALL_READ_CB(result, cb)        \
@@ -68,9 +69,9 @@ CAIXS_opmethod_wrapper(pTHX) {
     HV* stash = NULL;
 
     /*
-        this block isn't required for the 'goto gotcv' case, but skipping it
-        (or swapping those blocks) will make unstealing inside 'goto gotcv' block impossible,
-        thus requiring additional check in the fast case, and subref is a failure anyway most of the times
+        This block isn't required for the 'goto gotcv' case, but skipping it
+        (or swapping those blocks) makes unstealing inside 'goto gotcv' block impossible,
+        thus requiring additional check in the fast case, which is to be avoided.
     */
 #ifndef GV_CACHE_ONLY
     if (LIKELY(self != NULL)) {
@@ -110,7 +111,7 @@ CAIXS_opmethod_wrapper(pTHX) {
             SV* const rmeth = SvRV(meth);
             if (SvTYPE(rmeth) == SVt_PVCV) {
                 cv = (CV*)rmeth;
-                goto gotcv; /* we don't care about the 'stash' var here */
+                goto gotcv; /* We don't care about the 'stash' var here */
             }
         }
 
@@ -131,7 +132,7 @@ CAIXS_opmethod_wrapper(pTHX) {
         OP_UNSTEAL(optype);
     }
 
-    HE* he; /* to allow 'goto' to jump over this */
+    HE* he; /* To allow 'goto' to jump over this */
     if ((he = hv_fetch_ent(stash, meth, 0, hash))) {
         GV* gv = (GV*)(HeVAL(he));
         if (isGV(gv) && GvCV(gv) && (!GvCVGEN(gv) || GvCVGEN(gv) == (PL_sub_generation + HvMROMETA(stash)->cache_gen))) {
@@ -159,7 +160,7 @@ gotcv:
 
     } else {
         /*
-            we could also lift off CAIXS_entersub optimization here, but that's a one-time action,
+            We could also lift off CAIXS_entersub optimization here, but that's a one-time action,
             so let it fail on it's own
         */
         OP_UNSTEAL(optype);
@@ -183,7 +184,7 @@ CAIXS_entersub(pTHX) {
             if (UNLIKELY(SvTYPE(sv) != SVt_PVCV)) OP_UNSTEAL(OP_ENTERSUB);
         }
 
-        /* some older gcc's can't deduce correct function - have to add explicit cast  */
+        /* Some older gcc's can't deduce correct function - have to add explicit cast  */
         if (LIKELY(CvXSUB(sv) == (XSUBADDR_t)&CAIXS_entersub_wrapper<type>)) {
             /*
                 Assert against future XPVCV layout change - as for now, xcv_xsub shares space with xcv_root
@@ -219,7 +220,7 @@ CAIXS_install_entersub(pTHX) {
 
 #ifdef OPTIMIZE_OPMETHOD
         OP* methop = cUNOPx(op)->op_first;
-        if (LIKELY(methop != NULL)) {   /* such op can be created by call_sv(G_METHOD_NAMED) */
+        if (LIKELY(methop != NULL)) {   /* Such op can be created by call_sv(G_METHOD_NAMED) */
             while (methop->op_sibling) { methop = methop->op_sibling; }
 
             if (methop->op_next == op) {
@@ -268,7 +269,7 @@ CAIXS_accessor<PrivateClass>(pTHX_ SV** SP, CV* cv, HV* stash) {
     shared_keys* keys = (shared_keys*)CAIXS_find_keys(cv);
 
     if (items > 1) {
-        SP -= items; /* no need in the 'items == 1' case */
+        SP -= items; /* No need in the 'items == 1' case */
 
         sv_setsv(keys->storage, *(SP+2));
         PUSHs(keys->storage);
@@ -323,10 +324,10 @@ CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
 
     if (type == ObjectOnly) {
         croak("Can't use object accessor on non-object");
-        return; /* gcc detects unreachability even with croak(), but it won't hurt */
+        return; /* gcc detects unreachability even with bare croak(), but it won't hurt */
     }
 
-    /* Couldn't find value in object, so initiate a package lookup. */
+    /* Couldn't find value in the object, so initiate a package lookup. */
 
 #ifdef OPTIMIZE_OPMETHOD
     if (!stash) {
@@ -360,7 +361,7 @@ CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
             gv_init_sv(glob, stash, keys->pkg_key, 0);
 
             if (hent) {
-                /* there was just a stub instead of a full glob */
+                /* There was just a stub instead of the full glob */
                 SvREFCNT_inc_simple_void_NN((SV*)glob);
                 SvREFCNT_dec_NN(HeVAL(hent));
                 HeVAL(hent) = (SV*)glob;
