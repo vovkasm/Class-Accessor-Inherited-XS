@@ -313,8 +313,17 @@ CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
             if (hent) {
                 CALL_READ_CB(HeVAL(hent), keys->read_cb);
                 return;
+
+            } else if (type == ObjectOnly) {
+                CALL_READ_CB(&PL_sv_undef, keys->read_cb);
+                return;
             }
         }
+    }
+
+    if (type == ObjectOnly) {
+        croak("Can't use object accessor on non-object");
+        return; /* gcc detects unreachability even with croak(), but it won't hurt */
     }
 
     /* Couldn't find value in object, so initiate a package lookup. */

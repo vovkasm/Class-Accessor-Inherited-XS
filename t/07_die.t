@@ -8,6 +8,7 @@ use strict;
     use strict;
 
     Jopa->mk_inherited_accessors('foo');
+    Jopa->mk_object_accessors('bar');
 }
 
 sub exception (&) {
@@ -23,5 +24,7 @@ like exception {$arrobj->foo}, qr/hash-based/;
 
 my $scalarobj = bless \(my $z), 'Jopa';
 like exception {$scalarobj->foo}, qr/hash-based/;
+
+like exception {Jopa->bar}, qr/on non-object/;
 
 done_testing;

@@ -19,6 +19,7 @@ t/10_gparent_found.t
 t/11_empty_gv.t
 t/12_simple_class.t
 t/13_varclass.t
+t/14_object.t
 t/20_opcode_entersub.t
 t/21_opcode_method_named.t
 t/22_opcode_method.t

@@ -28,6 +28,8 @@ CAIXS_install_inherited_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key,
     } else if (pkg_key != NULL) {
         payload = CAIXS_install_accessor<Inherited>(aTHX_ full_name);
 
+    } else {
+        payload = CAIXS_install_accessor<ObjectOnly>(aTHX_ full_name);
     }
 
     STRLEN len;
@@ -85,6 +87,14 @@ BOOT:
 
     HV* stash = gv_stashpv("Class::Accessor::Inherited::XS", 0);
     newCONSTSUB(stash, "BINARY_UNSAFE", CAIX_BINARY_UNSAFE_RESULT);
+}
+
+void
+install_object_accessor(SV* full_name, SV* hash_key)
+PPCODE:
+{
+    CAIXS_install_inherited_accessor(aTHX_ full_name, hash_key, NULL, NULL, NULL);
+    XSRETURN_UNDEF;
 }
 
 void

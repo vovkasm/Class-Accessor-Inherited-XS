@@ -19,9 +19,10 @@ struct shared_keys {
 enum AccessorTypes {
     Inherited,
     InheritedCb,
-    PrivateClass
+    PrivateClass,
+    ObjectOnly
 };
 
-const int ALLOC_SIZE[] = {3, 3, 0}; /* for each AccessorTypes element */
+const int ALLOC_SIZE[] = {3, 3, 0, 0}; /* for each AccessorTypes element */
 
 #endif /* __INHERITED_XS_TYPES_H_ */

@@ -16,6 +16,7 @@ register_types(
     inherited => {installer => \&_mk_inherited_accessor},
     class     => {installer => \&_mk_class_accessor},
     varclass  => {installer => \&_mk_varclass_accessor},
+    object    => {installer => \&_mk_object_accessor},
 );
 
 sub import {
@@ -54,6 +55,11 @@ sub mk_class_accessors {
 sub mk_varclass_accessors {
     my $class = shift;
     mk_type_accessors($class, 'varclass', @_);
+}
+
+sub mk_object_accessors {
+    my $class = shift;
+    mk_type_accessors($class, 'object', @_);
 }
 
 sub mk_type_accessors {
@@ -119,6 +125,12 @@ sub _mk_varclass_accessor {
     my ($class, $name) = @_;
 
     install_class_accessor("${class}::${name}", 1);
+}
+
+sub _mk_object_accessor {
+    my ($class, $name, $field) = @_;
+
+    install_object_accessor("${class}::${name}", $field);
 }
 
 1;
