@@ -20,6 +20,7 @@ t/11_empty_gv.t
 t/12_simple_class.t
 t/13_varclass.t
 t/14_object.t
+t/15_constructor.t
 t/20_opcode_entersub.t
 t/21_opcode_method_named.t
 t/22_opcode_method.t
@@ -40,6 +41,7 @@ t/81_threads_anyptr.t
 t/90_leaktrace.t
 t/91_memleak.t
 t/92_leakcb.t
+t/93_leaknew.t
 t/lib/AccessorInstaller.pm
 t/lib/BaseInheritedGroups.pm
 t/lib/ExtraInheritedGroups.pm

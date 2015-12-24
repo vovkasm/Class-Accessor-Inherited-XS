@@ -20,9 +20,14 @@ enum AccessorTypes {
     Inherited,
     InheritedCb,
     PrivateClass,
-    ObjectOnly
+    ObjectOnly,
+    Constructor
 };
 
-const int ALLOC_SIZE[] = {3, 3, 0, 0}; /* for each AccessorTypes element */
+/*
+    - must have a value for each AccessorTypes element
+    - '-2' will croak in av_extend() and is used as a guard
+*/
+const int ALLOC_SIZE[] = {3, 3, 0, 0, -2};
 
 #endif /* __INHERITED_XS_TYPES_H_ */

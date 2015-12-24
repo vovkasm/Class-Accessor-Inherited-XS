@@ -69,7 +69,7 @@ CAIXS_install_class_accessor(pTHX_ SV* full_name, bool is_varclass) {
         payload->storage = GvSV(gv);
         assert(payload->storage);
 
-        /* We take ownership on this glob slot, so if someone changes the glob - they're in trouble */
+        /* We take ownership of this glob slot, so if someone changes the glob - they're in trouble */
         SvREFCNT_inc_simple_void_NN(payload->storage);
 
     } else {
@@ -118,6 +118,14 @@ install_class_accessor(SV* full_name, SV* is_varclass)
 PPCODE:
 {
     CAIXS_install_class_accessor(aTHX_ full_name, SvTRUE(is_varclass));
+    XSRETURN_UNDEF;
+}
+
+void
+install_constructor(SV* full_name)
+PPCODE:
+{
+    CAIXS_install_cv<Constructor>(aTHX_ full_name);
     XSRETURN_UNDEF;
 }
 

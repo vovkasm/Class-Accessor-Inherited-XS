@@ -258,6 +258,66 @@ CAIXS_find_keys(CV* cv) {
     return keys;
 }
 
+inline HV*
+CAIXS_find_stash(pTHX_ SV* self, CV* cv) {
+    HV* stash;
+
+    if (SvROK(self)) {
+        stash = SvSTASH(SvRV(self));
+
+    } else {
+        GV* acc_gv = CvGV(cv);
+        if (UNLIKELY(!acc_gv)) croak("Can't have package accessor in anon sub");
+        stash = GvSTASH(acc_gv);
+
+        const char* stash_name = HvNAME(stash);
+        const char* self_name = SvPV_nolen(self);
+        if (strcmp(stash_name, self_name) != 0) {
+            stash = gv_stashsv(self, GV_ADD);
+            if (UNLIKELY(!stash)) croak("Couldn't get required stash");
+        }
+    }
+
+    return stash;
+}
+
+template <> inline
+void
+CAIXS_accessor<Constructor>(pTHX_ SV** SP, CV* cv, HV* stash) {
+    dAXMARK; dITEMS;
+
+    CAIXS_install_entersub<Constructor>(aTHX);
+    if (UNLIKELY(!items)) croak("Usage: $obj->constructor or __PACKAGE__->constructor");
+
+    PL_stack_sp = ++MARK; /* PUTBACK */
+
+    if (!stash) stash = CAIXS_find_stash(aTHX_ *MARK, cv);
+    SV** ret = MARK++;
+
+    SV* self;
+    if (items == 2 && SvROK(*MARK) && SvTYPE(SvRV(*MARK)) == SVt_PVHV) {
+        self = *MARK;
+
+    } else if ((items & 1) == 0) {
+        croak("Odd number of elements in hash constructor");
+
+    } else {
+        HV* hash = newHV();
+
+        while (MARK < SP) {
+            SV* key = *MARK++;
+            /* Don't bother with retval here, as in pp_anonhash */
+            hv_store_ent(hash, key, newSVsv(*MARK++), 0);
+        }
+
+        self = sv_2mortal(newRV_noinc((SV*)hash));
+    }
+
+    sv_bless(self, stash);
+    *ret = self;
+    return;
+}
+
 template <> inline
 void
 CAIXS_accessor<PrivateClass>(pTHX_ SV** SP, CV* cv, HV* stash) {
@@ -282,6 +342,7 @@ CAIXS_accessor<PrivateClass>(pTHX_ SV** SP, CV* cv, HV* stash) {
     }
 }
 
+/* covers type = {Inherited, InheritedCb, ObjectOnly} */
 template <AccessorTypes type> inline
 void
 CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
@@ -329,27 +390,7 @@ CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
 
     /* Couldn't find value in the object, so initiate a package lookup. */
 
-#ifdef OPTIMIZE_OPMETHOD
-    if (!stash) {
-#endif
-    if (SvROK(self)) {
-        stash = SvSTASH(SvRV(self));
-
-    } else {
-        GV* acc_gv = CvGV(cv);
-        if (!acc_gv) croak("Can't have package accessor in anon sub");
-        stash = GvSTASH(acc_gv);
-
-        const char* stash_name = HvNAME(stash);
-        const char* self_name = SvPV_nolen(self);
-        if (strcmp(stash_name, self_name) != 0) {
-            stash = gv_stashsv(self, GV_ADD);
-            if (!stash) croak("Couldn't get required stash");
-        }
-    }
-#ifdef OPTIMIZE_OPMETHOD
-    }
-#endif
+    if (!stash) stash = CAIXS_find_stash(aTHX_ self, cv);
 
     HE* hent;
     if (items > 1) {

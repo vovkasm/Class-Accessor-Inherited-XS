@@ -13,10 +13,11 @@ XSLoader::load('Class::Accessor::Inherited::XS', $VERSION);
 
 my $REGISTERED_TYPES = {};
 register_types(
-    inherited => {installer => \&_mk_inherited_accessor},
-    class     => {installer => \&_mk_class_accessor},
-    varclass  => {installer => \&_mk_varclass_accessor},
-    object    => {installer => \&_mk_object_accessor},
+    inherited   => {installer => \&_mk_inherited_accessor},
+    class       => {installer => \&_mk_class_accessor},
+    varclass    => {installer => \&_mk_varclass_accessor},
+    object      => {installer => \&_mk_object_accessor},
+    constructor => {installer => \&_mk_constructor},
 );
 
 sub import {
@@ -134,6 +135,12 @@ sub _mk_object_accessor {
     my ($class, $name, $field) = @_;
 
     install_object_accessor("${class}::${name}", $field);
+}
+
+sub _mk_constructor {
+    my ($class, $name) = @_;
+
+    install_constructor("${class}::${name}");
 }
 
 1;
