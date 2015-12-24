@@ -141,15 +141,16 @@ __END__
 
 =head1 NAME
 
-Class::Accessor::Inherited::XS - Fast XS inherited and class accessors
+Class::Accessor::Inherited::XS - Fast XS inherited, object and class accessors
 
 =head1 SYNOPSIS
 
   #install accessors at compile time
   use Class::Accessor::Inherited::XS 
       inherited => [qw/foo bar/], # inherited accessors with key names equal to accessor names
-      class     => [qw/baz/],     # an anonymous non-inherited accessor for __PACKAGE__
-      varclass  => 'boo',         # non-inherited accessor for __PACKAGE__,  aliased with 'our $boo' variable
+      object    => 'fuz',         # non-inherited object accessor with key name equal to accessor name
+      varclass  => 'boo',         # non-inherited accessor for __PACKAGE__,  aliased with '$__PACKAGE__::boo' variable
+      class     => 'baz',         # non-inherited anonymous accessor for __PACKAGE__
   ;
   
   use Class::Accessor::Inherited::XS { # optional braces
@@ -157,8 +158,9 @@ Class::Accessor::Inherited::XS - Fast XS inherited and class accessors
         bar => 'bar_key',
         foo => 'foo_key',
       },
+      object    => {fuz => 'fuz_key'},
       class     => ['baz'],
-      varclass  => 'boo',
+      varclass  => ['boo'],
   };
   
   #or in a Class::Accessor::Grouped-like fashion
@@ -167,22 +169,26 @@ Class::Accessor::Inherited::XS - Fast XS inherited and class accessors
   __PACKAGE__->mk_inherited_accessors('foo', ['bar', 'bar_key']);
   __PACKAGE__->mk_class_accessors('baz');
   __PACKAGE__->mk_varclass_accessors('boo');
+  __PACKAGE__->mk_object_accessors('fuz');
 
 =head1 DESCRIPTION
 
-This module provides a very fast implementation for 'inherited' accessors, that were introduced
-by the L<Class::Accessor::Grouped> module. They give you a capability to override values set in
-a parent class with values set in childs or object instances. Generated accessors are compatible with
-L<Class::Accessor::Grouped> generated ones.
+This module provides a very fast implementation for a wide range of accessor types.
+
+B<inherited> accessors were introduced in the L<Class::Accessor::Grouped> module. They allow you to override
+values set in a parent class with values set in childs or object instances. Generated accessors are compatible with
+the L<Class::Accessor::Grouped> generated ones.
 
 Since this module focuses primary on speed, it provides no means to have your own per-class
 getters/setters logic (like overriding L<Class::Accessor::Grouped/get_inherited> / L<Class::Accessor::Grouped/set_inherited>),
-but it allows you to register a single get/set callback per accessor type.
+but it allows you to create new inherited accesor types with an attached callback.
 
-It also provides two types of non-inherited accessors, 'class' and 'varclass', which give you values
-from a package they were defined in, even when called on objects. The difference between them is that
-the 'varclass' internal storage is a package variable with the same name, while 'class' stores it's value
+B<class> and B<varclass> accessors are non-inherited package accessors - they return values from the class
+they were defined in, even when called on objects or child classes. The difference between them is that
+the B<varclass> internal storage is a package variable with the same name, while B<class> stores it's value
 in an anonymous variable.
+
+B<object> accessors provides plain simple hash key access.
 
 =head1 UTF-8 AND BINARY SAFETY
 
@@ -190,12 +196,12 @@ Starting with the perl 5.16.0, this module provides full support for UTF-8 metho
 But on older perls you can't distinguish UTF-8 strings from bytes string in method names, so accessors
 with UTF-8 names can end up getting a wrong value. You have been warned.
 
-From 5.16.0 and onwards, accessors installation is also binary safe, except for the Windows platform.
+Also, starting from 5.16.0 accessor installation is binary safe, except for the Windows platform.
 This module croaks on attempts to install binary accessors on unsupported platforms.
 
 =head1 THREADS
 
-Though highly discouraged, perl threads are supported by L<Class::Accessor::Inherited::XS>. You may
+Though highly discouraged, perl threads are supported by L<Class::Accessor::Inherited::XS>. You can
 have accessors with same names pointing to different keys in different threads, etc. There are
 no known conceptual leaks.
 
@@ -203,9 +209,10 @@ no known conceptual leaks.
 
 L<Class::Accessor::Inherited::XS> is at least 10x times faster than L<Class::Accessor::Grouped>, depending
 on your usage pattern. Accessing data from a parent in a large inheritance chain is still the worst case,
-but even there L<Class::Accessor::Inherited::XS> beats L<Class::Accessor::Grouped> best-case.
+but even there L<Class::Accessor::Inherited::XS> beats L<Class::Accessor::Grouped> best-case. Object accessors
+are event faster than L<Class::XSAccessor> ones.
 
-Accessors with just an empty sub callback are ~3x times slower then normal ones, so use them only when you definitely need them.
+Accessors with just an empty sub callback are ~3x times slower then normal ones, so use them only when absolutely necessary.
 
 Here are results from a benchmark run on perl 5.20.1 (see bench folder):
 
@@ -242,27 +249,32 @@ class_caix       34345065/s          13328%   3044%   2337%             910%    
     __PACKAGE__->mk_type_accessors(inherited_cb => 'foo', 'bar');
 
 You can register new inherited accessor types with associated read/write callbacks. Unlike
-L<Class::Accessor::Grouped>, only a single callback is set for a type, without per-class
- get_*/set_* lookups.
+L<Class::Accessor::Grouped>, only a single callback can be set for a type, without per-class
+B<get_$type>/B<set_$type> lookups.
 
-B<on_read> callback gets a single argument - from a normal 'inherited' accessor. It's return value is the new
-accessor's return value (and is not stored anywhere).
+B<on_read> callback receives a single argument - return value from the underlying B<inherited> accessor. It's result
+is the new accessor's return value (and it isn't stored anywhere).
 
-B<on_write> callback gets two arguments - original args from the accessor's call. It's return value is saved
-instead of the user's supplied one. Exceptions thrown from this callback will cancel store and leave the old value unchanged.
+B<on_write> callback receives original accessor's arguments, and it's return value is stored as usual.
+Exceptions thrown from this callback will cancel store and will leave the old value unchanged.
 
 =head1 PROFILING WITH Devel::NYTProf
 
-To perform it's task, L<Devel::NYTProf> hooks into the perl interpreter by replacing default behaviour for calling subroutines
-on the opcode level. To squeeze last bits of performance, L<Class::Accessor::Inherited::XS> does the same, but separately
-on each call site of its accessors. It turns out into CAIX favor - L<Devel::NYTProf> sees only first call to CAIX
+To perform it's task, L<Devel::NYTProf> hooks into the perl interpreter by replacing default behaviour for subroutine calls
+at the opcode level. To squeeze last bits of performance, L<Class::Accessor::Inherited::XS> does the same, but separately
+on each call site of its accessors. It turns out into CAIX favor - L<Devel::NYTProf> sees only the first call to CAIX
 accessor, but all subsequent ones become invisible to the subs profiler.
 
 Note that the statement profiler still correctly accounts for the time spent on each line, you just don't see time spent in accessors'
 calls separately. That's sometimes OK, sometimes not - you get profile with all possible optimizations on, but it's not easy to comprehend.
 
 Since it's hard to detect L<Devel::NYTProf> (and any other module doing such magic) in a portable way (all hail Win32), there's
-an %ENV switch available - you can set CAIXS_DISABLE_ENTERSUB to a true value to disable opcode optimization and get a full subs profile.
+an %ENV switch available - you can set CAIXS_DISABLE_ENTERSUB to a true value to disable opcode optimizations and get a full subs profile.
+
+=head1 CAVEATS
+
+When using B<varclass> accessors, do not clear or alias C<*__PACKAGE__::accessor> glob - that will break aliasing between accessor storage
+and $__PACKAGE__::accessor variable. While the stored value is still accessible through accessor, it effectively becomes a B<class> one.
 
 =head1 SEE ALSO
 
