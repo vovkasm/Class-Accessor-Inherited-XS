@@ -12,33 +12,33 @@
     after call_sv().
 */
 
-#define CALL_READ_CB(result, cb)        \
-    if ((type == InheritedCb) && cb) {  \
-        ENTER;                          \
-        PUSHMARK(SP);                   \
-        *(SP+1) = result;               \
-        call_sv(cb, G_SCALAR);          \
-        LEAVE;                          \
-    } else {                            \
-        *(SP+1) = result;               \
-    }                                   \
+#define CALL_READ_CB(result)                    \
+    if (type == InheritedCb && keys->read_cb) { \
+        ENTER;                                  \
+        PUSHMARK(SP);                           \
+        *(SP+1) = result;                       \
+        call_sv(keys->read_cb, G_SCALAR);       \
+        LEAVE;                                  \
+    } else {                                    \
+        *(SP+1) = result;                       \
+    }                                           \
 
-#define CALL_WRITE_CB(slot, cb, need_alloc) \
-    if ((type == InheritedCb) && cb) {      \
-        ENTER;                              \
-        PUSHMARK(SP);                       \
-        call_sv(cb, G_SCALAR);              \
-        SPAGAIN;                            \
-        LEAVE;                              \
-        if (need_alloc) slot = newSV(0);    \
-        sv_setsv(slot, *SP);                \
-        *SP = slot;                         \
-    } else {                                \
-        if (need_alloc) slot = newSV(0);    \
-        sv_setsv(slot, *(SP+2));            \
-        PUSHs(slot);                        \
-        PUTBACK;                            \
-    }                                       \
+#define CALL_WRITE_CB(slot, need_alloc)         \
+    if (type == InheritedCb && keys->write_cb) {\
+        ENTER;                                  \
+        PUSHMARK(SP);                           \
+        call_sv(keys->write_cb, G_SCALAR);      \
+        SPAGAIN;                                \
+        LEAVE;                                  \
+        if (need_alloc) slot = newSV(0);        \
+        sv_setsv(slot, *SP);                    \
+        *SP = slot;                             \
+    } else {                                    \
+        if (need_alloc) slot = newSV(0);        \
+        sv_setsv(slot, *(SP+2));                \
+        PUSHs(slot);                            \
+        PUTBACK;                                \
+    }                                           \
 
 #define OP_UNSTEAL(name) STMT_START {       \
         PL_op->op_ppaddr = PL_ppaddr[name]; \
@@ -363,7 +363,7 @@ CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
 
         if (items > 1) {
             SV* new_value;
-            CALL_WRITE_CB(new_value, keys->write_cb, 1);
+            CALL_WRITE_CB(new_value, 1);
             if (!hv_store_ent(obj, keys->hash_key, new_value, 0)) {
                 SvREFCNT_dec_NN(new_value);
                 croak("Can't store new hash value");
@@ -373,11 +373,11 @@ CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
         } else {
             HE* hent = hv_fetch_ent(obj, keys->hash_key, 0, 0);
             if (hent) {
-                CALL_READ_CB(HeVAL(hent), keys->read_cb);
+                CALL_READ_CB(HeVAL(hent));
                 return;
 
             } else if (type == ObjectOnly) {
-                CALL_READ_CB(&PL_sv_undef, keys->read_cb);
+                CALL_READ_CB(&PL_sv_undef);
                 return;
             }
         }
@@ -416,7 +416,7 @@ CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
         }
 
         SV* new_value = GvSVn(glob);
-        CALL_WRITE_CB(new_value, keys->write_cb, 0);
+        CALL_WRITE_CB(new_value, 0);
 
         return;
     }
@@ -425,7 +425,7 @@ CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
     if (stash && (hent = hv_fetch_ent(stash, keys->pkg_key, 0, 0))) {   \
         SV* sv = GvSV(HeVAL(hent));                                     \
         if (sv && SvOK(sv)) {                                           \
-            CALL_READ_CB(sv, keys->read_cb);                            \
+            CALL_READ_CB(sv);                                           \
             return;                                                     \
         }                                                               \
     }
@@ -451,7 +451,7 @@ CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
     }
 
     /* XSRETURN_UNDEF */
-    CALL_READ_CB(&PL_sv_undef, keys->read_cb);
+    CALL_READ_CB(&PL_sv_undef);
     return;
 }
 
