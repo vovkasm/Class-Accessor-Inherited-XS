@@ -42,4 +42,6 @@ for (qw/foo b foo a b foo/) {
     is($cref->($o), shift @res);
 }
 
+is(Class::Accessor::Inherited::XS::_unstolen_count, 2);
+
 done_testing;

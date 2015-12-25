@@ -86,4 +86,6 @@ for ('Jopa', 'Jopa', 'JopaChild', 'Jopa', 'JopaChild') {
     is($_->a, shift @res);
 }
 
+is(Class::Accessor::Inherited::XS::_unstolen_count, 11);
+
 done_testing;

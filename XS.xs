@@ -8,6 +8,7 @@ extern "C" {
 
 static MGVTBL sv_payload_marker;
 static bool optimize_entersub = 1;
+static int unstolen = 0;
 
 #include "xs/compat.h"
 #include "ppport.h"
@@ -87,6 +88,12 @@ BOOT:
 
     HV* stash = gv_stashpv("Class::Accessor::Inherited::XS", 0);
     newCONSTSUB(stash, "BINARY_UNSAFE", CAIX_BINARY_UNSAFE_RESULT);
+}
+
+void _unstolen_count()
+PPCODE:
+{
+    XSRETURN_IV(unstolen);
 }
 
 void

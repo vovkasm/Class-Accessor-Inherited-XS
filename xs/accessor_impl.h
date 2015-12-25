@@ -41,6 +41,7 @@
     }                                           \
 
 #define OP_UNSTEAL(name) STMT_START {       \
+        ++unstolen;                         \
         PL_op->op_ppaddr = PL_ppaddr[name]; \
         return PL_ppaddr[name](aTHX);       \
     } STMT_END                              \

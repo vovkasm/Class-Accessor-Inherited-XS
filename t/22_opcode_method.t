@@ -53,4 +53,6 @@ for (qw/a a a/) {
     is($o->$_(7), 7);
 }
 
+is(Class::Accessor::Inherited::XS::_unstolen_count, 7);
+
 done_testing;
