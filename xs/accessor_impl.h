@@ -242,7 +242,7 @@ CAIXS_find_keys(CV* cv) {
 #ifndef MULTIPLICITY
     /* Blessed are ye and get a fastpath */
     keys = (shared_keys*)(CvXSUBANY(cv).any_ptr);
-    if (!keys) croak("Can't find hash key information");
+    if (UNLIKELY(!keys)) croak("Can't find hash key information");
 #else
     /*
         We can't look into CvXSUBANY under threads, as it could have been written in the parent thread
@@ -250,7 +250,7 @@ CAIXS_find_keys(CV* cv) {
         refcnt storage - there's always a proper thread-local SV*, cloned for us by perl itself.
     */
     MAGIC* mg = mg_findext((SV*)cv, PERL_MAGIC_ext, &sv_payload_marker);
-    if (!mg) croak("Can't find hash key information");
+    if (UNLIKELY(!mg)) croak("Can't find hash key information");
 
     keys = (shared_keys*)AvARRAY((AV*)(mg->mg_obj));
 #endif
@@ -324,7 +324,7 @@ CAIXS_accessor<PrivateClass>(pTHX_ SV** SP, CV* cv, HV* stash) {
     dAXMARK; dITEMS;
     SP -= items;
 
-    if (!items) croak("Usage: $obj->accessor or __PACKAGE__->accessor");
+    if (UNLIKELY(!items)) croak("Usage: $obj->accessor or __PACKAGE__->accessor");
 
     CAIXS_install_entersub<PrivateClass>(aTHX);
     shared_keys* keys = (shared_keys*)CAIXS_find_keys(cv);
@@ -356,14 +356,14 @@ CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
     SV* self = *(SP+1);
     if (SvROK(self)) {
         HV* obj = (HV*)SvRV(self);
-        if (SvTYPE((SV*)obj) != SVt_PVHV) {
+        if (UNLIKELY(SvTYPE((SV*)obj) != SVt_PVHV)) {
             croak("Inherited accessors work only with hash-based objects");
         }
 
         if (items > 1) {
             SV* new_value;
             CALL_WRITE_CB(new_value, 1);
-            if (!hv_store_ent(obj, keys->hash_key, new_value, 0)) {
+            if (UNLIKELY(!hv_store_ent(obj, keys->hash_key, new_value, 0))) {
                 SvREFCNT_dec_NN(new_value);
                 croak("Can't store new hash value");
             }
@@ -395,7 +395,8 @@ CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
     if (items > 1) {
         hent = hv_fetch_ent(stash, keys->pkg_key, 0, 0);
         GV* glob = hent ? (GV*)HeVAL(hent) : NULL;
-        if (!glob || !isGV(glob) || SvFAKE(glob)) {
+
+        if (UNLIKELY(!glob || !isGV(glob) || SvFAKE(glob))) {
             if (!glob) glob = (GV*)newSV(0);
 
             gv_init_sv(glob, stash, keys->pkg_key, 0);
