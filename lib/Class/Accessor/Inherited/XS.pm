@@ -158,6 +158,7 @@ Class::Accessor::Inherited::XS - Fast XS inherited, object and class accessors
       object    => 'fuz',         # non-inherited object accessor with key name equal to accessor name
       varclass  => 'boo',         # non-inherited accessor for __PACKAGE__,  aliased with '$__PACKAGE__::boo' variable
       class     => 'baz',         # non-inherited anonymous accessor for __PACKAGE__
+      constructor => 'new',       # object constructor
   ;
   
   use Class::Accessor::Inherited::XS { # optional braces
@@ -169,10 +170,10 @@ Class::Accessor::Inherited::XS - Fast XS inherited, object and class accessors
       class     => ['baz'],
       varclass  => ['boo'],
   };
-  
+
   #or in a Class::Accessor::Grouped-like fashion
   use parent 'Class::Accessor::Inherited::XS';
-  
+
   __PACKAGE__->mk_inherited_accessors('foo', ['bar', 'bar_key']);
   __PACKAGE__->mk_class_accessors('baz');
   __PACKAGE__->mk_varclass_accessors('boo');
@@ -196,6 +197,13 @@ the B<varclass> internal storage is a package variable with the same name, while
 in an anonymous variable.
 
 B<object> accessors provides plain simple hash key access.
+
+B<constructor> can create objects either from a list or from a single hashref. Note that if you pass
+a hash reference, it becomes blessed too. If that's not what you want, pass a dereferenced copy.
+
+    __PACKAGE__->new(foo => 1, bar => 2); # values are copied
+    __PACKAGE__->new(\%args);             # values are not copied, much faster
+    $obj->new(\%new_object);              # values are copied, but nothing is taken from $obj
 
 =head1 UTF-8 AND BINARY SAFETY
 
