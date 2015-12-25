@@ -322,22 +322,21 @@ template <> inline
 void
 CAIXS_accessor<PrivateClass>(pTHX_ SV** SP, CV* cv, HV* stash) {
     dAXMARK; dITEMS;
+    SP -= items;
 
     if (!items) croak("Usage: $obj->accessor or __PACKAGE__->accessor");
 
     CAIXS_install_entersub<PrivateClass>(aTHX);
     shared_keys* keys = (shared_keys*)CAIXS_find_keys(cv);
 
-    if (items > 1) {
-        SP -= items; /* No need in the 'items == 1' case */
+    const int type = PrivateClass; /* for CALL_*_CB */
 
-        sv_setsv(keys->storage, *(SP+2));
-        PUSHs(keys->storage);
-        PUTBACK;
+    if (items > 1) {
+        CALL_WRITE_CB(keys->storage, 0);
         return;
 
     } else {
-        *SP = keys->storage;
+        CALL_READ_CB(keys->storage);
         return;
     }
 }
