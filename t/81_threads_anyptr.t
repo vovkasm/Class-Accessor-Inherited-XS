@@ -6,11 +6,10 @@ BEGIN {
 use Test::More ($has_threads) ? ('no_plan') : (skip_all => 'for threaded perls only');
 use Time::HiRes qw/sleep/;
 
-package Jopa;
-use parent qw/Class::Accessor::Inherited::XS/;
-
-package main;
-use strict;
+{
+    package Jopa;
+    use parent qw/Class::Accessor::Inherited::XS/;
+}
 
 Jopa->mk_inherited_accessors('foo');
 my $Jopa=bless{}, 'Jopa';

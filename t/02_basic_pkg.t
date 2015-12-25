@@ -1,13 +1,9 @@
-use Test::More;
-use Class::Accessor::Inherited::XS;
 use strict;
+use Test::More;
 
 {
     package Jopa;
-    use base qw/Class::Accessor::Inherited::XS/;
-    use strict;
-
-    Jopa->mk_inherited_accessors(qw/a b/);
+    use Class::Accessor::Inherited::XS inherited => [qw/a b/];
 }
 
 $Jopa::__cag_a = 1;

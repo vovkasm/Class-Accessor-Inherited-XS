@@ -5,15 +5,16 @@ BEGIN {
 }
 use Test::More ($have_threads) ? ('no_plan') : (skip_all => 'for threaded perls only');
 
-package Test;
-use parent qw/Class::Accessor::Inherited::XS/;
-__PACKAGE__->mk_inherited_accessors('foo');
+{
+    package Test;
+    use Class::Accessor::Inherited::XS inherited => [qw/foo/];
+}
 
-package Jopa;
-use parent qw/Class::Accessor::Inherited::XS/;
+{
+    package Jopa;
+    use parent qw/Class::Accessor::Inherited::XS/;
+}
 
-package main;
-use strict;
 my @threads;
 
 Test->foo(3);

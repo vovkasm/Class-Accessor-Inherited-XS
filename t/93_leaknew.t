@@ -1,5 +1,5 @@
 use constant HAS_LEAKTRACE => eval{ require Test::LeakTrace };
-use Test::More HAS_LEAKTRACE ? (no_plan) : (skip_all => 'require Test::LeakTrace');
+use Test::More HAS_LEAKTRACE ? ('no_plan') : (skip_all => 'requires Test::LeakTrace');
 use Test::LeakTrace;
 
 use Class::Accessor::Inherited::XS constructor => 'new';

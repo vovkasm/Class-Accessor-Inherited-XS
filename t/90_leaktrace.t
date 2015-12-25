@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use constant HAS_LEAKTRACE => eval{ require Test::LeakTrace };
-use Test::More HAS_LEAKTRACE ? (tests => 2) : (skip_all => 'require Test::LeakTrace');
+use Test::More HAS_LEAKTRACE ? ('no_plan') : (skip_all => 'requires Test::LeakTrace');
 use Test::LeakTrace;
 
 use lib 't/lib';

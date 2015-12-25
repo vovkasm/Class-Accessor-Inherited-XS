@@ -1,10 +1,11 @@
-package Jopa;
-use parent 'Class::Accessor::Inherited::XS';
-
-package main;
 use constant HAS_LEAKTRACE => eval{ require Test::LeakTrace };
-use Test::More HAS_LEAKTRACE ? (no_plan) : (skip_all => 'require Test::LeakTrace');
+use Test::More HAS_LEAKTRACE ? ('no_plan') : (skip_all => 'requires Test::LeakTrace');
 use Test::LeakTrace;
+
+{
+    package Jopa;
+    use parent 'Class::Accessor::Inherited::XS';
+}
 
 Jopa->mk_inherited_accessors('foo');
 

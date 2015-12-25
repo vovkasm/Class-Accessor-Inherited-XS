@@ -1,17 +1,11 @@
-use Test::More;
-use Class::Accessor::Inherited::XS;
 use strict;
+use Test::More;
 
 {
     package Jopa;
-    use base qw/Class::Accessor::Inherited::XS/;
-    use strict;
+    use Class::Accessor::Inherited::XS inherited => [qw/foo bar/];
 
     sub new { return bless {}, shift }
-
-    Jopa->mk_inherited_accessors(qw/foo bar/);
-
-    1;
 }
 
 my $o = new Jopa;

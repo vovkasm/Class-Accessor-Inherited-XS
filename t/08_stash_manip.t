@@ -1,13 +1,12 @@
+use strict;
 use Test::More;
 
-package Test;
+{
+    package Test;
+    use Class::Accessor::Inherited::XS inherited => [qw/foo/];
 
-use parent qw/Class::Accessor::Inherited::XS/;
-__PACKAGE__->mk_inherited_accessors('foo');
-
-*bar = *foo;
-
-package main;
+    *bar = *foo;
+}
 
 is(Test->foo(42), 42);
 is(Test->bar, 42);

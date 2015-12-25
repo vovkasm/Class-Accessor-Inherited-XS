@@ -1,5 +1,5 @@
-use Test::More;
 use strict;
+use Test::More;
 
 {
     package Jopa;

@@ -4,12 +4,10 @@ use strict;
 
 {
     package Jopa;
-    use base qw/Class::Accessor::Inherited::XS/;
+    use Class::Accessor::Inherited::XS inherited => [qw/a/];
 
     sub new { return bless {}, shift }
     sub foo { 42 }
-
-    Jopa->mk_inherited_accessors(qw/a/);
 }
 
 {
@@ -25,9 +23,9 @@ use strict;
 
 {
     package JopaClass;
-    use base qw/Class::Accessor::Inherited::XS/;
+    use Class::Accessor::Inherited::XS class => [qw/a/];
+
     sub new { return bless {}, shift }
-    JopaClass->mk_class_accessors(qw/a/);
 }
 
 my $o = new Jopa;

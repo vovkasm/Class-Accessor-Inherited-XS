@@ -1,11 +1,9 @@
-use Test::More;
 use strict;
-use base qw/Class::Accessor::Inherited::XS/;
+use Test::More;
+use Class::Accessor::Inherited::XS inherited => [qw/a b/];
 
 sub new { return bless {}, shift }
 sub foo { 42 }
-
-__PACKAGE__->mk_inherited_accessors(qw/a b/);
 
 my $o = __PACKAGE__->new;
 $o->{a} = 6;

@@ -1,11 +1,11 @@
-package Jopa;
+use strict;
 use Test::More;
-use parent 'Class::Accessor::Inherited::XS';
+use Class::Accessor::Inherited::XS {
+    inherited => [qw/foo/],
+    class     => [qw/cfoo/],
+};
 
-__PACKAGE__->mk_inherited_accessors('foo');
-__PACKAGE__->mk_class_accessors('cfoo');
-
-my $obj = bless {}, 'Jopa';
+my $obj = bless {}, __PACKAGE__;
 my $bar = \($obj->foo(24));
 is($obj->foo, 24);
 is($$bar, 24);

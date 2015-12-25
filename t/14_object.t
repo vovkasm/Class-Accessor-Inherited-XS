@@ -1,5 +1,5 @@
-use Test::More;
 use strict;
+use Test::More;
 use Class::Accessor::Inherited::XS object => 'foo';
 
 my $o = bless {foo => 66};
