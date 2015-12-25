@@ -24,8 +24,8 @@ sub import {
     my $pkg = shift;
     return unless scalar @_;
 
-    my $class = caller;
     my %opts = ref($_[0]) eq 'HASH' ? %{ $_[0] } : @_;
+    my $class = delete $opts{package} // caller;
 
     for my $type (keys %opts) {
         my $accessors = $opts{$type};
@@ -162,6 +162,7 @@ Class::Accessor::Inherited::XS - Fast XS inherited, object and class accessors
   ;
   
   use Class::Accessor::Inherited::XS { # optional braces
+      package   => 'Another::Package', # install into another package
       inherited => {
         bar => 'bar_key',
         foo => 'foo_key',
