@@ -59,7 +59,8 @@ DESCRIPTION
 
         __PACKAGE__->new(foo => 1, bar => 2); # values are copied
         __PACKAGE__->new(\%args);             # values are not copied, much faster
-        $obj->new(\%new_object);              # values are copied, but nothing is taken from $obj
+        $obj->new(foo => 1, bar => 2);        # values are copied, but nothing is taken from $obj
+        $obj->new(\%args);                    # values are not copied, and nothing is taken from $obj
 
 UTF-8 AND BINARY SAFETY
     Starting with the perl 5.16.0, this module provides full support for

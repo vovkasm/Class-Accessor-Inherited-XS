@@ -203,7 +203,8 @@ a hash reference, it becomes blessed too. If that's not what you want, pass a de
 
     __PACKAGE__->new(foo => 1, bar => 2); # values are copied
     __PACKAGE__->new(\%args);             # values are not copied, much faster
-    $obj->new(\%new_object);              # values are copied, but nothing is taken from $obj
+    $obj->new(foo => 1, bar => 2);        # values are copied, but nothing is taken from $obj
+    $obj->new(\%args);                    # values are not copied, and nothing is taken from $obj
 
 =head1 UTF-8 AND BINARY SAFETY
 
