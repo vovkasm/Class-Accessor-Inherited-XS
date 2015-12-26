@@ -47,8 +47,13 @@
     } STMT_END                              \
 
 template <AccessorTypes type>
+struct FImpl;
+
+template<AccessorTypes type>
 inline void
-CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash);
+CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
+    FImpl<type>::CAIXS_accessor(aTHX_ SP, cv, stash);
+}
 
 template <AccessorTypes type> static
 XSPROTO(CAIXS_entersub_wrapper) {
@@ -282,9 +287,9 @@ CAIXS_find_stash(pTHX_ SV* self, CV* cv) {
     return stash;
 }
 
-template <> inline
-void
-CAIXS_accessor<Constructor>(pTHX_ SV** SP, CV* cv, HV* stash) {
+template <>
+struct FImpl<Constructor> {
+static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
     dAXMARK; dITEMS;
 
     CAIXS_install_entersub<Constructor>(aTHX);
@@ -317,11 +322,11 @@ CAIXS_accessor<Constructor>(pTHX_ SV** SP, CV* cv, HV* stash) {
     sv_bless(self, stash);
     *ret = self;
     return;
-}
+}};
 
-template <> inline
-void
-CAIXS_accessor<PrivateClass>(pTHX_ SV** SP, CV* cv, HV* stash) {
+template <>
+struct FImpl<PrivateClass> {
+static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
     dAXMARK; dITEMS;
     SP -= items;
 
@@ -340,12 +345,12 @@ CAIXS_accessor<PrivateClass>(pTHX_ SV** SP, CV* cv, HV* stash) {
         CALL_READ_CB(keys->storage);
         return;
     }
-}
+}};
 
 /* covers type = {Inherited, InheritedCb, ObjectOnly} */
-template <AccessorTypes type> inline
-void
-CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
+template <AccessorTypes type>
+struct FImpl {
+static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
     dAXMARK; dITEMS;
     SP -= items;
 
@@ -454,6 +459,6 @@ CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
     /* XSRETURN_UNDEF */
     CALL_READ_CB(&PL_sv_undef);
     return;
-}
+}};
 
 #endif /* __INHERITED_XS_IMPL_H_ */
