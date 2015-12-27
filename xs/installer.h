@@ -12,7 +12,7 @@ CAIXS_payload_attach(pTHX_ CV* cv, AV* keys_av) {
     SvRMAGICAL_off((SV*)cv);
 }
 
-template <AccessorTypes type> static
+template <AccessorType type> static
 shared_keys*
 CAIXS_payload_init(pTHX_ CV* cv) {
     AV* keys_av = newAV();
@@ -24,7 +24,7 @@ CAIXS_payload_init(pTHX_ CV* cv) {
     return (shared_keys*)AvARRAY(keys_av);
 }
 
-template <AccessorTypes type, bool is_readonly> static
+template <AccessorType type, bool is_readonly> static
 CV*
 CAIXS_install_cv(pTHX_ SV* full_name) {
     STRLEN len;
@@ -42,7 +42,7 @@ CAIXS_install_cv(pTHX_ SV* full_name) {
     return cv;
 }
 
-template <AccessorTypes type, bool is_readonly> static
+template <AccessorType type, bool is_readonly> static
 shared_keys*
 CAIXS_install_accessor(pTHX_ SV* full_name) {
     CV* cv = CAIXS_install_cv<type, is_readonly>(aTHX_ full_name);

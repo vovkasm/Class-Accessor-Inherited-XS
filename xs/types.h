@@ -16,7 +16,7 @@ struct shared_keys {
     SV* write_cb;
 };
 
-enum AccessorTypes {
+enum AccessorType {
     Inherited,
     InheritedCb,
     PrivateClass,
@@ -25,7 +25,7 @@ enum AccessorTypes {
 };
 
 /*
-    - must have a value for each AccessorTypes element
+    - must have a value for each AccessorType element
     - '-2' will croak in av_extend() and is used as a guard
 */
 const int ALLOC_SIZE[] = {3, 3, 0, 0, -2};

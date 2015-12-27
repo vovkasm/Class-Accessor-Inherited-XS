@@ -46,16 +46,16 @@
         return PL_ppaddr[name](aTHX);       \
     } STMT_END                              \
 
-template <AccessorTypes type, bool is_readonly>
+template <AccessorType type, bool is_readonly>
 struct FImpl;
 
-template <AccessorTypes type, bool is_readonly> inline
+template <AccessorType type, bool is_readonly> inline
 void
 CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
     FImpl<type, is_readonly>::CAIXS_accessor(aTHX_ SP, cv, stash);
 }
 
-template <AccessorTypes type, bool is_readonly> static
+template <AccessorType type, bool is_readonly> static
 XSPROTO(CAIXS_entersub_wrapper) {
     dSP;
 
@@ -66,7 +66,7 @@ XSPROTO(CAIXS_entersub_wrapper) {
 
 #ifdef OPTIMIZE_OPMETHOD
 
-template <AccessorTypes type, int optype, bool is_readonly> static
+template <AccessorType type, int optype, bool is_readonly> static
 OP *
 CAIXS_opmethod_wrapper(pTHX) {
     dSP;
@@ -175,7 +175,7 @@ gotcv:
 
 #endif /* OPTIMIZE_OPMETHOD */
 
-template <AccessorTypes type, bool is_readonly> static
+template <AccessorType type, bool is_readonly> static
 OP *
 CAIXS_entersub(pTHX) {
     dSP;
@@ -209,7 +209,7 @@ CAIXS_entersub(pTHX) {
     OP_UNSTEAL(OP_ENTERSUB);
 }
 
-template <AccessorTypes type, bool is_readonly> inline
+template <AccessorType type, bool is_readonly> inline
 void
 CAIXS_install_entersub(pTHX) {
     /*
@@ -349,7 +349,7 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
 }};
 
 /* covers type = {Inherited, InheritedCb, ObjectOnly} */
-template <AccessorTypes type, bool is_readonly>
+template <AccessorType type, bool is_readonly>
 struct FImpl {
 static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
     dAXMARK; dITEMS;
