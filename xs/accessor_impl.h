@@ -46,27 +46,27 @@
         return PL_ppaddr[name](aTHX);       \
     } STMT_END                              \
 
-template <AccessorTypes type>
+template <AccessorTypes type, bool is_readonly>
 struct FImpl;
 
-template<AccessorTypes type>
-inline void
+template <AccessorTypes type, bool is_readonly> inline
+void
 CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
-    FImpl<type>::CAIXS_accessor(aTHX_ SP, cv, stash);
+    FImpl<type, is_readonly>::CAIXS_accessor(aTHX_ SP, cv, stash);
 }
 
-template <AccessorTypes type> static
+template <AccessorTypes type, bool is_readonly> static
 XSPROTO(CAIXS_entersub_wrapper) {
     dSP;
 
-    CAIXS_accessor<type>(aTHX_ SP, cv, NULL);
+    CAIXS_accessor<type, is_readonly>(aTHX_ SP, cv, NULL);
 
     return;
 }
 
 #ifdef OPTIMIZE_OPMETHOD
 
-template <AccessorTypes type, int optype> static
+template <AccessorTypes type, int optype, bool is_readonly> static
 OP *
 CAIXS_opmethod_wrapper(pTHX) {
     dSP;
@@ -155,12 +155,12 @@ CAIXS_opmethod_wrapper(pTHX) {
     }
 
 gotcv:
-    if (LIKELY(CvXSUB(cv) == (XSUBADDR_t)&CAIXS_entersub_wrapper<type>)) {
+    if (LIKELY((CvXSUB(cv) == (XSUBADDR_t)&CAIXS_entersub_wrapper<type, is_readonly>))) {
         assert(CvISXSUB(cv));
 
         if (optype == OP_METHOD) {--SP; PUTBACK; }
 
-        CAIXS_accessor<type>(aTHX_ SP, cv, stash);
+        CAIXS_accessor<type, is_readonly>(aTHX_ SP, cv, stash);
 
         return PL_op->op_next->op_next;
 
@@ -175,7 +175,7 @@ gotcv:
 
 #endif /* OPTIMIZE_OPMETHOD */
 
-template <AccessorTypes type> static
+template <AccessorTypes type, bool is_readonly> static
 OP *
 CAIXS_entersub(pTHX) {
     dSP;
@@ -191,7 +191,7 @@ CAIXS_entersub(pTHX) {
         }
 
         /* Some older gcc's can't deduce correct function - have to add explicit cast  */
-        if (LIKELY(CvXSUB(sv) == (XSUBADDR_t)&CAIXS_entersub_wrapper<type>)) {
+        if (LIKELY((CvXSUB(sv) == (XSUBADDR_t)&CAIXS_entersub_wrapper<type, is_readonly>))) {
             /*
                 Assert against future XPVCV layout change - as for now, xcv_xsub shares space with xcv_root
                 which are both pointers, so address check is enough, and there's no need to look into op_flags for CvISXSUB.
@@ -199,7 +199,7 @@ CAIXS_entersub(pTHX) {
             assert(CvISXSUB(sv));
 
             POPs; PUTBACK;
-            CAIXS_accessor<type>(aTHX_ SP, sv, NULL);
+            CAIXS_accessor<type, is_readonly>(aTHX_ SP, sv, NULL);
 
             return NORMAL;
         }
@@ -209,7 +209,7 @@ CAIXS_entersub(pTHX) {
     OP_UNSTEAL(OP_ENTERSUB);
 }
 
-template <AccessorTypes type> inline
+template <AccessorTypes type, bool is_readonly> inline
 void
 CAIXS_install_entersub(pTHX) {
     /*
@@ -222,7 +222,7 @@ CAIXS_install_entersub(pTHX) {
 
     if ((op->op_spare & 1) != 1 && op->op_ppaddr == PL_ppaddr[OP_ENTERSUB] && optimize_entersub) {
         op->op_spare |= 1;
-        op->op_ppaddr = &CAIXS_entersub<type>;
+        op->op_ppaddr = &CAIXS_entersub<type, is_readonly>;
 
 #ifdef OPTIMIZE_OPMETHOD
         OP* methop = cUNOPx(op)->op_first;
@@ -231,9 +231,10 @@ CAIXS_install_entersub(pTHX) {
 
             if (methop->op_next == op) {
                 if (methop->op_type == OP_METHOD_NAMED && methop->op_ppaddr == PL_ppaddr[OP_METHOD_NAMED]) {
-                    methop->op_ppaddr = &CAIXS_opmethod_wrapper<type, OP_METHOD_NAMED>;
+                    methop->op_ppaddr = &CAIXS_opmethod_wrapper<type, OP_METHOD_NAMED, is_readonly>;
+
                 } else if (methop->op_type == OP_METHOD && methop->op_ppaddr == PL_ppaddr[OP_METHOD]) {
-                    methop->op_ppaddr = &CAIXS_opmethod_wrapper<type, OP_METHOD>;
+                    methop->op_ppaddr = &CAIXS_opmethod_wrapper<type, OP_METHOD, is_readonly>;
                 }
             }
         }
@@ -287,12 +288,12 @@ CAIXS_find_stash(pTHX_ SV* self, CV* cv) {
     return stash;
 }
 
-template <>
-struct FImpl<Constructor> {
+template <bool is_readonly>
+struct FImpl<Constructor, is_readonly> {
 static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
     dAXMARK; dITEMS;
 
-    CAIXS_install_entersub<Constructor>(aTHX);
+    CAIXS_install_entersub<Constructor, is_readonly>(aTHX);
     if (UNLIKELY(!items)) croak("Usage: $obj->constructor or __PACKAGE__->constructor");
 
     PL_stack_sp = ++MARK; /* PUTBACK */
@@ -324,15 +325,15 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
     return;
 }};
 
-template <>
-struct FImpl<PrivateClass> {
+template <bool is_readonly>
+struct FImpl<PrivateClass, is_readonly> {
 static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
     dAXMARK; dITEMS;
     SP -= items;
 
     if (UNLIKELY(!items)) croak("Usage: $obj->accessor or __PACKAGE__->accessor");
 
-    CAIXS_install_entersub<PrivateClass>(aTHX);
+    CAIXS_install_entersub<PrivateClass, is_readonly>(aTHX);
     shared_keys* keys = (shared_keys*)CAIXS_find_keys(cv);
 
     const int type = PrivateClass; /* for CALL_*_CB */
@@ -348,7 +349,7 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
 }};
 
 /* covers type = {Inherited, InheritedCb, ObjectOnly} */
-template <AccessorTypes type>
+template <AccessorTypes type, bool is_readonly>
 struct FImpl {
 static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
     dAXMARK; dITEMS;
@@ -356,7 +357,7 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
 
     if (UNLIKELY(!items)) croak("Usage: $obj->accessor or __PACKAGE__->accessor");
 
-    CAIXS_install_entersub<type>(aTHX);
+    CAIXS_install_entersub<type, is_readonly>(aTHX);
     shared_keys* keys = CAIXS_find_keys(cv);
 
     SV* self = *(SP+1);
