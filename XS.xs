@@ -24,21 +24,13 @@ CAIXS_install_inherited_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key,
 
     if (need_cb) {
         assert(pkg_key != NULL);
-        payload = CAIXS_install_accessor<InheritedCb, false>(aTHX_ full_name);
+        payload = CAIXS_install_accessor<InheritedCb>(aTHX_ full_name, false);
 
     } else if (pkg_key != NULL) {
-        if (is_readonly) {
-            payload = CAIXS_install_accessor<Inherited, true>(aTHX_ full_name);
-        } else {
-            payload = CAIXS_install_accessor<Inherited, false>(aTHX_ full_name);
-        }
+        payload = CAIXS_install_accessor<Inherited>(aTHX_ full_name, is_readonly);
 
     } else {
-        if (is_readonly) {
-            payload = CAIXS_install_accessor<ObjectOnly, true>(aTHX_ full_name);
-        } else {
-            payload = CAIXS_install_accessor<ObjectOnly, false>(aTHX_ full_name);
-        }
+        payload = CAIXS_install_accessor<ObjectOnly>(aTHX_ full_name, is_readonly);
     }
 
     STRLEN len;
@@ -69,13 +61,7 @@ CAIXS_install_inherited_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key,
 
 static void
 CAIXS_install_class_accessor(pTHX_ SV* full_name, bool is_varclass, bool is_readonly = false) {
-    shared_keys* payload;
-
-    if (is_readonly) {
-        payload = CAIXS_install_accessor<PrivateClass, true>(aTHX_ full_name);
-    } else {
-        payload = CAIXS_install_accessor<PrivateClass, false>(aTHX_ full_name);
-    }
+    shared_keys* payload = CAIXS_install_accessor<PrivateClass>(aTHX_ full_name, is_readonly);
 
     if (is_varclass) {
         GV* gv = gv_fetchsv(full_name, GV_ADD, SVt_PV);

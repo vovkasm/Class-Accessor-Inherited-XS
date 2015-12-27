@@ -42,10 +42,18 @@ CAIXS_install_cv(pTHX_ SV* full_name) {
     return cv;
 }
 
-template <AccessorType type, bool is_readonly> static
+template <AccessorType type> static
 shared_keys*
-CAIXS_install_accessor(pTHX_ SV* full_name) {
-    CV* cv = CAIXS_install_cv<type, is_readonly>(aTHX_ full_name);
+CAIXS_install_accessor(pTHX_ SV* full_name, bool is_readonly) {
+    CV* cv;
+
+    if (is_readonly) {
+        cv = CAIXS_install_cv<type, true>(aTHX_ full_name);
+
+    } else {
+        cv = CAIXS_install_cv<type, false>(aTHX_ full_name);
+    }
+
     return CAIXS_payload_init<type>(aTHX_ cv);
 }
 
