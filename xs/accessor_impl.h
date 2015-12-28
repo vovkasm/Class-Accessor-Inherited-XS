@@ -46,6 +46,12 @@
         return PL_ppaddr[name](aTHX);       \
     } STMT_END                              \
 
+#define READONLY_CROAK_CHECK                            \
+    if (is_readonly) {                                  \
+        croak("Can't set value in readonly accessor");  \
+        return;                                         \
+    }                                                   \
+
 template <AccessorType type, bool is_readonly>
 struct FImpl;
 
@@ -338,14 +344,14 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
 
     const int type = PrivateClass; /* for CALL_*_CB */
 
-    if (items > 1) {
-        CALL_WRITE_CB(keys->storage, 0);
-        return;
-
-    } else {
+    if (items == 1) {
         CALL_READ_CB(keys->storage);
         return;
     }
+
+    READONLY_CROAK_CHECK;
+    CALL_WRITE_CB(keys->storage, 0);
+    return;
 }};
 
 /* covers type = {Inherited, InheritedCb, ObjectOnly} */
@@ -368,6 +374,8 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
         }
 
         if (items > 1) {
+            if (type != InheritedCb) READONLY_CROAK_CHECK;
+
             SV* new_value;
             CALL_WRITE_CB(new_value, 1);
             if (UNLIKELY(!hv_store_ent(obj, keys->hash_key, new_value, 0))) {
@@ -400,6 +408,8 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
 
     HE* hent;
     if (items > 1) {
+        if (type != InheritedCb) READONLY_CROAK_CHECK;
+
         hent = hv_fetch_ent(stash, keys->pkg_key, 0, 0);
         GV* glob = hent ? (GV*)HeVAL(hent) : NULL;
 
