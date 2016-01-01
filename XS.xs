@@ -18,7 +18,7 @@ static int unstolen = 0;
 #include "xs/installer.h"
 
 static void
-CAIXS_install_inherited_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key, SV* read_cb, SV* write_cb, bool is_readonly = false) {
+CAIXS_install_inherited_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key, SV* read_cb, SV* write_cb, bool is_readonly) {
     shared_keys* payload;
     bool need_cb = read_cb && write_cb;
 
@@ -60,7 +60,7 @@ CAIXS_install_inherited_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key,
 }
 
 static void
-CAIXS_install_class_accessor(pTHX_ SV* full_name, bool is_varclass, bool is_readonly = false) {
+CAIXS_install_class_accessor(pTHX_ SV* full_name, bool is_varclass, bool is_readonly) {
     shared_keys* payload = CAIXS_install_accessor<PrivateClass>(aTHX_ full_name, is_readonly);
 
     if (is_varclass) {
@@ -97,18 +97,18 @@ PPCODE:
 }
 
 void
-install_object_accessor(SV* full_name, SV* hash_key)
+install_object_accessor(SV* full_name, SV* hash_key, SV* is_readonly)
 PPCODE:
 {
-    CAIXS_install_inherited_accessor(aTHX_ full_name, hash_key, NULL, NULL, NULL);
+    CAIXS_install_inherited_accessor(aTHX_ full_name, hash_key, NULL, NULL, NULL, SvTRUE(is_readonly));
     XSRETURN_UNDEF;
 }
 
 void
-install_inherited_accessor(SV* full_name, SV* hash_key, SV* pkg_key)
+install_inherited_accessor(SV* full_name, SV* hash_key, SV* pkg_key, SV* is_readonly)
 PPCODE: 
 {
-    CAIXS_install_inherited_accessor(aTHX_ full_name, hash_key, pkg_key, NULL, NULL);
+    CAIXS_install_inherited_accessor(aTHX_ full_name, hash_key, pkg_key, NULL, NULL, SvTRUE(is_readonly));
     XSRETURN_UNDEF;
 }
 
@@ -116,15 +116,15 @@ void
 install_inherited_cb_accessor(SV* full_name, SV* hash_key, SV* pkg_key, SV* read_cb, SV* write_cb)
 PPCODE:
 {
-    CAIXS_install_inherited_accessor(aTHX_ full_name, hash_key, pkg_key, read_cb, write_cb);
+    CAIXS_install_inherited_accessor(aTHX_ full_name, hash_key, pkg_key, read_cb, write_cb, false); /* is_readonly not applicable */
     XSRETURN_UNDEF;
 }
 
 void
-install_class_accessor(SV* full_name, SV* is_varclass)
+install_class_accessor(SV* full_name, SV* is_varclass, SV* is_readonly)
 PPCODE:
 {
-    CAIXS_install_class_accessor(aTHX_ full_name, SvTRUE(is_varclass));
+    CAIXS_install_class_accessor(aTHX_ full_name, SvTRUE(is_varclass), SvTRUE(is_readonly));
     XSRETURN_UNDEF;
 }
 

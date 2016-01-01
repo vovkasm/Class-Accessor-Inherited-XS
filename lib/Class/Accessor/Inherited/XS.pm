@@ -13,11 +13,15 @@ XSLoader::load('Class::Accessor::Inherited::XS', $VERSION);
 
 my $REGISTERED_TYPES = {};
 register_types(
-    inherited   => {installer => \&_mk_inherited_accessor},
-    class       => {installer => \&_mk_class_accessor},
-    varclass    => {installer => \&_mk_varclass_accessor},
-    object      => {installer => \&_mk_object_accessor},
-    constructor => {installer => \&_mk_constructor},
+    inherited       => {installer => \&_mk_inherited_accessor},
+    inherited_ro    => {installer => sub { _mk_inherited_accessor(@_, 1) }},
+    class           => {installer => \&_mk_class_accessor},
+    class_ro        => {installer => sub { _mk_class_accessor(@_, 0, 1) }},
+    varclass        => {installer => sub { _mk_class_accessor(@_, 1, 0) }},
+    varclass_ro     => {installer => sub { _mk_class_accessor(@_, 1, 1) }},
+    object          => {installer => \&_mk_object_accessor},
+    object_ro       => {installer => sub { _mk_object_accessor(@_, 1) }},
+    constructor     => {installer => \&_mk_constructor},
 );
 
 sub import {
@@ -114,27 +118,21 @@ sub _type_installer {
 }
 
 sub _mk_inherited_accessor {
-    my ($class, $name, $field) = @_;
+    my ($class, $name, $field, $is_readonly) = @_;
 
-    install_inherited_accessor("${class}::${name}", $field, $PREFIX.$field);
+    install_inherited_accessor("${class}::${name}", $field, $PREFIX.$field, $is_readonly);
 }
 
 sub _mk_class_accessor {
-    my ($class, $name) = @_;
+    my ($class, $name, undef, $is_varclass, $is_readonly) = @_;
 
-    install_class_accessor("${class}::${name}", 0);
-}
-
-sub _mk_varclass_accessor {
-    my ($class, $name) = @_;
-
-    install_class_accessor("${class}::${name}", 1);
+    install_class_accessor("${class}::${name}", $is_varclass, $is_readonly);
 }
 
 sub _mk_object_accessor {
-    my ($class, $name, $field) = @_;
+    my ($class, $name, $field, $is_readonly) = @_;
 
-    install_object_accessor("${class}::${name}", $field);
+    install_object_accessor("${class}::${name}", $field, $is_readonly);
 }
 
 sub _mk_constructor {
