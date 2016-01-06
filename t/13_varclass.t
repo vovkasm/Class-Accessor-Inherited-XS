@@ -4,9 +4,7 @@ use strict;
 {
     package Jopa;
     use base qw/Class::Accessor::Inherited::XS/;
-    use Class::Accessor::Inherited::XS varclass => {
-        foo => 'bar',
-    };
+    use Class::Accessor::Inherited::XS varclass => ['foo'];
     __PACKAGE__->mk_class_accessors('baz');
 
     sub new { return bless {}, shift }

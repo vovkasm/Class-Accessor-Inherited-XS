@@ -13,15 +13,15 @@ XSLoader::load('Class::Accessor::Inherited::XS', $VERSION);
 
 my $REGISTERED_TYPES = {};
 register_types(
-    inherited       => {installer => \&_mk_inherited_accessor},
-    inherited_ro    => {installer => sub { _mk_inherited_accessor(@_, 1) }},
-    class           => {installer => \&_mk_class_accessor},
-    class_ro        => {installer => sub { _mk_class_accessor(@_, 0, 1) }},
-    varclass        => {installer => sub { _mk_class_accessor(@_, 1, 0) }},
-    varclass_ro     => {installer => sub { _mk_class_accessor(@_, 1, 1) }},
-    object          => {installer => \&_mk_object_accessor},
-    object_ro       => {installer => sub { _mk_object_accessor(@_, 1) }},
-    constructor     => {installer => \&_mk_constructor},
+    inherited       => {installer => \&_mk_inherited_accessor,              clone_arg => 1},
+    inherited_ro    => {installer => sub { _mk_inherited_accessor(@_, 1) }, clone_arg => 1},
+    class           => {installer => sub { _mk_class_accessor(@_, 0, 0) },  clone_arg => undef},
+    class_ro        => {installer => sub { _mk_class_accessor(@_, 0, 1) },  clone_arg => undef},
+    varclass        => {installer => sub { _mk_class_accessor(@_, 1, 0) },  clone_arg => undef},
+    varclass_ro     => {installer => sub { _mk_class_accessor(@_, 1, 1) },  clone_arg => undef},
+    object          => {installer => \&_mk_object_accessor,                 clone_arg => 1},
+    object_ro       => {installer => sub { _mk_object_accessor(@_, 1) },    clone_arg => 1},
+    constructor     => {installer => \&_mk_constructor,                     clone_arg => undef},
 );
 
 sub import {
@@ -34,15 +34,16 @@ sub import {
     for my $type (keys %opts) {
         my $accessors = $opts{$type};
         my $installer = _type_installer($type);
+        my $clone_arg = $REGISTERED_TYPES->{$type}{clone_arg};
 
         if (ref($accessors) eq 'HASH') {
             $installer->($class, $_, $accessors->{$_}) for keys %$accessors;
 
         } elsif (ref($accessors) eq 'ARRAY') {
-            $installer->($class, $_, $_) for @$accessors;
+            $installer->($class, $_, $clone_arg && $_) for @$accessors;
 
         } elsif (!ref($accessors)) {
-            $installer->($class, $accessors, $accessors);
+            $installer->($class, $accessors, $clone_arg && $accessors);
 
         } else {
             Carp::confess("Can't understand format for '$type' accessors initializer");
@@ -74,11 +75,14 @@ sub mk_type_accessors {
     my ($class, $type) = (shift, shift);
 
     my $installer = _type_installer($type);
+    my $clone_arg = $REGISTERED_TYPES->{$type}{clone_arg};
+
     for my $entry (@_) {
         if (ref($entry) eq 'ARRAY') {
             $installer->($class, @$entry);
+
         } else {
-            $installer->($class, $entry, $entry);
+            $installer->($class, $entry, $clone_arg && $entry);
         }
     }
 }
@@ -103,6 +107,7 @@ sub register_type {
         };
     }
 
+    $args->{clone_arg} = 1 unless exists $args->{clone_arg};
     $REGISTERED_TYPES->{$type} = $args;
 }
 
