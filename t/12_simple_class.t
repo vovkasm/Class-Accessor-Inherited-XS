@@ -5,6 +5,7 @@ use strict;
     package Jopa;
     use base qw/Class::Accessor::Inherited::XS/;
     use Class::Accessor::Inherited::XS class => ['foo'];
+    use Class::Accessor::Inherited::XS class => {'baz' => 90};
     __PACKAGE__->mk_class_accessors('bar');
 
     sub new { return bless {}, shift }
@@ -32,5 +33,6 @@ $Jopa::foo = -1;
 is(Jopa->foo, 42);
 
 is(Jopa->bar(70), 70);
+is(Jopa->baz, 90);
 
 done_testing;
