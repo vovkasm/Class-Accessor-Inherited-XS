@@ -176,7 +176,8 @@ Class::Accessor::Inherited::XS - Fast XS inherited, object and class accessors
       varclass  => ['boo'],
   };
 
-  #or in a Class::Accessor::Grouped-like fashion
+  # or in a Class::Accessor::Grouped-like fashion
+  # this is unrecommended style and it provides very limited interface
   use parent 'Class::Accessor::Inherited::XS';
 
   __PACKAGE__->mk_inherited_accessors('foo', ['bar', 'bar_key']);
