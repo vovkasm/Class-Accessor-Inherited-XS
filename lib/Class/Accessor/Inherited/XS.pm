@@ -271,7 +271,8 @@ class_caix       34345065/s          13328%   3044%   2337%             910%    
 
 You can register new inherited accessor types with associated read/write callbacks. Unlike
 L<Class::Accessor::Grouped>, only a single callback can be set for a type, without per-class
-B<get_$type>/B<set_$type> lookups.
+B<get_$type>/B<set_$type> lookups. You can omit either B<on_read> or B<on_write> if you don't
+need them to avoid performance losses.
 
 B<on_read> callback receives a single argument - return value from the underlying B<inherited> accessor. It's result
 is the new accessor's return value (and it isn't stored anywhere).
