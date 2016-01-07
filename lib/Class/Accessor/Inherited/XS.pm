@@ -131,8 +131,7 @@ sub _mk_inherited_accessor {
 sub _mk_class_accessor {
     my ($class, $name, $default, $is_varclass, $is_readonly) = @_;
 
-    install_class_accessor("${class}::${name}", $is_varclass, $is_readonly);
-    ${\$class->$name} = $default if defined $default;
+    install_class_accessor("${class}::${name}", $default, $is_varclass, $is_readonly);
 }
 
 sub _mk_object_accessor {

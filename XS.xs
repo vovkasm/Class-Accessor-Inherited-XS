@@ -60,8 +60,16 @@ CAIXS_install_inherited_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key,
 }
 
 static void
-CAIXS_install_class_accessor(pTHX_ SV* full_name, bool is_varclass, bool is_readonly) {
-    shared_keys* payload = CAIXS_install_accessor<PrivateClass>(aTHX_ full_name, is_readonly);
+CAIXS_install_class_accessor(pTHX_ SV* full_name, SV* default_sv, bool is_varclass, bool is_readonly) {
+    bool is_lazy = SvOK(default_sv) && SvROK(default_sv) && SvTYPE(SvRV(default_sv)) == SVt_PVCV;
+
+    shared_keys* payload;
+    if (is_lazy) {
+        payload = CAIXS_install_accessor<LazyClass>(aTHX_ full_name, is_readonly);
+
+    } else {
+        payload = CAIXS_install_accessor<PrivateClass>(aTHX_ full_name, is_readonly);
+    }
 
     if (is_varclass) {
         GV* gv = gv_fetchsv(full_name, GV_ADD, SVt_PV);
@@ -75,6 +83,15 @@ CAIXS_install_class_accessor(pTHX_ SV* full_name, bool is_varclass, bool is_read
 
     } else {
         payload->storage = newSV(0);
+    }
+
+    if (SvOK(default_sv)) {
+        if (is_lazy) {
+            payload->lazy_cb = SvREFCNT_inc_NN(SvRV(default_sv));
+
+        } else {
+            sv_setsv(payload->storage, default_sv);
+        }
     }
 }
 
@@ -122,10 +139,10 @@ PPCODE:
 }
 
 void
-install_class_accessor(SV* full_name, SV* is_varclass, SV* is_readonly)
+install_class_accessor(SV* full_name, SV* default_sv, SV* is_varclass, SV* is_readonly)
 PPCODE:
 {
-    CAIXS_install_class_accessor(aTHX_ full_name, SvTRUE(is_varclass), SvTRUE(is_readonly));
+    CAIXS_install_class_accessor(aTHX_ full_name, default_sv, SvTRUE(is_varclass), SvTRUE(is_readonly));
     XSRETURN_UNDEF;
 }
 

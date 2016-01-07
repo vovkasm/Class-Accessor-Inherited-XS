@@ -11,7 +11,10 @@ struct shared_keys {
         SV* hash_key;
         SV* storage;
     };
-    SV* pkg_key;
+    union {
+        SV* pkg_key;
+        SV* lazy_cb;
+    };
     SV* read_cb;
     SV* write_cb;
 };
@@ -21,13 +24,14 @@ enum AccessorType {
     InheritedCb,
     PrivateClass,
     ObjectOnly,
-    Constructor
+    Constructor,
+    LazyClass
 };
 
 /*
     - must have a value for each AccessorType element
     - '-2' will croak in av_extend() and is used as a guard
 */
-const int ALLOC_SIZE[] = {3, 3, 0, 0, -2};
+const int ALLOC_SIZE[] = {3, 3, 0, 0, -2, 1};
 
 #endif /* __INHERITED_XS_TYPES_H_ */

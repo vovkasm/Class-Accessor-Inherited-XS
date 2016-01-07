@@ -47,7 +47,7 @@
     } STMT_END                              \
 
 #define READONLY_TYPE_ASSERT \
-    assert(type == Inherited || type == PrivateClass || type == ObjectOnly)
+    assert(type == Inherited || type == PrivateClass || type == ObjectOnly || type == LazyClass)
 
 #define READONLY_CROAK_CHECK                            \
     if (type != InheritedCb && is_readonly) {           \
@@ -332,6 +332,39 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
 
     sv_bless(self, stash);
     *ret = self;
+    return;
+}};
+
+template <bool is_readonly>
+struct FImpl<LazyClass, is_readonly> {
+static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
+    dAXMARK; dITEMS;
+
+    if (UNLIKELY(!items)) croak("Usage: $obj->accessor or __PACKAGE__->accessor");
+    shared_keys* keys = (shared_keys*)CAIXS_find_keys(cv);
+
+    if (items > 1) {
+        const int type = LazyClass; /* for READONLY_CROAK_CHECK */
+        READONLY_CROAK_CHECK;
+
+        PUSHMARK(SP - items); /* our dAXMARK has popped one */
+        FImpl<PrivateClass, is_readonly>::CAIXS_accessor(aTHX_ SP, cv, stash);
+
+    } else {
+        ENTER;
+        PUSHMARK(--SP); /* SP -= items */
+        call_sv(keys->lazy_cb, G_SCALAR);
+        SPAGAIN;
+        LEAVE;
+
+        sv_setsv(keys->storage, *SP);
+        *SP = keys->storage;
+    }
+
+    CvXSUB(cv) = (XSUBADDR_t)&CAIXS_entersub_wrapper<PrivateClass, is_readonly>;
+    SvREFCNT_dec_NN(keys->lazy_cb);
+    keys->lazy_cb = NULL;
+
     return;
 }};
 
