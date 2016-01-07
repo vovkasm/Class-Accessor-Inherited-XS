@@ -46,8 +46,12 @@
         return PL_ppaddr[name](aTHX);       \
     } STMT_END                              \
 
+#define READONLY_TYPE_ASSERT \
+    assert(type == Inherited || type == PrivateClass || type == ObjectOnly)
+
 #define READONLY_CROAK_CHECK                            \
     if (type != InheritedCb && is_readonly) {           \
+        READONLY_TYPE_ASSERT;                           \
         croak("Can't set value in readonly accessor");  \
         return;                                         \
     }                                                   \
