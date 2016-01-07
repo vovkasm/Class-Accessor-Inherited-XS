@@ -1,5 +1,9 @@
 Revision history for Class::Accessor::Inherited::XS.
 
+0.21 Thu Jan  7 20:13:46 MSK 2016
+    - readonly accessors
+    - change hash arg for class/varclass into default value
+
 0.20 Fri Dec 25 15:41:46 MSK 2015
     - fix docs mistake
 
