@@ -1,7 +1,6 @@
 sudo: false
 language: perl
 perl:
-  - "blead"
   - "5.22"
   - "5.22-extras"
   - "5.20"
