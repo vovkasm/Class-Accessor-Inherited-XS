@@ -7,7 +7,10 @@
 #endif
 
 #if (PERL_VERSION >= 12)
-#define OPTIMIZE_OPMETHOD
+#define CAIX_OPTIMIZE_OPMETHOD
+#define CAIX_OPTIMIZE_OPMETHOD_RESULT (&PL_sv_yes)
+#else
+#define CAIX_OPTIMIZE_OPMETHOD_RESULT (&PL_sv_no)
 #endif
 
 #ifndef SvREFCNT_dec_NN

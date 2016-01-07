@@ -74,7 +74,7 @@ XSPROTO(CAIXS_entersub_wrapper) {
     return;
 }
 
-#ifdef OPTIMIZE_OPMETHOD
+#ifdef CAIX_OPTIMIZE_OPMETHOD
 
 template <AccessorType type, int optype, bool is_readonly> static
 OP *
@@ -183,7 +183,7 @@ gotcv:
     }
 }
 
-#endif /* OPTIMIZE_OPMETHOD */
+#endif /* CAIX_OPTIMIZE_OPMETHOD */
 
 template <AccessorType type, bool is_readonly> static
 OP *
@@ -234,7 +234,7 @@ CAIXS_install_entersub(pTHX) {
         op->op_spare |= 1;
         op->op_ppaddr = &CAIXS_entersub<type, is_readonly>;
 
-#ifdef OPTIMIZE_OPMETHOD
+#ifdef CAIX_OPTIMIZE_OPMETHOD
         OP* methop = cUNOPx(op)->op_first;
         if (LIKELY(methop != NULL)) {   /* Such op can be created by call_sv(G_METHOD_NAMED) */
             while (methop->op_sibling) { methop = methop->op_sibling; }
@@ -248,7 +248,7 @@ CAIXS_install_entersub(pTHX) {
                 }
             }
         }
-#endif /* OPTIMIZE_OPMETHOD */
+#endif /* CAIX_OPTIMIZE_OPMETHOD */
     }
 }
 

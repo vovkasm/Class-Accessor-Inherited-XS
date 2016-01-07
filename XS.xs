@@ -88,6 +88,7 @@ BOOT:
 
     HV* stash = gv_stashpv("Class::Accessor::Inherited::XS", 0);
     newCONSTSUB(stash, "BINARY_UNSAFE", CAIX_BINARY_UNSAFE_RESULT);
+    newCONSTSUB(stash, "OPTIMIZED_OPMETHOD", CAIX_OPTIMIZE_OPMETHOD_RESULT);
 }
 
 void _unstolen_count()
