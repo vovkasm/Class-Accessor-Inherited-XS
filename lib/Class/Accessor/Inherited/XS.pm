@@ -156,34 +156,31 @@ Class::Accessor::Inherited::XS - Fast XS inherited, object and class accessors
 
 =head1 SYNOPSIS
 
-  #install accessors at compile time
+  # install accessors at compile time
   use Class::Accessor::Inherited::XS 
-      inherited => [qw/foo bar/], # inherited accessors with key names equal to accessor names
-      object    => 'fuz',         # non-inherited object accessor with key name equal to accessor name
-      varclass  => 'boo',         # non-inherited accessor for __PACKAGE__,  aliased with '$__PACKAGE__::boo' variable
-      class     => 'baz',         # non-inherited anonymous accessor for __PACKAGE__
-      constructor => 'new',       # object constructor
+      package      => 'Pkg', # optionally install into another package
+      constructor  => 'new', # object constructor name
+      inherited    => 'foo', # inherited accessor for classes/objects
+      object       => 'foo', # non-inherited simple object accessor
+      varclass     => 'foo', # non-inherited accessor for __PACKAGE__,  aliased with '$__PACKAGE__::foo' variable
+      class        => 'foo', # non-inherited anonymous accessor for __PACKAGE__
   ;
   
-  use Class::Accessor::Inherited::XS { # optional braces
-      package   => 'Another::Package', # install into another package
-      inherited => {
-        bar => 'bar_key',
-        foo => 'foo_key',
-      },
-      object    => {fuz => 'fuz_key'},
-      class     => ['baz'],
-      varclass  => ['boo'],
+  use Class::Accessor::Inherited::XS {  # optional braces
+      inherited => {foo => 'foo_key'},  # change package variable/hash key
+      object    => {foo => 'foo_key'},  # change hash key
+      class_ro  => {foo => $default},   # B<class_ro>, B<varclass_ro>, B<class>, B<varclass> set default values instead
+      class     => ['foo', 'bar'],      # provide a list of accessor names
   };
 
-  # or in a Class::Accessor::Grouped-like fashion
+  # or at run time, in a Class::Accessor::Grouped-like fashion
   # this is unrecommended style and it provides very limited interface
   use parent 'Class::Accessor::Inherited::XS';
 
-  __PACKAGE__->mk_inherited_accessors('foo', ['bar', 'bar_key']);
-  __PACKAGE__->mk_class_accessors('baz');
-  __PACKAGE__->mk_varclass_accessors('boo');
-  __PACKAGE__->mk_object_accessors('fuz');
+  __PACKAGE__->mk_inherited_accessors('foo', [bar => 'bar_key']);
+  __PACKAGE__->mk_class_accessors('foo');
+  __PACKAGE__->mk_varclass_accessors('foo');
+  __PACKAGE__->mk_object_accessors('foo');
 
 =head1 DESCRIPTION
 
@@ -203,6 +200,11 @@ the B<varclass> internal storage is a package variable with the same name, while
 in an anonymous variable.
 
 B<object> accessors provides plain simple hash key access.
+
+There are following read-only accessor types: B<class_ro>, B<varclass_ro>, B<inherited_ro>, B<object_ro>.
+They behave exactly like theirs non-ro counterparts, but will croak when you try to call them with arguments.
+To set values for such accessors, you have to access either corresponding package variable or a hash key. But
+B<ro_class> accessor has none - so you can provide a default value for it using hash initializer syntax.
 
 B<constructor> can create objects either from a list or from a single hashref. Note that if you pass
 a hash reference, it becomes blessed too. If that's not what you want, pass a dereferenced copy.
