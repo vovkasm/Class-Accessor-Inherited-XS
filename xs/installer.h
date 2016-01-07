@@ -36,7 +36,7 @@ CAIXS_install_cv(pTHX_ SV* full_name) {
     }
 #endif
 
-    CV* cv = Perl_newXS_len_flags(aTHX_ full_name_buf, len, &CAIXS_entersub_wrapper<type, is_readonly>, __FILE__, NULL, NULL, SvUTF8(full_name));
+    CV* cv = Perl_newXS_len_flags(aTHX_ full_name_buf, len, (&CAIXS_entersub_wrapper<type, is_readonly>), __FILE__, NULL, NULL, SvUTF8(full_name));
     if (!cv) croak("Can't install XS accessor");
 
     return cv;
