@@ -47,7 +47,7 @@
     } STMT_END                              \
 
 #define READONLY_CROAK_CHECK                            \
-    if (is_readonly) {                                  \
+    if (type != InheritedCb && is_readonly) {           \
         croak("Can't set value in readonly accessor");  \
         return;                                         \
     }                                                   \
@@ -374,7 +374,7 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
         }
 
         if (items > 1) {
-            if (type != InheritedCb) READONLY_CROAK_CHECK;
+            READONLY_CROAK_CHECK;
 
             SV* new_value;
             CALL_WRITE_CB(new_value, 1);
@@ -408,7 +408,7 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
 
     HE* hent;
     if (items > 1) {
-        if (type != InheritedCb) READONLY_CROAK_CHECK;
+        READONLY_CROAK_CHECK;
 
         hent = hv_fetch_ent(stash, keys->pkg_key, 0, 0);
         GV* glob = hent ? (GV*)HeVAL(hent) : NULL;
