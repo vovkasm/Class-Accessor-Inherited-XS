@@ -1,14 +1,9 @@
 use strict;
 use Test::More;
 
-{
-    package Jopa;
-    use Class::Accessor::Inherited::XS inherited => [qw/a b c/];
+use Class::Accessor::Inherited::XS inherited => [qw/a b c/];
 
-    sub new { return bless {}, shift }
-}
-
-my $o = new Jopa;
+my $o = bless {};
 
 $o->{a} = 1;
 is($o->a, 1, 'read obj attr');
