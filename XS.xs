@@ -61,7 +61,7 @@ CAIXS_install_inherited_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key,
 
 static void
 CAIXS_install_class_accessor(pTHX_ SV* full_name, SV* default_sv, bool is_varclass, bool is_readonly) {
-    bool is_lazy = SvOK(default_sv) && SvROK(default_sv) && SvTYPE(SvRV(default_sv)) == SVt_PVCV;
+    bool is_lazy = SvROK(default_sv) && SvTYPE(SvRV(default_sv)) == SVt_PVCV;
 
     shared_keys* payload;
     if (is_lazy) {
