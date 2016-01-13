@@ -159,7 +159,7 @@ Class::Accessor::Inherited::XS - Fast XS inherited, object and class accessors
   use Class::Accessor::Inherited::XS 
       package      => 'Pkg', # optionally install into another package
       constructor  => 'new', # object constructor name
-      inherited    => 'foo', # inherited accessor for classes/objects
+      inherited    => 'foo', # inherited accessor for class/object
       object       => 'foo', # non-inherited simple object accessor
       varclass     => 'foo', # non-inherited accessor for __PACKAGE__,  aliased with '$__PACKAGE__::foo' variable
       class        => 'foo', # non-inherited anonymous accessor for __PACKAGE__
@@ -168,7 +168,7 @@ Class::Accessor::Inherited::XS - Fast XS inherited, object and class accessors
   use Class::Accessor::Inherited::XS {  # optional braces
       inherited => {foo => 'foo_key'},  # change package variable/hash key
       object    => {foo => 'foo_key'},  # change hash key
-      class_ro  => {foo => $default},   # B<class_ro>, B<varclass_ro>, B<class>, B<varclass> set default values instead
+      class_ro  => {foo => $default},   # class_ro, varclass_ro, class, varclas set default values instead
       class     => ['foo', 'bar'],      # provide a list of accessor names
   };
 
@@ -200,10 +200,11 @@ in an anonymous variable.
 
 B<object> accessors provides plain simple hash key access.
 
-There are following read-only accessor types: B<class_ro>, B<varclass_ro>, B<inherited_ro>, B<object_ro>.
-They behave exactly like theirs non-ro counterparts, but will croak when you try to call them with arguments.
-To set values for such accessors, you have to access either corresponding package variable or a hash key. But
-B<ro_class> accessor has none - so you can provide a default value for it using hash initializer syntax.
+B<class_ro>, B<varclass_ro>, B<inherited_ro>, B<object_ro> are readonly counterparts for correspoding accessors
+without B<_ro> suffix. They behave exactly the same except that they will croak upon a call with arguments.
+To set values for such accessors, you can write to either corresponding package variable or a hash key. B<ro_class>
+accessor has no externally accessible storage, but you can provide a default value for it using hash
+initializer syntax.
 
 B<constructor> can create objects either from a list or from a single hashref. Note that if you pass
 a hash reference, it becomes blessed too. If that's not what you want, pass a dereferenced copy.
@@ -274,13 +275,13 @@ class_caix       34345065/s          13328%   3044%   2337%             910%    
 You can register new inherited accessor types with associated read/write callbacks. Unlike
 L<Class::Accessor::Grouped>, only a single callback can be set for a type, without per-class
 B<get_$type>/B<set_$type> lookups. You can omit either B<on_read> or B<on_write> if you don't
-need them to avoid performance losses.
+need it to avoid performance losses from associated call.
 
 B<on_read> callback receives a single argument - return value from the underlying B<inherited> accessor. It's result
 is the new accessor's return value (and it isn't stored anywhere).
 
 B<on_write> callback receives original accessor's arguments, and it's return value is stored as usual.
-Exceptions thrown from this callback will cancel store and will leave the old value unchanged.
+Exceptions thrown from this callback will cancel store and will leave old value unchanged.
 
 =head1 PROFILING WITH Devel::NYTProf
 
