@@ -1,5 +1,9 @@
 Revision history for Class::Accessor::Inherited::XS.
 
+0.23 Mon Jan 18 02:57:36 MSK 2016
+    - add CAIXS alias
+    - implement lazy class accessors
+
 0.22 Thu Jan  7 21:11:15 MSK 2016
     - fix compilation for older perls
 
