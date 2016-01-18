@@ -168,8 +168,9 @@ Class::Accessor::Inherited::XS - Fast XS inherited, object and class accessors
   use Class::Accessor::Inherited::XS {  # optional braces
       inherited => {foo => 'foo_key'},  # change package variable/hash key
       object    => {foo => 'foo_key'},  # change hash key
-      class_ro  => {foo => $default},   # class_ro, varclass_ro, class, varclas set default values instead
-      class     => ['foo', 'bar'],      # provide a list of accessor names
+      class_ro  => {foo => $default},   # class_ro, varclass_ro, class, varclass set default values instead
+      class     => {foo => $subref},    # lazy accessor initializer
+      varclass  => ['foo', 'bar'],      # provide a list of accessor names
   };
 
   # or at run time, in a Class::Accessor::Grouped-like fashion
@@ -205,6 +206,11 @@ without B<_ro> suffix. They behave exactly the same except that they will croak 
 To set values for such accessors, you can write to either corresponding package variable or a hash key. B<ro_class>
 accessor has no externally accessible storage, but you can provide a default value for it using hash
 initializer syntax.
+
+B<lazy> accessors do not have their own keyword but, instead, if you pass a subref as a B<default> argument
+to any one of the B<class> accessors' family, it's not stored as-is, but is called instead upon the first accessor
+read and it's return value is stored. After that, B<lazy> accessor becomes a normal one of the same type. Calling
+an accessor as a setter before first getter will loose it's defaultness (unless, of course, it's a readonly one).
 
 B<constructor> can create objects either from a list or from a single hashref. Note that if you pass
 a hash reference, it becomes blessed too. If that's not what you want, pass a dereferenced copy.

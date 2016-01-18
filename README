@@ -7,7 +7,7 @@ SYNOPSIS
       use Class::Accessor::Inherited::XS 
           package      => 'Pkg', # optionally install into another package
           constructor  => 'new', # object constructor name
-          inherited    => 'foo', # inherited accessor for classes/objects
+          inherited    => 'foo', # inherited accessor for class/object
           object       => 'foo', # non-inherited simple object accessor
           varclass     => 'foo', # non-inherited accessor for __PACKAGE__,  aliased with '$__PACKAGE__::foo' variable
           class        => 'foo', # non-inherited anonymous accessor for __PACKAGE__
@@ -16,8 +16,9 @@ SYNOPSIS
       use Class::Accessor::Inherited::XS {  # optional braces
           inherited => {foo => 'foo_key'},  # change package variable/hash key
           object    => {foo => 'foo_key'},  # change hash key
-          class_ro  => {foo => $default},   # B<class_ro>, B<varclass_ro>, B<class>, B<varclass> set default values instead
-          class     => ['foo', 'bar'],      # provide a list of accessor names
+          class_ro  => {foo => $default},   # class_ro, varclass_ro, class, varclass set default values instead
+          class     => {foo => $subref},    # lazy accessor initializer
+          varclass  => ['foo', 'bar'],      # provide a list of accessor names
       };
 
       # or at run time, in a Class::Accessor::Grouped-like fashion
@@ -52,13 +53,21 @@ DESCRIPTION
 
     object accessors provides plain simple hash key access.
 
-    There are following read-only accessor types: class_ro, varclass_ro,
-    inherited_ro, object_ro. They behave exactly like theirs non-ro
-    counterparts, but will croak when you try to call them with arguments.
-    To set values for such accessors, you have to access either
-    corresponding package variable or a hash key. But ro_class accessor has
-    none - so you can provide a default value for it using hash initializer
-    syntax.
+    class_ro, varclass_ro, inherited_ro, object_ro are readonly counterparts
+    for correspoding accessors without _ro suffix. They behave exactly the
+    same except that they will croak upon a call with arguments. To set
+    values for such accessors, you can write to either corresponding package
+    variable or a hash key. ro_class accessor has no externally accessible
+    storage, but you can provide a default value for it using hash
+    initializer syntax.
+
+    lazy accessors do not have their own keyword but, instead, if you pass a
+    subref as a default argument to any one of the class accessors' family,
+    it's not stored as-is, but is called instead upon the first accessor
+    read and it's return value is stored. After that, lazy accessor becomes
+    a normal one of the same type. Calling an accessor as a setter before
+    first getter will loose it's defaultness (unless, of course, it's a
+    readonly one).
 
     constructor can create objects either from a list or from a single
     hashref. Note that if you pass a hash reference, it becomes blessed too.
@@ -119,8 +128,8 @@ EXTENDING
     You can register new inherited accessor types with associated read/write
     callbacks. Unlike Class::Accessor::Grouped, only a single callback can
     be set for a type, without per-class get_$type/set_$type lookups. You
-    can omit either on_read or on_write if you don't need them to avoid
-    performance losses.
+    can omit either on_read or on_write if you don't need it to avoid
+    performance losses from associated call.
 
     on_read callback receives a single argument - return value from the
     underlying inherited accessor. It's result is the new accessor's return
@@ -128,7 +137,7 @@ EXTENDING
 
     on_write callback receives original accessor's arguments, and it's
     return value is stored as usual. Exceptions thrown from this callback
-    will cancel store and will leave the old value unchanged.
+    will cancel store and will leave old value unchanged.
 
 PROFILING WITH Devel::NYTProf
     To perform it's task, Devel::NYTProf hooks into the perl interpreter by
