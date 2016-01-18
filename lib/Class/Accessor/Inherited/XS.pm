@@ -207,8 +207,8 @@ To set values for such accessors, you can write to either corresponding package 
 accessor has no externally accessible storage, but you can provide a default value for it using hash
 initializer syntax.
 
-B<lazy> accessors do not have their own keyword but, instead, if you pass a subref as a B<default> argument
-to any one of the B<class> accessors' family, it's not stored as-is, but is called instead upon the first accessor
+B<lazy> accessors do not have their own keyword but, instead, if you pass a subref as a default argument
+to any one of the B<package> accessors' family, it's not stored as-is, but is called instead upon the first accessor
 read and it's return value is stored. After that, B<lazy> accessor becomes a normal one of the same type. Calling
 an accessor as a setter before first getter will loose it's defaultness (unless, of course, it's a readonly one).
 
