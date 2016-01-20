@@ -1,11 +1,6 @@
 #ifndef __INHERITED_XS_COMPAT_H_
 #define __INHERITED_XS_COMPAT_H_
 
-#if (PERL_VERSION < 21)
-#undef mg_findext
-#define NEED_mg_findext
-#endif
-
 #if (PERL_VERSION >= 12)
 #define CAIX_OPTIMIZE_OPMETHOD
 #define CAIX_OPTIMIZE_OPMETHOD_RESULT (&PL_sv_yes)

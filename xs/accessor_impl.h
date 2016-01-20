@@ -252,6 +252,20 @@ CAIXS_install_entersub(pTHX) {
     }
 }
 
+inline MAGIC*
+CAIXS_mg_findext(SV* sv, int type, MGVTBL* vtbl) {
+    MAGIC* mg;
+
+    if (sv) {
+        for (mg = SvMAGIC(sv); mg; mg = mg->mg_moremagic) {
+            if (mg->mg_type == type && mg->mg_virtual == vtbl)
+                return mg;
+        }
+    }
+
+    return NULL;
+}
+
 inline shared_keys*
 CAIXS_find_keys(CV* cv) {
     shared_keys* keys;
@@ -266,7 +280,7 @@ CAIXS_find_keys(CV* cv) {
         and had gone away at any time without prior notice. So, instead, we have to scan our magical
         refcnt storage - there's always a proper thread-local SV*, cloned for us by perl itself.
     */
-    MAGIC* mg = mg_findext((SV*)cv, PERL_MAGIC_ext, &sv_payload_marker);
+    MAGIC* mg = CAIXS_mg_findext((SV*)cv, PERL_MAGIC_ext, &sv_payload_marker);
     if (UNLIKELY(!mg)) croak("Can't find hash key information");
 
     keys = (shared_keys*)AvARRAY((AV*)(mg->mg_obj));

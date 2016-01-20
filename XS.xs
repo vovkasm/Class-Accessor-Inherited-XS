@@ -11,8 +11,6 @@ static bool optimize_entersub = 1;
 static int unstolen = 0;
 
 #include "xs/compat.h"
-#include "ppport.h"
-
 #include "xs/types.h"
 #include "xs/accessor_impl.h"
 #include "xs/installer.h"
