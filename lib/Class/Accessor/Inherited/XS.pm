@@ -240,7 +240,7 @@ no known conceptual leaks.
 L<Class::Accessor::Inherited::XS> is at least 10x times faster than L<Class::Accessor::Grouped>, depending
 on your usage pattern. Accessing data from a parent in a large inheritance chain is still the worst case,
 but even there L<Class::Accessor::Inherited::XS> beats L<Class::Accessor::Grouped> best-case. Object accessors
-are event faster than L<Class::XSAccessor> ones.
+are even faster than L<Class::XSAccessor> ones.
 
 Accessors with just an empty sub callback are ~3x times slower then normal ones, so use them only when absolutely necessary.
 
