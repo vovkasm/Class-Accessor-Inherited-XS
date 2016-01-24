@@ -13,21 +13,21 @@
 */
 
 #define CALL_READ_CB(result)                    \
-    if (type == InheritedCb && keys->read_cb) { \
+    if (type == InheritedCb && payload->read_cb) {  \
         ENTER;                                  \
         PUSHMARK(SP);                           \
         *(SP+1) = result;                       \
-        call_sv(keys->read_cb, G_SCALAR);       \
+        call_sv(payload->read_cb, G_SCALAR);        \
         LEAVE;                                  \
     } else {                                    \
         *(SP+1) = result;                       \
     }                                           \
 
 #define CALL_WRITE_CB(slot, need_alloc)         \
-    if (type == InheritedCb && keys->write_cb) {\
+    if (type == InheritedCb && payload->write_cb) { \
         ENTER;                                  \
         PUSHMARK(SP);                           \
-        call_sv(keys->write_cb, G_SCALAR);      \
+        call_sv(payload->write_cb, G_SCALAR);       \
         SPAGAIN;                                \
         LEAVE;                                  \
         if (need_alloc) slot = newSV(0);        \
@@ -267,13 +267,13 @@ CAIXS_mg_findext(SV* sv, int type, MGVTBL* vtbl) {
 }
 
 inline shared_keys*
-CAIXS_find_keys(CV* cv) {
-    shared_keys* keys;
+CAIXS_find_payload(CV* cv) {
+    shared_keys* payload;
 
 #ifndef MULTIPLICITY
     /* Blessed are ye and get a fastpath */
-    keys = (shared_keys*)(CvXSUBANY(cv).any_ptr);
-    if (UNLIKELY(!keys)) croak("Can't find hash key information");
+    payload = (shared_keys*)(CvXSUBANY(cv).any_ptr);
+    if (UNLIKELY(!payload)) croak("Can't find hash key information");
 #else
     /*
         We can't look into CvXSUBANY under threads, as it could have been written in the parent thread
@@ -283,10 +283,10 @@ CAIXS_find_keys(CV* cv) {
     MAGIC* mg = CAIXS_mg_findext((SV*)cv, PERL_MAGIC_ext, &sv_payload_marker);
     if (UNLIKELY(!mg)) croak("Can't find hash key information");
 
-    keys = (shared_keys*)AvARRAY((AV*)(mg->mg_obj));
+    payload = (shared_keys*)AvARRAY((AV*)(mg->mg_obj));
 #endif
 
-    return keys;
+    return payload;
 }
 
 inline HV*
@@ -355,7 +355,7 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
     dAXMARK; dITEMS;
 
     if (UNLIKELY(!items)) croak("Usage: $obj->accessor or __PACKAGE__->accessor");
-    shared_keys* keys = (shared_keys*)CAIXS_find_keys(cv);
+    shared_keys* payload = CAIXS_find_payload(cv);
 
     if (items > 1) {
         const int type = LazyClass; /* for READONLY_CROAK_CHECK */
@@ -367,17 +367,17 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
     } else {
         ENTER;
         PUSHMARK(--SP); /* SP -= items */
-        call_sv(keys->lazy_cb, G_SCALAR);
+        call_sv(payload->lazy_cb, G_SCALAR);
         SPAGAIN;
         LEAVE;
 
-        sv_setsv(keys->storage, *SP);
-        *SP = keys->storage;
+        sv_setsv(payload->storage, *SP);
+        *SP = payload->storage;
     }
 
     CvXSUB(cv) = (XSUBADDR_t)&CAIXS_entersub_wrapper<PrivateClass, is_readonly>;
-    SvREFCNT_dec_NN(keys->lazy_cb);
-    keys->lazy_cb = NULL;
+    SvREFCNT_dec_NN(payload->lazy_cb);
+    payload->lazy_cb = NULL;
 
     return;
 }};
@@ -391,17 +391,17 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
     if (UNLIKELY(!items)) croak("Usage: $obj->accessor or __PACKAGE__->accessor");
 
     CAIXS_install_entersub<PrivateClass, is_readonly>(aTHX);
-    shared_keys* keys = (shared_keys*)CAIXS_find_keys(cv);
+    shared_keys* payload = CAIXS_find_payload(cv);
 
     const int type = PrivateClass; /* for CALL_*_CB */
 
     if (items == 1) {
-        CALL_READ_CB(keys->storage);
+        CALL_READ_CB(payload->storage);
         return;
     }
 
     READONLY_CROAK_CHECK;
-    CALL_WRITE_CB(keys->storage, 0);
+    CALL_WRITE_CB(payload->storage, 0);
     return;
 }};
 
@@ -415,7 +415,7 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
     if (UNLIKELY(!items)) croak("Usage: $obj->accessor or __PACKAGE__->accessor");
 
     CAIXS_install_entersub<type, is_readonly>(aTHX);
-    shared_keys* keys = CAIXS_find_keys(cv);
+    shared_keys* payload = CAIXS_find_payload(cv);
 
     SV* self = *(SP+1);
     if (SvROK(self)) {
@@ -429,14 +429,14 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
 
             SV* new_value;
             CALL_WRITE_CB(new_value, 1);
-            if (UNLIKELY(!hv_store_ent(obj, keys->hash_key, new_value, 0))) {
+            if (UNLIKELY(!hv_store_ent(obj, payload->hash_key, new_value, 0))) {
                 SvREFCNT_dec_NN(new_value);
                 croak("Can't store new hash value");
             }
             return;
                     
         } else {
-            HE* hent = hv_fetch_ent(obj, keys->hash_key, 0, 0);
+            HE* hent = hv_fetch_ent(obj, payload->hash_key, 0, 0);
             if (hent) {
                 CALL_READ_CB(HeVAL(hent));
                 return;
@@ -461,13 +461,13 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
     if (items > 1) {
         READONLY_CROAK_CHECK;
 
-        hent = hv_fetch_ent(stash, keys->pkg_key, 0, 0);
+        hent = hv_fetch_ent(stash, payload->pkg_key, 0, 0);
         GV* glob = hent ? (GV*)HeVAL(hent) : NULL;
 
         if (UNLIKELY(!glob || !isGV(glob) || SvFAKE(glob))) {
             if (!glob) glob = (GV*)newSV(0);
 
-            gv_init_sv(glob, stash, keys->pkg_key, 0);
+            gv_init_sv(glob, stash, payload->pkg_key, 0);
 
             if (hent) {
                 /* There was just a stub instead of the full glob */
@@ -476,7 +476,7 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
                 HeVAL(hent) = (SV*)glob;
 
             } else {
-                if (!hv_store_ent(stash, keys->pkg_key, (SV*)glob, 0)) {
+                if (!hv_store_ent(stash, payload->pkg_key, (SV*)glob, 0)) {
                     SvREFCNT_dec_NN(glob);
                     croak("Couldn't add a glob to package");
                 }
@@ -489,8 +489,8 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
         return;
     }
     
-    #define TRY_FETCH_PKG_VALUE(stash, keys, hent)                      \
-    if (stash && (hent = hv_fetch_ent(stash, keys->pkg_key, 0, 0))) {   \
+    #define TRY_FETCH_PKG_VALUE(stash, payload, hent)                   \
+    if (stash && (hent = hv_fetch_ent(stash, payload->pkg_key, 0, 0))) {\
         SV* sv = GvSV(HeVAL(hent));                                     \
         if (sv && SvOK(sv)) {                                           \
             CALL_READ_CB(sv);                                           \
@@ -498,7 +498,7 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
         }                                                               \
     }
 
-    TRY_FETCH_PKG_VALUE(stash, keys, hent);
+    TRY_FETCH_PKG_VALUE(stash, payload, hent);
 
     AV* supers = mro_get_linear_isa(stash);
     /*
@@ -514,7 +514,7 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
 
         if (elem) {
             stash = gv_stashsv(elem, 0);
-            TRY_FETCH_PKG_VALUE(stash, keys, hent);
+            TRY_FETCH_PKG_VALUE(stash, payload, hent);
         }
     }
 

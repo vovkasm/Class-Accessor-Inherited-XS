@@ -2,26 +2,26 @@
 #define __INHERITED_XS_INSTALLER_H_
 
 inline void
-CAIXS_payload_attach(pTHX_ CV* cv, AV* keys_av) {
+CAIXS_payload_attach(pTHX_ CV* cv, AV* payload_av) {
 #ifndef MULTIPLICITY
-    CvXSUBANY(cv).any_ptr = (void*)AvARRAY(keys_av);
+    CvXSUBANY(cv).any_ptr = (void*)AvARRAY(payload_av);
 #endif
 
-    sv_magicext((SV*)cv, (SV*)keys_av, PERL_MAGIC_ext, &sv_payload_marker, NULL, 0);
-    SvREFCNT_dec_NN((SV*)keys_av);
+    sv_magicext((SV*)cv, (SV*)payload_av, PERL_MAGIC_ext, &sv_payload_marker, NULL, 0);
+    SvREFCNT_dec_NN((SV*)payload_av);
     SvRMAGICAL_off((SV*)cv);
 }
 
 template <AccessorType type> static
 shared_keys*
 CAIXS_payload_init(pTHX_ CV* cv) {
-    AV* keys_av = newAV();
+    AV* payload_av = newAV();
 
-    av_extend(keys_av, ALLOC_SIZE[type]);
-    AvFILLp(keys_av) = ALLOC_SIZE[type];
+    av_extend(payload_av, ALLOC_SIZE[type]);
+    AvFILLp(payload_av) = ALLOC_SIZE[type];
 
-    CAIXS_payload_attach(aTHX_ cv, keys_av);
-    return (shared_keys*)AvARRAY(keys_av);
+    CAIXS_payload_attach(aTHX_ cv, payload_av);
+    return (shared_keys*)AvARRAY(payload_av);
 }
 
 template <AccessorType type, bool is_readonly> static
