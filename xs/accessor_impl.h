@@ -12,33 +12,33 @@
     after call_sv().
 */
 
-#define CALL_READ_CB(result)                    \
+#define CALL_READ_CB(result)                        \
     if (type == InheritedCb && payload->read_cb) {  \
-        ENTER;                                  \
-        PUSHMARK(SP);                           \
-        *(SP+1) = result;                       \
+        ENTER;                                      \
+        PUSHMARK(SP);                               \
+        *(SP+1) = result;                           \
         call_sv(payload->read_cb, G_SCALAR);        \
-        LEAVE;                                  \
-    } else {                                    \
-        *(SP+1) = result;                       \
-    }                                           \
+        LEAVE;                                      \
+    } else {                                        \
+        *(SP+1) = result;                           \
+    }                                               \
 
-#define CALL_WRITE_CB(slot, need_alloc)         \
+#define CALL_WRITE_CB(slot, need_alloc)             \
     if (type == InheritedCb && payload->write_cb) { \
-        ENTER;                                  \
-        PUSHMARK(SP);                           \
+        ENTER;                                      \
+        PUSHMARK(SP);                               \
         call_sv(payload->write_cb, G_SCALAR);       \
-        SPAGAIN;                                \
-        LEAVE;                                  \
-        if (need_alloc) slot = newSV(0);        \
-        sv_setsv(slot, *SP);                    \
-        *SP = slot;                             \
-    } else {                                    \
-        if (need_alloc) slot = newSV(0);        \
-        sv_setsv(slot, *(SP+2));                \
-        PUSHs(slot);                            \
-        PUTBACK;                                \
-    }                                           \
+        SPAGAIN;                                    \
+        LEAVE;                                      \
+        if (need_alloc) slot = newSV(0);            \
+        sv_setsv(slot, *SP);                        \
+        *SP = slot;                                 \
+    } else {                                        \
+        if (need_alloc) slot = newSV(0);            \
+        sv_setsv(slot, *(SP+2));                    \
+        PUSHs(slot);                                \
+        PUTBACK;                                    \
+    }                                               \
 
 #define OP_UNSTEAL(name) STMT_START {       \
         ++unstolen;                         \
