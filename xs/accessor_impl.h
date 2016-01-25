@@ -258,8 +258,9 @@ CAIXS_mg_findext(SV* sv, int type, MGVTBL* vtbl) {
 
     if (sv) {
         for (mg = SvMAGIC(sv); mg; mg = mg->mg_moremagic) {
-            if (mg->mg_type == type && mg->mg_virtual == vtbl)
+            if (mg->mg_type == type && mg->mg_virtual == vtbl) {
                 return mg;
+            }
         }
     }
 
