@@ -6,8 +6,8 @@ use strict;
 use Benchmark qw/cmpthese/;
 
 sub __read_caxsi {}
-Class::Accessor::Inherited::XS::install_object_accessor("CCC::caixo", "caixo");
-Class::Accessor::Inherited::XS::install_class_accessor("CCC::caixc", 0);
+Class::Accessor::Inherited::XS::install_object_accessor("CCC::caixo", "caixo", 0);
+Class::Accessor::Inherited::XS::install_class_accessor("CCC::caixc", undef, 0, 0);
 Class::Accessor::Inherited::XS::install_inherited_cb_accessor("CCC::caxsi", "caxsi", "__cag_caxsi", \&__read_caxsi, undef);
 
 my $o = CCC->new;
