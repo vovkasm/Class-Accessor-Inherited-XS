@@ -21,6 +21,7 @@ WriteMakefile(
     META_MERGE => {
         resources => {
             repository => 'http://github.com/vovkasm/Class-Accessor-Inherited-XS',
+            bugtracker => {web => 'https://github.com/vovkasm/Class-Accessor-Inherited-XS/issues'},
         },
     },
     ABSTRACT_FROM   => 'lib/Class/Accessor/Inherited/XS.pm',
