@@ -313,6 +313,33 @@ CAIXS_find_stash(pTHX_ SV* self, CV* cv) {
     return stash;
 }
 
+inline GV*
+CAIXS_fetch_glob(pTHX_ HV* stash, shared_keys* payload) {
+    HE* hent = hv_fetch_ent(stash, payload->pkg_key, 0, 0);
+    GV* glob = hent ? (GV*)HeVAL(hent) : NULL;
+
+    if (UNLIKELY(!glob || !isGV(glob) || SvFAKE(glob))) {
+        if (!glob) glob = (GV*)newSV(0);
+
+        gv_init_sv(glob, stash, payload->pkg_key, 0);
+
+        if (hent) {
+            /* There was just a stub instead of the full glob */
+            SvREFCNT_inc_simple_void_NN((SV*)glob);
+            SvREFCNT_dec_NN(HeVAL(hent));
+            HeVAL(hent) = (SV*)glob;
+
+        } else {
+            if (!hv_store_ent(stash, payload->pkg_key, (SV*)glob, 0)) {
+                SvREFCNT_dec_NN(glob);
+                croak("Couldn't add a glob to package");
+            }
+        }
+    }
+
+    return glob;
+}
+
 template <bool is_readonly>
 struct FImpl<Constructor, is_readonly> {
 static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
@@ -462,28 +489,7 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
     if (items > 1) {
         READONLY_CROAK_CHECK;
 
-        hent = hv_fetch_ent(stash, payload->pkg_key, 0, 0);
-        GV* glob = hent ? (GV*)HeVAL(hent) : NULL;
-
-        if (UNLIKELY(!glob || !isGV(glob) || SvFAKE(glob))) {
-            if (!glob) glob = (GV*)newSV(0);
-
-            gv_init_sv(glob, stash, payload->pkg_key, 0);
-
-            if (hent) {
-                /* There was just a stub instead of the full glob */
-                SvREFCNT_inc_simple_void_NN((SV*)glob);
-                SvREFCNT_dec_NN(HeVAL(hent));
-                HeVAL(hent) = (SV*)glob;
-
-            } else {
-                if (!hv_store_ent(stash, payload->pkg_key, (SV*)glob, 0)) {
-                    SvREFCNT_dec_NN(glob);
-                    croak("Couldn't add a glob to package");
-                }
-            }
-        }
-
+        GV* glob = CAIXS_fetch_glob(aTHX_ stash, payload);
         SV* new_value = GvSVn(glob);
         CALL_WRITE_CB(new_value, 0);
 
