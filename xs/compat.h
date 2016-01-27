@@ -17,6 +17,22 @@
 #define dNOOP
 #endif
 
+#if defined(GvGPFLAGS_on) || defined(GvGPFLAGS_off)
+#error("GvGPFLAGS_on or GvGPFLAGS_off defined by perl core");
+#endif
+
+#ifndef GvGPFLAGS
+#define GvGPFLAGS(gv) (GvLINE(gv) & ((U32)1<<31))
+#define GvGPFLAGS_on(gv) (GvLINE(gv) |= ((U32)1<<31))
+#define GvGPFLAGS_off(gv) (GvLINE(gv) &= ~((U32)1<<31))
+#else
+#define GvGPFLAGS_on(gv) (GvGPFLAGS(gv) = 1)
+#define GvGPFLAGS_off(gv) (GvGPFLAGS(gv) = 0)
+#endif
+
+#define hv_fetchhek(hv, hek) \
+    ((SV **)hv_common((hv), NULL, HEK_KEY(hek), HEK_LEN(hek), HEK_UTF8(hek), HV_FETCH_JUST_SV, NULL, HEK_HASH(hek)))
+
 #ifndef gv_init_sv
 #define gv_init_sv(gv, stash, sv, flags) gv_init(gv, stash, SvPVX(sv), SvLEN(sv), flags | SvUTF8(sv))
 #endif

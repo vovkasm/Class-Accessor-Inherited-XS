@@ -340,6 +340,116 @@ CAIXS_fetch_glob(pTHX_ HV* stash, shared_keys* payload) {
     return glob;
 }
 
+template <AccessorType type, bool is_readonly> static
+void
+CAIXS_inherited_compat(pTHX_ SV** SP, HV* stash, shared_keys* payload, int items) {
+    if (items > 1) {
+        READONLY_CROAK_CHECK;
+
+        GV* glob = CAIXS_fetch_glob(aTHX_ stash, payload);
+        SV* new_value = GvSVn(glob);
+        CALL_WRITE_CB(new_value, 0);
+
+        return;
+    }
+
+    #define TRY_FETCH_PKG_VALUE(stash, payload, hent)                   \
+    if (stash && (hent = hv_fetch_ent(stash, payload->pkg_key, 0, 0))) {\
+        SV* sv = GvSV(HeVAL(hent));                                     \
+        if (sv && SvOK(sv)) {                                           \
+            CALL_READ_CB(sv);                                           \
+            return;                                                     \
+        }                                                               \
+    }
+
+    HE* hent;
+    TRY_FETCH_PKG_VALUE(stash, payload, hent);
+
+    AV* supers = mro_get_linear_isa(stash);
+    /*
+        First entry in the 'mro_get_linear_isa' list is the 'stash' itself.
+        It's already been tested, so ajust both counter and iterator to skip over it.
+    */
+    SSize_t fill     = AvFILLp(supers);
+    SV** supers_list = AvARRAY(supers);
+
+    SV* elem;
+    while (--fill >= 0) {
+        elem = *(++supers_list);
+
+        if (elem) {
+            stash = gv_stashsv(elem, 0);
+            TRY_FETCH_PKG_VALUE(stash, payload, hent);
+        }
+    }
+
+    /* XSRETURN_UNDEF */
+    CALL_READ_CB(&PL_sv_undef);
+    return;
+}
+
+inline SV*
+CAIXS_inherited_cache(pTHX_ HV* stash, GV* glob, shared_keys* payload) {
+    const struct mro_meta* stash_meta = HvMROMETA(stash);
+    const int64_t curgen = (int64_t)PL_sub_generation + stash_meta->pkg_gen;
+
+    if (GvLINE(glob) == curgen || GvGPFLAGS(glob) == 1) return GvSV(glob);
+    if (UNLIKELY(curgen > ((U32)1 << 31) - 1)) {
+        warn("MRO cache generation 31 bit wraparound");
+        PL_sub_generation = 0;
+    }
+
+    return NULL;
+}
+
+inline SV*
+CAIXS_update_cache(pTHX_ HV* stash, GV* glob, shared_keys* payload) {
+    AV* supers = mro_get_linear_isa(stash);
+    /*
+        First entry in the 'mro_get_linear_isa' list is the 'stash' itself.
+        It's already been tested, so ajust both counter and iterator to skip over it.
+    */
+    SSize_t fill     = AvFILLp(supers);
+    SV** supers_list = AvARRAY(supers);
+
+    SV* elem;
+    HE* hent;
+    SV* result = NULL;
+
+    GV* stack[fill + 1];
+    stack[fill] = glob;
+
+    while (result == NULL && --fill >= 0) {
+        elem = *(++supers_list);
+
+        if (elem) {
+            HV* next_stash = gv_stashsv(elem, GV_ADD); /* inherited from empty stash */
+            GV* next_gv = CAIXS_fetch_glob(aTHX_ next_stash, payload);
+            stack[fill] = next_gv;
+
+            result = CAIXS_inherited_cache(aTHX_ next_stash, next_gv, payload);
+        }
+    }
+
+    if (!result) result = GvSVn(stack[0]); /* undef from root */
+
+    for (int i = fill + 1; i <= AvFILLp(supers); ++i) {
+        GV* cur_gv = stack[i];
+
+        const struct mro_meta* stash_meta = HvMROMETA(GvSTASH(cur_gv));
+        const U32 curgen = PL_sub_generation + stash_meta->pkg_gen;
+        GvLINE(cur_gv) = curgen & (((U32)1 << 31) - 1); /* perl may lack 'gp_flags' field, so we must care about the highest bit */
+
+        SV** sv_slot = &GvSV(cur_gv);
+
+        SvREFCNT_inc_simple_NN(result);
+        SvREFCNT_dec(*sv_slot);
+        *sv_slot = result;
+    }
+
+    return result;
+}
+
 template <bool is_readonly>
 struct FImpl<Constructor, is_readonly> {
 static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
@@ -485,48 +595,51 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
 
     if (!stash) stash = CAIXS_find_stash(aTHX_ self, cv);
 
-    HE* hent;
     if (items > 1) {
         READONLY_CROAK_CHECK;
 
         GV* glob = CAIXS_fetch_glob(aTHX_ stash, payload);
         SV* new_value = GvSVn(glob);
+
+        if (!GvGPFLAGS(glob)) {
+            SV** svp = hv_fetchhek(PL_isarev, HvENAME_HEK(stash));
+            if (svp) {
+                HV* isarev = (HV*)*svp;
+                hv_iterinit(isarev);
+
+                HE* iter;
+                while ((iter = hv_iternext(isarev))) {
+                    HV* revstash = gv_stashsv(hv_iterkeysv(iter), GV_ADD);
+                    GV* revglob = CAIXS_fetch_glob(aTHX_ revstash, payload);
+
+                    if (GvSV(revglob) == new_value) GvLINE(revglob) = 0;
+                }
+            }
+
+            SvREFCNT_dec(new_value);
+
+            GvSV(glob) = newSV(0);
+            new_value = GvSV(glob);
+        }
+
         CALL_WRITE_CB(new_value, 0);
+
+        if (SvOK(new_value)) {
+            GvGPFLAGS_on(glob);
+
+        } else {
+            GvGPFLAGS_off(glob);
+            GvLINE(glob) = 0;
+        }
 
         return;
     }
-    
-    #define TRY_FETCH_PKG_VALUE(stash, payload, hent)                   \
-    if (stash && (hent = hv_fetch_ent(stash, payload->pkg_key, 0, 0))) {\
-        SV* sv = GvSV(HeVAL(hent));                                     \
-        if (sv && SvOK(sv)) {                                           \
-            CALL_READ_CB(sv);                                           \
-            return;                                                     \
-        }                                                               \
-    }
 
-    TRY_FETCH_PKG_VALUE(stash, payload, hent);
+    GV* glob = CAIXS_fetch_glob(aTHX_ stash, payload);
+    SV* result = CAIXS_inherited_cache(aTHX_ stash, glob, payload);
+    if (!result) result = CAIXS_update_cache(aTHX_ stash, glob, payload);
 
-    AV* supers = mro_get_linear_isa(stash);
-    /*
-        First entry in the 'mro_get_linear_isa' list is the 'stash' itself.
-        It's already been tested, so ajust both counter and iterator to skip over it.
-    */
-    SSize_t fill     = AvFILLp(supers);
-    SV** supers_list = AvARRAY(supers);
-
-    SV* elem;
-    while (--fill >= 0) {
-        elem = *(++supers_list);
-
-        if (elem) {
-            stash = gv_stashsv(elem, 0);
-            TRY_FETCH_PKG_VALUE(stash, payload, hent);
-        }
-    }
-
-    /* XSRETURN_UNDEF */
-    CALL_READ_CB(&PL_sv_undef);
+    CALL_READ_CB(result);
     return;
 }};
 
