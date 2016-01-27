@@ -393,7 +393,7 @@ CAIXS_inherited_cache(pTHX_ HV* stash, GV* glob, shared_keys* payload) {
     const struct mro_meta* stash_meta = HvMROMETA(stash);
     const int64_t curgen = (int64_t)PL_sub_generation + stash_meta->pkg_gen;
 
-    if (GvLINE(glob) == curgen || GvGPFLAGS(glob) == 1) return GvSV(glob);
+    if (GvLINE(glob) == curgen || GvGPFLAGS(glob)) return GvSV(glob);
     if (UNLIKELY(curgen > ((U32)1 << 31) - 1)) {
         warn("MRO cache generation 31 bit wraparound");
         PL_sub_generation = 0;
