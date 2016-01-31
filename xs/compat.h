@@ -30,6 +30,11 @@
 #define GvGPFLAGS_off(gv) (GvGPFLAGS(gv) = 0)
 #endif
 
+#ifndef HvENAME
+#define HvENAME HvNAME
+#define HvENAME_HEK HvNAME_HEK
+#endif
+
 #define hv_fetchhek(hv, hek) \
     ((SV **)hv_common((hv), NULL, HEK_KEY(hek), HEK_LEN(hek), HEK_UTF8(hek), HV_FETCH_JUST_SV, NULL, HEK_HASH(hek)))
 

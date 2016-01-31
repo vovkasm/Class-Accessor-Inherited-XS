@@ -302,7 +302,7 @@ CAIXS_find_stash(pTHX_ SV* self, CV* cv) {
         if (UNLIKELY(!acc_gv)) croak("Can't have package accessor in anon sub");
         stash = GvSTASH(acc_gv);
 
-        const char* stash_name = HvNAME(stash);
+        const char* stash_name = HvENAME(stash);
         const char* self_name = SvPV_nolen(self);
         if (strcmp(stash_name, self_name) != 0) {
             stash = gv_stashsv(self, GV_ADD);
