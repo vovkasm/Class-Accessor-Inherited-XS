@@ -12,7 +12,7 @@ static int unstolen = 0;
 
 #include "xs/compat.h"
 #include "xs/types.h"
-#include "xs/accessor_impl.h"
+#include "xs/accessors.h"
 #include "xs/installer.h"
 
 static void
