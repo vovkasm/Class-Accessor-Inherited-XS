@@ -23,6 +23,7 @@ WriteMakefile(
             repository => 'http://github.com/vovkasm/Class-Accessor-Inherited-XS',
             bugtracker => {web => 'https://github.com/vovkasm/Class-Accessor-Inherited-XS/issues'},
         },
+        dynamic_config => 0,
     },
     ABSTRACT_FROM   => 'lib/Class/Accessor/Inherited/XS.pm',
     LICENSE         => 'perl',
