@@ -314,14 +314,14 @@ CAIXS_find_stash(pTHX_ SV* self, CV* cv) {
 }
 
 inline GV*
-CAIXS_fetch_glob(pTHX_ HV* stash, shared_keys* payload) {
-    HE* hent = hv_fetch_ent(stash, payload->pkg_key, 0, 0);
+CAIXS_fetch_glob(pTHX_ HV* stash, SV* pkg_key) {
+    HE* hent = hv_fetch_ent(stash, pkg_key, 0, 0);
     GV* glob = hent ? (GV*)HeVAL(hent) : NULL;
 
     if (UNLIKELY(!glob || !isGV(glob) || SvFAKE(glob))) {
         if (!glob) glob = (GV*)newSV(0);
 
-        gv_init_sv(glob, stash, payload->pkg_key, 0);
+        gv_init_sv(glob, stash, pkg_key, 0);
 
         if (hent) {
             /* There was just a stub instead of the full glob */
@@ -330,7 +330,7 @@ CAIXS_fetch_glob(pTHX_ HV* stash, shared_keys* payload) {
             HeVAL(hent) = (SV*)glob;
 
         } else {
-            if (!hv_store_ent(stash, payload->pkg_key, (SV*)glob, 0)) {
+            if (!hv_store_ent(stash, pkg_key, (SV*)glob, 0)) {
                 SvREFCNT_dec_NN(glob);
                 croak("Couldn't add a glob to package");
             }
@@ -346,7 +346,7 @@ CAIXS_inherited_compat(pTHX_ SV** SP, HV* stash, shared_keys* payload, int items
     if (items > 1) {
         READONLY_CROAK_CHECK;
 
-        GV* glob = CAIXS_fetch_glob(aTHX_ stash, payload);
+        GV* glob = CAIXS_fetch_glob(aTHX_ stash, payload->pkg_key);
         SV* new_value = GvSVn(glob);
         CALL_WRITE_CB(new_value, 0);
 
@@ -424,7 +424,7 @@ CAIXS_update_cache(pTHX_ HV* stash, GV* glob, shared_keys* payload) {
 
         if (elem) {
             HV* next_stash = gv_stashsv(elem, GV_ADD); /* inherited from empty stash */
-            GV* next_gv = CAIXS_fetch_glob(aTHX_ next_stash, payload);
+            GV* next_gv = CAIXS_fetch_glob(aTHX_ next_stash, payload->pkg_key);
             stack[fill] = next_gv;
 
             result = CAIXS_inherited_cache(aTHX_ next_stash, next_gv, payload);
@@ -598,7 +598,7 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
     if (items > 1) {
         READONLY_CROAK_CHECK;
 
-        GV* glob = CAIXS_fetch_glob(aTHX_ stash, payload);
+        GV* glob = CAIXS_fetch_glob(aTHX_ stash, payload->pkg_key);
         SV* new_value = GvSVn(glob);
 
         if (!GvGPFLAGS(glob)) {
@@ -610,7 +610,7 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
                 HE* iter;
                 while ((iter = hv_iternext(isarev))) {
                     HV* revstash = gv_stashsv(hv_iterkeysv(iter), GV_ADD);
-                    GV* revglob = CAIXS_fetch_glob(aTHX_ revstash, payload);
+                    GV* revglob = CAIXS_fetch_glob(aTHX_ revstash, payload->pkg_key);
 
                     if (GvSV(revglob) == new_value) GvLINE(revglob) = 0;
                 }
@@ -635,7 +635,7 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
         return;
     }
 
-    GV* glob = CAIXS_fetch_glob(aTHX_ stash, payload);
+    GV* glob = CAIXS_fetch_glob(aTHX_ stash, payload->pkg_key);
     SV* result = CAIXS_inherited_cache(aTHX_ stash, glob, payload);
     if (!result) result = CAIXS_update_cache(aTHX_ stash, glob, payload);
 
