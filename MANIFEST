@@ -50,7 +50,10 @@ t/lib/BaseInheritedGroups.pm
 t/lib/ExtraInheritedGroups.pm
 t/lib/SuperInheritedGroups.pm
 XS.xs
+xs/accessors.h
 xs/compat.h
-xs/accessor_impl.h
+xs/fimpl.h
 xs/installer.h
+xs/op.h
 xs/types.h
+xs/util.h
