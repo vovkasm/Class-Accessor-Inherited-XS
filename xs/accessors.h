@@ -319,14 +319,23 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
             SV** svp = hv_fetchhek(PL_isarev, HvENAME_HEK(stash));
             if (svp) {
                 HV* isarev = (HV*)*svp;
-                hv_iterinit(isarev);
 
-                HE* iter;
-                while ((iter = hv_iternext(isarev))) {
-                    HV* revstash = gv_stashsv(hv_iterkeysv(iter), GV_ADD);
-                    GV* revglob = CAIXS_fetch_glob(aTHX_ revstash, payload->pkg_key);
+                if (HvUSEDKEYS(isarev)) {
+                    STRLEN hvmax = HvMAX(isarev);
+                    HE** hvarr = HvARRAY(isarev);
 
-                    if (GvSV(revglob) == new_value) GvLINE(revglob) = 0;
+                    for (STRLEN bucket_num = 0; bucket_num <= hvmax; ++bucket_num) {
+                        for (const HE* he = hvarr[bucket_num]; he; he = HeNEXT(he)) {
+                            if (HeVAL(he) == &PL_sv_yes) { /* mro_core.c stores only them */
+                                /* access PL_stashcache through HEK interface directly here?  */
+                                HEK* hkey = HeKEY_hek(he);
+                                HV* revstash = gv_stashpvn(HEK_KEY(hkey), HEK_LEN(hkey), HEK_UTF8(hkey) | GV_ADD);
+                                GV* revglob = CAIXS_fetch_glob(aTHX_ revstash, payload->pkg_key);
+
+                                if (GvSV(revglob) == new_value) GvLINE(revglob) = 0;
+                            }
+                        }
+                    }
                 }
             }
 
