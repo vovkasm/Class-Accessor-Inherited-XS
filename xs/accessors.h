@@ -118,7 +118,7 @@ CAIXS_icache_get(pTHX_ HV* stash, GV* glob) {
 }
 
 inline SV*
-CAIXS_icache_update(pTHX_ HV* stash, GV* glob, shared_keys* payload) {
+CAIXS_icache_update(pTHX_ HV* stash, GV* glob, SV* pkg_key) {
     AV* supers = mro_get_linear_isa(stash);
     /*
         First entry in the 'mro_get_linear_isa' list is the 'stash' itself.
@@ -139,7 +139,7 @@ CAIXS_icache_update(pTHX_ HV* stash, GV* glob, shared_keys* payload) {
 
         if (elem) {
             HV* next_stash = gv_stashsv(elem, GV_ADD); /* inherited from empty stash */
-            GV* next_gv = CAIXS_fetch_glob(aTHX_ next_stash, payload->pkg_key);
+            GV* next_gv = CAIXS_fetch_glob(aTHX_ next_stash, pkg_key);
             stack[fill] = next_gv;
 
             result = CAIXS_icache_get<false>(aTHX_ next_stash, next_gv);
@@ -168,7 +168,7 @@ CAIXS_icache_update(pTHX_ HV* stash, GV* glob, shared_keys* payload) {
 }
 
 inline void
-CAIXS_icache_clear(pTHX_ HV* stash, SV* new_value, shared_keys* payload) {
+CAIXS_icache_clear(pTHX_ HV* stash, SV* new_value, SV* pkg_key) {
     SV** svp = hv_fetchhek(PL_isarev, HvENAME_HEK(stash));
     if (svp) {
         HV* isarev = (HV*)*svp;
@@ -184,7 +184,7 @@ CAIXS_icache_clear(pTHX_ HV* stash, SV* new_value, shared_keys* payload) {
                         /* access PL_stashcache through HEK interface directly here?  */
                         HEK* hkey = HeKEY_hek(he);
                         HV* revstash = gv_stashpvn(HEK_KEY(hkey), HEK_LEN(hkey), HEK_UTF8(hkey) | GV_ADD);
-                        GV* revglob = CAIXS_fetch_glob(aTHX_ revstash, payload->pkg_key);
+                        GV* revglob = CAIXS_fetch_glob(aTHX_ revstash, pkg_key);
 
                         if (GvSV(revglob) == new_value) GvLINE(revglob) = 0;
                     }
@@ -346,7 +346,7 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
         SV* new_value = GvSVn(glob);
 
         if (!GvGPFLAGS(glob)) {
-            CAIXS_icache_clear(aTHX_ stash, new_value, payload);
+            CAIXS_icache_clear(aTHX_ stash, new_value, payload->pkg_key);
 
             SvREFCNT_dec(new_value);
 
@@ -369,7 +369,7 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
 
     GV* glob = CAIXS_fetch_glob(aTHX_ stash, payload->pkg_key);
     SV* result = CAIXS_icache_get<true>(aTHX_ stash, glob);
-    if (!result) result = CAIXS_icache_update(aTHX_ stash, glob, payload);
+    if (!result) result = CAIXS_icache_update(aTHX_ stash, glob, payload->pkg_key);
 
     CALL_READ_CB(result);
     return;
