@@ -156,7 +156,7 @@ CAIXS_icache_update(pTHX_ HV* stash, GV* glob, shared_keys* payload) {
 
         SV** sv_slot = &GvSV(cur_gv);
 
-        SvREFCNT_inc_simple_NN(result);
+        SvREFCNT_inc_simple_void_NN(result);
         SvREFCNT_dec(*sv_slot);
         *sv_slot = result;
     }
