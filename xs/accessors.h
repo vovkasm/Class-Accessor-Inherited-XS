@@ -170,7 +170,7 @@ CAIXS_icache_update(pTHX_ HV* stash, GV* glob, SV* pkg_key) {
 
         SV* sv_slot = GvSVn(cur_gv);
         sv_setsv_nomg(sv_slot, result);
-        if (!SvMAGICAL(sv_slot) || !mg_findext(sv_slot, PERL_MAGIC_ext, &vtcompat)) {
+        if (!SvSMAGICAL(sv_slot) || !mg_findext(sv_slot, PERL_MAGIC_ext, &vtcompat)) {
             sv_magicext(sv_slot, (SV*)cur_gv, PERL_MAGIC_ext, &vtcompat, (const char*)pkg_key, HEf_SVKEY);
         }
     }
@@ -370,6 +370,10 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
 
         GV* glob = CAIXS_fetch_glob(aTHX_ stash, payload->pkg_key);
         SV* new_value = GvSVn(glob);
+
+        if (!SvSMAGICAL(new_value) || !mg_findext(new_value, PERL_MAGIC_ext, &vtcompat)) {
+            sv_magicext(new_value, (SV*)glob, PERL_MAGIC_ext, &vtcompat, (const char*)(payload->pkg_key), HEf_SVKEY);
+        }
 
         CAIXS_icache_clear(aTHX_ stash, payload->pkg_key);
 
