@@ -103,7 +103,7 @@ CAIXS_inherited_compat(pTHX_ SV** SP, HV* stash, shared_keys* payload, int items
 }
 
 inline SV*
-CAIXS_inherited_cache(pTHX_ HV* stash, GV* glob) {
+CAIXS_icache_get(pTHX_ HV* stash, GV* glob) {
     const struct mro_meta* stash_meta = HvMROMETA(stash);
     const int64_t curgen = (int64_t)PL_sub_generation + stash_meta->pkg_gen;
 
@@ -117,7 +117,7 @@ CAIXS_inherited_cache(pTHX_ HV* stash, GV* glob) {
 }
 
 inline SV*
-CAIXS_update_cache(pTHX_ HV* stash, GV* glob, shared_keys* payload) {
+CAIXS_icache_update(pTHX_ HV* stash, GV* glob, shared_keys* payload) {
     AV* supers = mro_get_linear_isa(stash);
     /*
         First entry in the 'mro_get_linear_isa' list is the 'stash' itself.
@@ -141,7 +141,7 @@ CAIXS_update_cache(pTHX_ HV* stash, GV* glob, shared_keys* payload) {
             GV* next_gv = CAIXS_fetch_glob(aTHX_ next_stash, payload->pkg_key);
             stack[fill] = next_gv;
 
-            result = CAIXS_inherited_cache(aTHX_ next_stash, next_gv);
+            result = CAIXS_icache_get(aTHX_ next_stash, next_gv);
         }
     }
 
@@ -360,8 +360,8 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
     }
 
     GV* glob = CAIXS_fetch_glob(aTHX_ stash, payload->pkg_key);
-    SV* result = CAIXS_inherited_cache(aTHX_ stash, glob);
-    if (!result) result = CAIXS_update_cache(aTHX_ stash, glob, payload);
+    SV* result = CAIXS_icache_get(aTHX_ stash, glob);
+    if (!result) result = CAIXS_icache_update(aTHX_ stash, glob, payload);
 
     CALL_READ_CB(result);
     return;
