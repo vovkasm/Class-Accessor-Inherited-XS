@@ -148,11 +148,13 @@ CAIXS_icache_update(pTHX_ HV* stash, GV* glob, shared_keys* payload) {
 
     if (!result) result = GvSVn(stack[0]); /* undef from root */
 
-    for (int i = fill + 1; i <= AvFILLp(supers); ++i) {
+    U32 pl_sgen = PL_sub_generation;
+    SSize_t new_fill = AvFILLp(supers);
+    for (int i = fill + 1; i <= new_fill; ++i) {
         GV* cur_gv = stack[i];
 
         const struct mro_meta* stash_meta = HvMROMETA(GvSTASH(cur_gv));
-        const U32 curgen = PL_sub_generation + stash_meta->pkg_gen;
+        const U32 curgen = pl_sgen + stash_meta->pkg_gen;
         GvLINE(cur_gv) = curgen & (((U32)1 << 31) - 1); /* perl may lack 'gp_flags' field, so we must care about the highest bit */
 
         SV** sv_slot = &GvSV(cur_gv);
