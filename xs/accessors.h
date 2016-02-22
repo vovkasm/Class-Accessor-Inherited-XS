@@ -102,13 +102,14 @@ CAIXS_inherited_compat(pTHX_ SV** SP, HV* stash, shared_keys* payload, int items
     return;
 }
 
-inline SV*
+template <bool overflow> static
+SV*
 CAIXS_icache_get(pTHX_ HV* stash, GV* glob) {
     const struct mro_meta* stash_meta = HvMROMETA(stash);
     const int64_t curgen = (int64_t)PL_sub_generation + stash_meta->pkg_gen;
 
     if (GvLINE(glob) == curgen || GvGPFLAGS(glob)) return GvSV(glob);
-    if (UNLIKELY(curgen > ((U32)1 << 31) - 1)) {
+    if (overflow && UNLIKELY(curgen > ((U32)1 << 31) - 1)) {
         warn("MRO cache generation 31 bit wraparound");
         PL_sub_generation = 0;
     }
@@ -141,7 +142,7 @@ CAIXS_icache_update(pTHX_ HV* stash, GV* glob, shared_keys* payload) {
             GV* next_gv = CAIXS_fetch_glob(aTHX_ next_stash, payload->pkg_key);
             stack[fill] = next_gv;
 
-            result = CAIXS_icache_get(aTHX_ next_stash, next_gv);
+            result = CAIXS_icache_get<false>(aTHX_ next_stash, next_gv);
         }
     }
 
@@ -360,7 +361,7 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
     }
 
     GV* glob = CAIXS_fetch_glob(aTHX_ stash, payload->pkg_key);
-    SV* result = CAIXS_icache_get(aTHX_ stash, glob);
+    SV* result = CAIXS_icache_get<true>(aTHX_ stash, glob);
     if (!result) result = CAIXS_icache_update(aTHX_ stash, glob, payload);
 
     CALL_READ_CB(result);
