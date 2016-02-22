@@ -54,6 +54,9 @@
         return;                                         \
     }                                                   \
 
+static int CAIXS_glob_setter(pTHX_ SV *sv, MAGIC* mg);
+static MGVTBL vtcompat = {NULL, CAIXS_glob_setter};
+
 template <AccessorType type, bool is_readonly> static
 void
 CAIXS_inherited_compat(pTHX_ SV** SP, HV* stash, shared_keys* payload, int items) {
@@ -157,18 +160,26 @@ CAIXS_icache_update(pTHX_ HV* stash, GV* glob, SV* pkg_key) {
         const U32 curgen = pl_sgen + stash_meta->pkg_gen;
         GvLINE(cur_gv) = curgen & (((U32)1 << 31) - 1); /* perl may lack 'gp_flags' field, so we must care about the highest bit */
 
+/*
         SV** sv_slot = &GvSV(cur_gv);
 
         SvREFCNT_inc_simple_void_NN(result);
         SvREFCNT_dec(*sv_slot);
         *sv_slot = result;
+*/
+
+        SV* sv_slot = GvSVn(cur_gv);
+        sv_setsv_nomg(sv_slot, result);
+        if (!SvMAGICAL(sv_slot) || !mg_findext(sv_slot, PERL_MAGIC_ext, &vtcompat)) {
+            sv_magicext(sv_slot, (SV*)cur_gv, PERL_MAGIC_ext, &vtcompat, (const char*)pkg_key, HEf_SVKEY);
+        }
     }
 
     return result;
 }
 
-inline void
-CAIXS_icache_clear(pTHX_ HV* stash, SV* new_value, SV* pkg_key) {
+static void
+CAIXS_icache_clear(pTHX_ HV* stash, SV* pkg_key) {
     SV** svp = hv_fetchhek(PL_isarev, HvENAME_HEK(stash));
     if (svp) {
         HV* isarev = (HV*)*svp;
@@ -186,12 +197,27 @@ CAIXS_icache_clear(pTHX_ HV* stash, SV* new_value, SV* pkg_key) {
                         HV* revstash = gv_stashpvn(HEK_KEY(hkey), HEK_LEN(hkey), HEK_UTF8(hkey) | GV_ADD);
                         GV* revglob = CAIXS_fetch_glob(aTHX_ revstash, pkg_key);
 
-                        if (GvSV(revglob) == new_value) GvLINE(revglob) = 0;
+/*
+                        if (GvSV(revglob) == new_value) {
+                            assert(!GvGPFLAGS(revglob));
+                            GvLINE(revglob) = 0;
+                        }
+*/
+                        if (!GvGPFLAGS(revglob)) {GvLINE(revglob) = 0;}
                     }
                 }
             }
         }
     }
+}
+
+static int
+CAIXS_glob_setter(pTHX_ SV *sv, MAGIC* mg) {
+    GV* glob = (GV*)(mg->mg_obj);
+    GvGPFLAGS_on(glob);
+    CAIXS_icache_clear(aTHX_ GvSTASH(glob), (SV*)(mg->mg_ptr));
+
+    return 0;
 }
 
 template <bool is_readonly>
@@ -345,6 +371,9 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
         GV* glob = CAIXS_fetch_glob(aTHX_ stash, payload->pkg_key);
         SV* new_value = GvSVn(glob);
 
+        CAIXS_icache_clear(aTHX_ stash, payload->pkg_key);
+
+/*
         if (!GvGPFLAGS(glob)) {
             CAIXS_icache_clear(aTHX_ stash, new_value, payload->pkg_key);
 
@@ -353,6 +382,7 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
             GvSV(glob) = newSV(0);
             new_value = GvSV(glob);
         }
+//*/
 
         CALL_WRITE_CB(new_value, 0);
 
