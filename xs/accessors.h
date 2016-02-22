@@ -167,6 +167,33 @@ CAIXS_icache_update(pTHX_ HV* stash, GV* glob, shared_keys* payload) {
     return result;
 }
 
+inline void
+CAIXS_icache_clear(pTHX_ HV* stash, SV* new_value, shared_keys* payload) {
+    SV** svp = hv_fetchhek(PL_isarev, HvENAME_HEK(stash));
+    if (svp) {
+        HV* isarev = (HV*)*svp;
+
+        if (HvUSEDKEYS(isarev)) {
+            STRLEN hvmax = HvMAX(isarev);
+            HE** hvarr = HvARRAY(isarev);
+
+            SV* pl_yes = &PL_sv_yes; /* not that I care much about ithreads, but still */
+            for (STRLEN bucket_num = 0; bucket_num <= hvmax; ++bucket_num) {
+                for (const HE* he = hvarr[bucket_num]; he; he = HeNEXT(he)) {
+                    if (HeVAL(he) == pl_yes) { /* mro_core.c stores only them */
+                        /* access PL_stashcache through HEK interface directly here?  */
+                        HEK* hkey = HeKEY_hek(he);
+                        HV* revstash = gv_stashpvn(HEK_KEY(hkey), HEK_LEN(hkey), HEK_UTF8(hkey) | GV_ADD);
+                        GV* revglob = CAIXS_fetch_glob(aTHX_ revstash, payload->pkg_key);
+
+                        if (GvSV(revglob) == new_value) GvLINE(revglob) = 0;
+                    }
+                }
+            }
+        }
+    }
+}
+
 template <bool is_readonly>
 struct FImpl<Constructor, is_readonly> {
 static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
@@ -319,29 +346,7 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
         SV* new_value = GvSVn(glob);
 
         if (!GvGPFLAGS(glob)) {
-            SV** svp = hv_fetchhek(PL_isarev, HvENAME_HEK(stash));
-            if (svp) {
-                HV* isarev = (HV*)*svp;
-
-                if (HvUSEDKEYS(isarev)) {
-                    STRLEN hvmax = HvMAX(isarev);
-                    HE** hvarr = HvARRAY(isarev);
-
-                    SV* pl_yes = &PL_sv_yes; /* not that i care much about ithreads, but still */
-                    for (STRLEN bucket_num = 0; bucket_num <= hvmax; ++bucket_num) {
-                        for (const HE* he = hvarr[bucket_num]; he; he = HeNEXT(he)) {
-                            if (HeVAL(he) == pl_yes) { /* mro_core.c stores only them */
-                                /* access PL_stashcache through HEK interface directly here?  */
-                                HEK* hkey = HeKEY_hek(he);
-                                HV* revstash = gv_stashpvn(HEK_KEY(hkey), HEK_LEN(hkey), HEK_UTF8(hkey) | GV_ADD);
-                                GV* revglob = CAIXS_fetch_glob(aTHX_ revstash, payload->pkg_key);
-
-                                if (GvSV(revglob) == new_value) GvLINE(revglob) = 0;
-                            }
-                        }
-                    }
-                }
-            }
+            CAIXS_icache_clear(aTHX_ stash, new_value, payload);
 
             SvREFCNT_dec(new_value);
 
