@@ -54,6 +54,15 @@
         return;                                         \
     }                                                   \
 
+#define SET_GVGP_FLAGS(glob, sv)\
+    if (SvOK(sv)) {             \
+        GvGPFLAGS_on(glob);     \
+                                \
+    } else {                    \
+        GvGPFLAGS_off(glob);    \
+        GvLINE(glob) = 0;       \
+    }                           \
+
 static int CAIXS_glob_setter(pTHX_ SV *sv, MAGIC* mg);
 static MGVTBL vtcompat = {NULL, CAIXS_glob_setter};
 
@@ -214,7 +223,8 @@ CAIXS_icache_clear(pTHX_ HV* stash, SV* pkg_key) {
 static int
 CAIXS_glob_setter(pTHX_ SV *sv, MAGIC* mg) {
     GV* glob = (GV*)(mg->mg_obj);
-    GvGPFLAGS_on(glob);
+
+    SET_GVGP_FLAGS(glob, sv);
     CAIXS_icache_clear(aTHX_ GvSTASH(glob), (SV*)(mg->mg_ptr));
 
     return 0;
@@ -389,14 +399,7 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
 //*/
 
         CALL_WRITE_CB(new_value, 0);
-
-        if (SvOK(new_value)) {
-            GvGPFLAGS_on(glob);
-
-        } else {
-            GvGPFLAGS_off(glob);
-            GvLINE(glob) = 0;
-        }
+        SET_GVGP_FLAGS(glob, new_value);
 
         return;
     }

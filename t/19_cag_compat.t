@@ -25,4 +25,7 @@ $main::__cag_foo = 88;
 is(main2->foo, 25);
 is(main->foo, 88);
 
+$main1::__cag_foo = undef;
+is(main1->foo, 88);
+
 done_testing;
