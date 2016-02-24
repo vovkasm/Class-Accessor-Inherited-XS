@@ -66,54 +66,6 @@
 static int CAIXS_glob_setter(pTHX_ SV *sv, MAGIC* mg);
 static MGVTBL vtcompat = {NULL, CAIXS_glob_setter};
 
-template <AccessorType type, bool is_readonly> static
-void
-CAIXS_inherited_compat(pTHX_ SV** SP, HV* stash, shared_keys* payload, int items) {
-    if (items > 1) {
-        READONLY_CROAK_CHECK;
-
-        GV* glob = CAIXS_fetch_glob(aTHX_ stash, payload->pkg_key);
-        SV* new_value = GvSVn(glob);
-        CALL_WRITE_CB(new_value, 0);
-
-        return;
-    }
-
-    #define TRY_FETCH_PKG_VALUE(stash, payload, hent)                   \
-    if (stash && (hent = hv_fetch_ent(stash, payload->pkg_key, 0, 0))) {\
-        SV* sv = GvSV(HeVAL(hent));                                     \
-        if (sv && SvOK(sv)) {                                           \
-            CALL_READ_CB(sv);                                           \
-            return;                                                     \
-        }                                                               \
-    }
-
-    HE* hent;
-    TRY_FETCH_PKG_VALUE(stash, payload, hent);
-
-    AV* supers = mro_get_linear_isa(stash);
-    /*
-        First entry in the 'mro_get_linear_isa' list is the 'stash' itself.
-        It's already been tested, so ajust both counter and iterator to skip over it.
-    */
-    SSize_t fill     = AvFILLp(supers);
-    SV** supers_list = AvARRAY(supers);
-
-    SV* elem;
-    while (--fill >= 0) {
-        elem = *(++supers_list);
-
-        if (elem) {
-            stash = gv_stashsv(elem, 0);
-            TRY_FETCH_PKG_VALUE(stash, payload, hent);
-        }
-    }
-
-    /* XSRETURN_UNDEF */
-    CALL_READ_CB(&PL_sv_undef);
-    return;
-}
-
 template <bool overflow> static
 SV*
 CAIXS_icache_get(pTHX_ HV* stash, GV* glob) {
