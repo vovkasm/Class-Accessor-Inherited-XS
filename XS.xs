@@ -15,8 +15,11 @@ static int unstolen = 0;
 #include "xs/accessors.h"
 #include "xs/installer.h"
 
+#define C_FLAGS_RO ((flags & 0x1) == 0x1)
+#define C_FLAGS_CO ((flags & 0x2) == 0x2)
+
 static void
-CAIXS_install_inherited_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key, SV* read_cb, SV* write_cb, bool is_readonly) {
+CAIXS_install_inherited_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key, SV* read_cb, SV* write_cb, int flags) {
     shared_keys* payload;
     bool need_cb = read_cb && write_cb;
 
@@ -25,10 +28,15 @@ CAIXS_install_inherited_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key,
         payload = CAIXS_install_accessor<InheritedCb>(aTHX_ full_name, false); /* is_readonly not applicable */
 
     } else if (pkg_key != NULL) {
-        payload = CAIXS_install_accessor<Inherited>(aTHX_ full_name, is_readonly);
+        if (C_FLAGS_CO) {
+            payload = CAIXS_install_accessor<InheritedCompat>(aTHX_ full_name, C_FLAGS_RO);
+
+        } else {
+            payload = CAIXS_install_accessor<Inherited>(aTHX_ full_name, C_FLAGS_RO);
+        }
 
     } else {
-        payload = CAIXS_install_accessor<ObjectOnly>(aTHX_ full_name, is_readonly);
+        payload = CAIXS_install_accessor<ObjectOnly>(aTHX_ full_name, C_FLAGS_RO);
     }
 
     STRLEN len;
@@ -113,18 +121,18 @@ PPCODE:
 }
 
 void
-install_object_accessor(SV* full_name, SV* hash_key, SV* is_readonly)
+install_object_accessor(SV* full_name, SV* hash_key, int flags)
 PPCODE:
 {
-    CAIXS_install_inherited_accessor(aTHX_ full_name, hash_key, NULL, NULL, NULL, SvTRUE(is_readonly));
+    CAIXS_install_inherited_accessor(aTHX_ full_name, hash_key, NULL, NULL, NULL, flags);
     XSRETURN_UNDEF;
 }
 
 void
-install_inherited_accessor(SV* full_name, SV* hash_key, SV* pkg_key, SV* is_readonly)
+install_inherited_accessor(SV* full_name, SV* hash_key, SV* pkg_key, int flags)
 PPCODE: 
 {
-    CAIXS_install_inherited_accessor(aTHX_ full_name, hash_key, pkg_key, NULL, NULL, SvTRUE(is_readonly));
+    CAIXS_install_inherited_accessor(aTHX_ full_name, hash_key, pkg_key, NULL, NULL, flags);
     XSRETURN_UNDEF;
 }
 
@@ -132,7 +140,7 @@ void
 install_inherited_cb_accessor(SV* full_name, SV* hash_key, SV* pkg_key, SV* read_cb, SV* write_cb)
 PPCODE:
 {
-    CAIXS_install_inherited_accessor(aTHX_ full_name, hash_key, pkg_key, read_cb, write_cb, false); /* is_readonly not applicable */
+    CAIXS_install_inherited_accessor(aTHX_ full_name, hash_key, pkg_key, read_cb, write_cb, 0);
     XSRETURN_UNDEF;
 }
 

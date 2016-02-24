@@ -1,7 +1,11 @@
 use strict;
 use Test::More;
 
-use Class::Accessor::Inherited::XS inherited => [qw/foo/];
+use Class::Accessor::Inherited::XS {
+    compability => 1,
+    inherited   => [qw/foo/],
+};
+
 @main1::ISA = qw/main/;
 @main2::ISA = qw/main1/;
 

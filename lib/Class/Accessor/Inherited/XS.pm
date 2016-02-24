@@ -7,19 +7,20 @@ use Carp ();
 
 our $VERSION = '0.23';
 our $PREFIX  = '__cag_';
+our $NEED_COMPAT = 0;
 
 require XSLoader;
 XSLoader::load('Class::Accessor::Inherited::XS', $VERSION);
 
 my $REGISTERED_TYPES = {};
 register_types(
-    inherited       => {installer => \&_mk_inherited_accessor,              clone_arg => 1},
+    inherited       => {installer => sub { _mk_inherited_accessor(@_, 0) }, clone_arg => 1},
     inherited_ro    => {installer => sub { _mk_inherited_accessor(@_, 1) }, clone_arg => 1},
     class           => {installer => sub { _mk_class_accessor(@_, 0, 0) },  clone_arg => undef},
     class_ro        => {installer => sub { _mk_class_accessor(@_, 0, 1) },  clone_arg => undef},
     varclass        => {installer => sub { _mk_class_accessor(@_, 1, 0) },  clone_arg => undef},
     varclass_ro     => {installer => sub { _mk_class_accessor(@_, 1, 1) },  clone_arg => undef},
-    object          => {installer => \&_mk_object_accessor,                 clone_arg => 1},
+    object          => {installer => sub { _mk_object_accessor(@_, 0) },    clone_arg => 1},
     object_ro       => {installer => sub { _mk_object_accessor(@_, 1) },    clone_arg => 1},
     constructor     => {installer => \&_mk_constructor,                     clone_arg => undef},
 );
@@ -30,6 +31,7 @@ sub import {
 
     my %opts = ref($_[0]) eq 'HASH' ? %{ $_[0] } : @_;
     my $class = delete $opts{package} // caller;
+    local $NEED_COMPAT = 1 if delete $opts{compability};
 
     for my $type (keys %opts) {
         my $accessors = $opts{$type};
@@ -123,9 +125,9 @@ sub _type_installer {
 }
 
 sub _mk_inherited_accessor {
-    my ($class, $name, $field, $is_readonly) = @_;
+    my ($class, $name, $field, $flags) = @_;
 
-    install_inherited_accessor("${class}::${name}", $field, $PREFIX.$field, $is_readonly);
+    install_inherited_accessor("${class}::${name}", $field, $PREFIX.$field, $flags | ($NEED_COMPAT ? 2 : 0));
 }
 
 sub _mk_class_accessor {
@@ -135,9 +137,9 @@ sub _mk_class_accessor {
 }
 
 sub _mk_object_accessor {
-    my ($class, $name, $field, $is_readonly) = @_;
+    my ($class, $name, $field, $flags) = @_;
 
-    install_object_accessor("${class}::${name}", $field, $is_readonly);
+    install_object_accessor("${class}::${name}", $field, $flags);
 }
 
 sub _mk_constructor {
