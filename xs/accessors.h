@@ -143,7 +143,7 @@ CAIXS_icache_update(pTHX_ HV* stash, GV* glob, SV* pkg_key) {
 
 template <bool is_compat> static
 void
-CAIXS_icache_clear(pTHX_ HV* stash, SV* pkg_key) {
+CAIXS_icache_clear(pTHX_ HV* stash, SV* pkg_key, SV* base_sv) {
     SV** svp = hv_fetchhek(PL_isarev, HvENAME_HEK(stash));
     if (svp) {
         HV* isarev = (HV*)*svp;
@@ -151,20 +151,6 @@ CAIXS_icache_clear(pTHX_ HV* stash, SV* pkg_key) {
         if (HvUSEDKEYS(isarev)) {
             STRLEN hvmax = HvMAX(isarev);
             HE** hvarr = HvARRAY(isarev);
-
-            /*
-                Validity of those variables is really tightly coupled with the current type.
-                They're used in non-compat block below only. While 'base_value' may be passed
-                as an argument here, it's calculated here for now.
-
-                Check later.
-            */
-            GV* base_glob;
-            SV* base_value;
-            if (!is_compat) {
-                base_glob = CAIXS_fetch_glob(aTHX_ stash, pkg_key);
-                base_value = GvSV(base_glob);
-            }
 
             SV* pl_yes = &PL_sv_yes; /* not that I care much about ithreads, but still */
             for (STRLEN bucket_num = 0; bucket_num <= hvmax; ++bucket_num) {
@@ -176,10 +162,12 @@ CAIXS_icache_clear(pTHX_ HV* stash, SV* pkg_key) {
                         GV* revglob = CAIXS_fetch_glob(aTHX_ revstash, pkg_key);
 
                         if (is_compat) {
+                            assert(base_sv == NULL);
                             if (!GvGPFLAGS(revglob)) GvLINE(revglob) = 0;
 
                         } else {
-                            if (GvSV(revglob) == base_value) {
+                            assert(base_sv != NULL);
+                            if (GvSV(revglob) == base_sv) {
                                 assert(!GvGPFLAGS(revglob));
                                 GvLINE(revglob) = 0;
                             }
@@ -196,7 +184,7 @@ CAIXS_glob_setter(pTHX_ SV *sv, MAGIC* mg) {
     GV* glob = (GV*)(mg->mg_obj);
 
     SET_GVGP_FLAGS(glob, sv);
-    CAIXS_icache_clear<InheritedCompat>(aTHX_ GvSTASH(glob), (SV*)(mg->mg_ptr));
+    CAIXS_icache_clear<InheritedCompat>(aTHX_ GvSTASH(glob), (SV*)(mg->mg_ptr), NULL);
 
     return 0;
 }
@@ -357,11 +345,11 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
                 sv_magicext(new_value, (SV*)glob, PERL_MAGIC_ext, &vtcompat, (const char*)(payload->pkg_key), HEf_SVKEY);
             }
 
-            CAIXS_icache_clear<true>(aTHX_ stash, payload->pkg_key);
+            CAIXS_icache_clear<true>(aTHX_ stash, payload->pkg_key, NULL);
 
         } else {
             if (!GvGPFLAGS(glob)) {
-                CAIXS_icache_clear<false>(aTHX_ stash, payload->pkg_key);
+                CAIXS_icache_clear<false>(aTHX_ stash, payload->pkg_key, new_value);
 
                 SvREFCNT_dec(new_value);
 
