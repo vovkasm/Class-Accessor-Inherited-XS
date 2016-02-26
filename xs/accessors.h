@@ -349,9 +349,14 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
         READONLY_CROAK_CHECK;
 
         GV* glob = CAIXS_fetch_glob(aTHX_ stash, payload->pkg_key);
-        SV* new_value = GvSVn(glob); /* do not pessimize fastpath */
+        SV* new_value = GvSV(glob);
 
         if (type == InheritedCompat) {
+            if (UNLIKELY(new_value == NULL)) {
+                GvSV(glob) = newSV(0);
+                new_value = GvSV(glob);
+            }
+
             if (!SvSMAGICAL(new_value) || !CAIXS_mg_findext(new_value, PERL_MAGIC_ext, &vtcompat)) {
                 sv_magicext(new_value, (SV*)glob, PERL_MAGIC_ext, &vtcompat, (const char*)(payload->pkg_key), HEf_SVKEY);
             }
@@ -362,12 +367,16 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
         } else {
             if (!GvGPFLAGS(glob)) {
                 /* wipe only for the new junction */
-                CAIXS_icache_clear<false>(aTHX_ stash, payload->pkg_key, new_value);
-
-                SvREFCNT_dec(new_value);
+                if (LIKELY(new_value != NULL)) {
+                    CAIXS_icache_clear<false>(aTHX_ stash, payload->pkg_key, new_value);
+                    SvREFCNT_dec_NN(new_value);
+                }
 
                 GvSV(glob) = newSV(0);
                 new_value = GvSV(glob);
+
+            } else {
+                assert(new_value);
             }
         }
 
