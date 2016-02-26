@@ -111,7 +111,10 @@ CAIXS_icache_update(pTHX_ HV* stash, GV* glob, SV* pkg_key) {
         }
     }
 
-    if (!result) result = GvSVn(stack[0]); /* undef from root */
+    if (!result) {
+        assert(fill == -1);
+        result = GvSVn(stack[0]); /* undef from root */
+    }
 
     U32 pl_sgen = PL_sub_generation;
     SSize_t new_fill = AvFILLp(supers);
@@ -123,13 +126,16 @@ CAIXS_icache_update(pTHX_ HV* stash, GV* glob, SV* pkg_key) {
         GvLINE(cur_gv) = curgen & (((U32)1 << 31) - 1); /* perl may lack 'gp_flags' field, so we must care about the highest bit */
 
         if (is_compat) {
+            /* copy-by-val + attach watchdog magic */
             SV* sv_slot = GvSVn(cur_gv);
             sv_setsv_nomg(sv_slot, result);
+
             if (!SvSMAGICAL(sv_slot) || !CAIXS_mg_findext(sv_slot, PERL_MAGIC_ext, &vtcompat)) {
                 sv_magicext(sv_slot, (SV*)cur_gv, PERL_MAGIC_ext, &vtcompat, (const char*)pkg_key, HEf_SVKEY);
             }
 
         } else {
+            /* copy-by-reference */
             SV** sv_slot = &GvSV(cur_gv);
 
             SvREFCNT_inc_simple_void_NN(result);
@@ -155,6 +161,8 @@ CAIXS_icache_clear(pTHX_ HV* stash, SV* pkg_key, SV* base_sv) {
             SV* pl_yes = &PL_sv_yes; /* not that I care much about ithreads, but still */
             for (STRLEN bucket_num = 0; bucket_num <= hvmax; ++bucket_num) {
                 for (const HE* he = hvarr[bucket_num]; he; he = HeNEXT(he)) {
+                    assert(HeVAL(he) == &PL_sv_placeholder || HeVAL(he) == &PL_sv_yes);
+
                     if (HeVAL(he) == pl_yes) { /* mro_core.c stores only them */
                         /* access PL_stashcache through HEK interface directly here?  */
                         HEK* hkey = HeKEY_hek(he);
@@ -163,10 +171,12 @@ CAIXS_icache_clear(pTHX_ HV* stash, SV* pkg_key, SV* base_sv) {
 
                         if (is_compat) {
                             assert(base_sv == NULL);
+                            /* invalidates all non-root nodes */
                             if (!GvGPFLAGS(revglob)) GvLINE(revglob) = 0;
 
                         } else {
                             assert(base_sv != NULL);
+                            /* since all the cache elements point to the same sv, invalidate only it's copies */
                             if (GvSV(revglob) == base_sv) {
                                 assert(!GvGPFLAGS(revglob));
                                 GvLINE(revglob) = 0;
@@ -183,6 +193,7 @@ static int
 CAIXS_glob_setter(pTHX_ SV *sv, MAGIC* mg) {
     GV* glob = (GV*)(mg->mg_obj);
 
+    /* InheritedCompat only - cache wipe out */
     SET_GVGP_FLAGS(glob, sv);
     CAIXS_icache_clear<InheritedCompat>(aTHX_ GvSTASH(glob), (SV*)(mg->mg_ptr), NULL);
 
@@ -338,17 +349,19 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
         READONLY_CROAK_CHECK;
 
         GV* glob = CAIXS_fetch_glob(aTHX_ stash, payload->pkg_key);
-        SV* new_value = GvSVn(glob);
+        SV* new_value = GvSVn(glob); /* do not pessimize fastpath */
 
         if (type == InheritedCompat) {
             if (!SvSMAGICAL(new_value) || !CAIXS_mg_findext(new_value, PERL_MAGIC_ext, &vtcompat)) {
                 sv_magicext(new_value, (SV*)glob, PERL_MAGIC_ext, &vtcompat, (const char*)(payload->pkg_key), HEf_SVKEY);
             }
 
+            /* wipe whole cache from down there */
             CAIXS_icache_clear<true>(aTHX_ stash, payload->pkg_key, NULL);
 
         } else {
             if (!GvGPFLAGS(glob)) {
+                /* wipe only for the new junction */
                 CAIXS_icache_clear<false>(aTHX_ stash, payload->pkg_key, new_value);
 
                 SvREFCNT_dec(new_value);
@@ -366,6 +379,8 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
 
     GV* glob = CAIXS_fetch_glob(aTHX_ stash, payload->pkg_key);
     SV* result = CAIXS_icache_get<true>(aTHX_ stash, glob);
+
+    /* lazy cache builder */
     if (!result) result = CAIXS_icache_update<type == InheritedCompat>(aTHX_ stash, glob, payload->pkg_key);
 
     CALL_READ_CB(result);
