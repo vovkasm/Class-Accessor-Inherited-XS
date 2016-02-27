@@ -188,9 +188,9 @@ Class::Accessor::Inherited::XS - Fast XS inherited, object and class accessors
 
 This module provides a very fast implementation for a wide range of accessor types.
 
-B<inherited> accessors were introduced in the L<Class::Accessor::Grouped> module. They allow you to override
-values set in a parent class with values set in childs or object instances. Generated accessors are compatible with
-the L<Class::Accessor::Grouped> generated ones.
+B<inherited> accessors have been introduced by L<Class::Accessor::Grouped>. They allow you to override
+values set in a parent class with values set in childs or object instances. This module tries to be compatible
+with L<Class::Accessor::Grouped> as much as possible.
 
 Since this module focuses primary on speed, it provides no means to have your own per-class
 getters/setters logic (like overriding L<Class::Accessor::Grouped/get_inherited> / L<Class::Accessor::Grouped/set_inherited>),
@@ -240,26 +240,25 @@ no known conceptual leaks.
 =head1 PERFORMANCE
 
 L<Class::Accessor::Inherited::XS> is at least 10x times faster than L<Class::Accessor::Grouped>, depending
-on your usage pattern. Accessing data from a parent in a large inheritance chain is still the worst case,
-but even there L<Class::Accessor::Inherited::XS> beats L<Class::Accessor::Grouped> best-case. Object accessors
+on your usage pattern. Inherited accessors have constant speed even in large inheritance chains. Object accessors
 are even faster than L<Class::XSAccessor> ones.
 
 Accessors with just an empty sub callback are ~3x times slower then normal ones, so use them only when absolutely necessary.
 
 Here are results from a benchmark run on perl 5.20.1 (see bench folder):
 
-                       Rate pkg_gparent_cag pkg_cag obj_cag pkg_gparent_caix obj_caix_cb pkg_set_caix pkg_caix obj_cxa obj_caix obj_direct class_caix
-pkg_gparent_cag    255778/s              --    -77%    -82%             -92%        -97%         -97%     -98%    -98%     -99%       -99%       -99%
-pkg_cag           1092262/s            327%      --    -22%             -68%        -85%         -89%     -89%    -94%     -95%       -96%       -97%
-obj_cag           1409030/s            451%     29%      --             -59%        -81%         -86%     -86%    -92%     -93%       -95%       -96%
-pkg_gparent_caix  3401161/s           1230%    211%    141%               --        -54%         -65%     -67%    -80%     -83%       -88%       -90%
-obj_caix_cb       7384333/s           2787%    576%    424%             117%          --         -24%     -29%    -57%     -63%       -73%       -78%
-pkg_set_caix      9771705/s           3720%    795%    594%             187%         32%           --      -6%    -43%     -52%       -65%       -72%
-pkg_caix         10386837/s           3961%    851%    637%             205%         41%           6%       --    -39%     -49%       -62%       -70%
-obj_cxa          17049394/s           6566%   1461%   1110%             401%        131%          74%      64%      --     -16%       -38%       -50%
-obj_caix         20176934/s           7788%   1747%   1332%             493%        173%         106%      94%     18%       --       -27%       -41%
-obj_direct       27568192/s          10678%   2424%   1857%             711%        273%         182%     165%     62%      37%         --       -20%
-class_caix       34345065/s          13328%   3044%   2337%             910%        365%         251%     231%    101%      70%        25%         --
+                       Rate pkg_gparent_cag pkg_cag obj_cag obj_caix_cb pkg_set_caix pkg_gparent_caix pkg_caix obj_cxa obj_caix obj_direct class_caix
+pkg_gparent_cag    233829/s              --    -77%    -82%        -96%         -98%             -98%     -98%    -99%     -99%       -99%       -99%
+pkg_cag           1022855/s            337%      --    -21%        -84%         -89%             -90%     -90%    -94%     -95%       -96%       -97%
+obj_cag           1302727/s            457%     27%      --        -80%         -86%             -87%     -87%    -92%     -94%       -95%       -96%
+obj_caix_cb       6377179/s           2627%    523%    390%          --         -33%             -36%     -37%    -62%     -69%       -76%       -80%
+pkg_set_caix      9538400/s           3979%    833%    632%         50%           --              -4%      -6%    -43%     -54%       -64%       -70%
+pkg_gparent_caix  9914704/s           4140%    869%    661%         55%           4%               --      -2%    -41%     -52%       -62%       -68%
+pkg_caix         10138654/s           4236%    891%    678%         59%           6%               2%       --    -40%     -51%       -61%       -68%
+obj_cxa          16858257/s           7110%   1548%   1194%        164%          77%              70%      66%      --     -19%       -36%       -46%
+obj_caix         20811071/s           8800%   1935%   1498%        226%         118%             110%     105%     23%       --       -20%       -34%
+obj_direct       26145035/s          11081%   2456%   1907%        310%         174%             164%     158%     55%      26%         --       -16%
+class_caix       31300776/s          13286%   2960%   2303%        391%         228%             216%     209%     86%      50%        20%         --
 
 
 =head1 EXTENDING

@@ -34,10 +34,10 @@ DESCRIPTION
     This module provides a very fast implementation for a wide range of
     accessor types.
 
-    inherited accessors were introduced in the Class::Accessor::Grouped
-    module. They allow you to override values set in a parent class with
-    values set in childs or object instances. Generated accessors are
-    compatible with the Class::Accessor::Grouped generated ones.
+    inherited accessors have been introduced by Class::Accessor::Grouped.
+    They allow you to override values set in a parent class with values set
+    in childs or object instances. This module tries to be compatible with
+    Class::Accessor::Grouped as much as possible.
 
     Since this module focuses primary on speed, it provides no means to have
     your own per-class getters/setters logic (like overriding
@@ -62,12 +62,12 @@ DESCRIPTION
     initializer syntax.
 
     lazy accessors do not have their own keyword but, instead, if you pass a
-    subref as a default argument to any one of the class accessors' family,
-    it's not stored as-is, but is called instead upon the first accessor
-    read and it's return value is stored. After that, lazy accessor becomes
-    a normal one of the same type. Calling an accessor as a setter before
-    first getter will loose it's defaultness (unless, of course, it's a
-    readonly one).
+    subref as a default argument to any one of the package accessors'
+    family, it's not stored as-is, but is called instead upon the first
+    accessor read and it's return value is stored. After that, lazy accessor
+    becomes a normal one of the same type. Calling an accessor as a setter
+    before first getter will loose it's defaultness (unless, of course, it's
+    a readonly one).
 
     constructor can create objects either from a list or from a single
     hashref. Note that if you pass a hash reference, it becomes blessed too.
@@ -97,11 +97,9 @@ THREADS
 
 PERFORMANCE
     Class::Accessor::Inherited::XS is at least 10x times faster than
-    Class::Accessor::Grouped, depending on your usage pattern. Accessing
-    data from a parent in a large inheritance chain is still the worst case,
-    but even there Class::Accessor::Inherited::XS beats
-    Class::Accessor::Grouped best-case. Object accessors are event faster
-    than Class::XSAccessor ones.
+    Class::Accessor::Grouped, depending on your usage pattern. Inherited
+    accessors have constant speed even in large inheritance chains. Object
+    accessors are even faster than Class::XSAccessor ones.
 
     Accessors with just an empty sub callback are ~3x times slower then
     normal ones, so use them only when absolutely necessary.
