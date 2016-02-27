@@ -93,17 +93,25 @@ CAIXS_icache_update(pTHX_ HV* stash, GV* glob, SV* pkg_key) {
     SV** supers_list = AvARRAY(supers);
 
     SV* elem;
-    HE* hent;
     SV* result = NULL;
 
     GV* stack[fill + 1];
+#ifdef DEBUGGING
+    memzero(stack, (fill + 1) * sizeof(GV*));
+#endif
     stack[fill] = glob;
 
     while (result == NULL && --fill >= 0) {
         elem = *(++supers_list);
+        assert(elem); /* mro_get_linear_isa returns dense array */
 
-        if (elem) {
-            HV* next_stash = gv_stashsv(elem, GV_ADD); /* inherited from empty stash */
+        HV* next_stash = gv_stashsv(elem, is_compat ? GV_ADD : 0);
+        /*
+            In non-compat mode, skip entries for empty stashes to save
+            some memory. This may result in gaps in the 'stack' array,
+            but in this mode we don't care.
+        */
+        if (is_compat || LIKELY(next_stash != NULL)) {
             GV* next_gv = CAIXS_fetch_glob(aTHX_ next_stash, pkg_key);
             stack[fill] = next_gv;
 
@@ -111,15 +119,32 @@ CAIXS_icache_update(pTHX_ HV* stash, GV* glob, SV* pkg_key) {
         }
     }
 
-    if (!result) {
+    if (UNLIKELY(result == NULL)) {
         assert(fill == -1);
+
+        if (!is_compat) {
+            /* this mode doesn't force stash creation in the above loop, so do it here */
+            HV* root_stash = gv_stashsv(*supers_list, GV_ADD);
+            stack[0] = CAIXS_fetch_glob(aTHX_ root_stash, pkg_key);
+        }
+
+        assert(stack[0]);
         result = GvSVn(stack[0]); /* undef from root */
+        if (!is_compat) GvGPFLAGS_on(stack[0]); /* yeah, valid 'undef', to speed up lookups later */
     }
 
     U32 pl_sgen = PL_sub_generation;
     SSize_t new_fill = AvFILLp(supers);
-    for (int i = fill + 1; i <= new_fill; ++i) {
+
+    /*
+        For non-compat mode, perfroms a single iteration on the 'glob' variable,
+        thus saving memory for non-fetched items. But we can't do that in compat mode,
+        as we need magic cast upon everything in between.
+    */
+    for (int i = (is_compat ? fill + 1 : new_fill); i <= new_fill; ++i) {
         GV* cur_gv = stack[i];
+        assert(cur_gv);
+        assert(is_compat || cur_gv == glob);
 
         const struct mro_meta* stash_meta = HvMROMETA(GvSTASH(cur_gv));
         const U32 curgen = pl_sgen + stash_meta->pkg_gen;
@@ -169,13 +194,13 @@ CAIXS_icache_clear(pTHX_ HV* stash, SV* pkg_key, SV* base_sv) {
                         HV* revstash = gv_stashpvn(HEK_KEY(hkey), HEK_LEN(hkey), HEK_UTF8(hkey) | GV_ADD);
                         GV* revglob = CAIXS_fetch_glob(aTHX_ revstash, pkg_key);
 
-                        if (is_compat) {
-                            assert(base_sv == NULL);
+                        if (is_compat || base_sv == NULL) {
+                            assert(!is_compat || base_sv == NULL);
+
                             /* invalidates all non-root nodes */
                             if (!GvGPFLAGS(revglob)) GvLINE(revglob) = 0;
 
                         } else {
-                            assert(base_sv != NULL);
                             /* since all the cache elements point to the same sv, invalidate only it's copies */
                             if (GvSV(revglob) == base_sv) {
                                 assert(!GvGPFLAGS(revglob));
@@ -361,16 +386,18 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
                 sv_magicext(new_value, (SV*)glob, PERL_MAGIC_ext, &vtcompat, (const char*)(payload->pkg_key), HEf_SVKEY);
             }
 
-            /* wipe whole cache from down there */
+            /* Wipe the whole cache from down there */
             CAIXS_icache_clear<true>(aTHX_ stash, payload->pkg_key, NULL);
 
         } else {
             if (!GvGPFLAGS(glob)) {
-                /* wipe only for the new junction */
-                if (LIKELY(new_value != NULL)) {
-                    CAIXS_icache_clear<false>(aTHX_ stash, payload->pkg_key, new_value);
-                    SvREFCNT_dec_NN(new_value);
-                }
+                /*
+                    When this is an already calculated cache point (new_value != NULL),
+                    wipe will be performed only to the 'new_value' copies. Otherwise,
+                    like in the above case, the whole cache gets erased.
+                */
+                CAIXS_icache_clear<false>(aTHX_ stash, payload->pkg_key, new_value);
+                SvREFCNT_dec(new_value);
 
                 GvSV(glob) = newSV(0);
                 new_value = GvSV(glob);
