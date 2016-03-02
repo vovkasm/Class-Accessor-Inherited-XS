@@ -5,6 +5,7 @@ BEGIN {our $ovcfoo = 90}
 
 use Class::Accessor::Inherited::XS {
     object_ro       => 'ofoo',
+    getters         => 'gfoo',
     class_ro        => {'cfoo' => 32},
     varclass_ro     => 'vcfoo',
     inherited_ro    => 'ifoo',
@@ -20,7 +21,7 @@ sub exception (&) {
     $@
 }
 
-my $o = bless {ofoo => 66, ifoo => 22};
+my $o = bless {ofoo => 66, ifoo => 22, gfoo => 91};
 
 sub check {
     my ($method, $value) = @_;
@@ -31,6 +32,7 @@ sub check {
 }
 
 check('ofoo', 66);
+check('gfoo', 91);
 check('cfoo', 32);
 
 check('ifoo', 22);

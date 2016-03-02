@@ -1,9 +1,15 @@
 use strict;
 use Test::More;
-use Class::Accessor::Inherited::XS object => 'foo';
 
-my $o = bless {foo => 66};
+use Class::Accessor::Inherited::XS {
+    object => 'foo',
+    accessors => 'bar',
+};
+
+my $o = bless {foo => 66, bar => 23};
 my $z = bless {};
+
+is($o->bar, 23);
 
 is($o->foo, 66);
 is($o->foo(12), 12);

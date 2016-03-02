@@ -21,7 +21,9 @@ register_types(
     varclass        => {installer => sub { _mk_class_accessor(@_, 1, 0) },  clone_arg => undef},
     varclass_ro     => {installer => sub { _mk_class_accessor(@_, 1, 1) },  clone_arg => undef},
     object          => {installer => sub { _mk_object_accessor(@_, 0) },    clone_arg => 1},
+    accessors       => {installer => sub { _mk_object_accessor(@_, 0) },    clone_arg => 1}, # alias for object
     object_ro       => {installer => sub { _mk_object_accessor(@_, 1) },    clone_arg => 1},
+    getters         => {installer => sub { _mk_object_accessor(@_, 1) },    clone_arg => 1}, # alias for object_ro
     constructor     => {installer => \&_mk_constructor,                     clone_arg => undef},
 );
 
