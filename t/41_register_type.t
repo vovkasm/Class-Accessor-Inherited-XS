@@ -10,7 +10,7 @@ BEGIN {
         component => {read_cb => \&on_read, write_cb => \&on_write}
     );
     Class::Accessor::Inherited::XS::register_type(
-        die       => {read_cb => \&CORE::die, write_cb => \&CORE::die},
+        die       => {on_read => \&CORE::die, on_write => \&CORE::die},
     );
 }
 

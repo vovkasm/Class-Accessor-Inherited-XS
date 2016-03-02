@@ -105,7 +105,9 @@ sub register_type {
     if (!exists $args->{installer}) {
         $args->{installer} = sub {
             my ($class, $name, $field) = @_;
-            install_inherited_cb_accessor("${class}::${name}", $field, $PREFIX.$field, $args->{read_cb}, $args->{write_cb});
+            install_inherited_cb_accessor(
+                "${class}::${name}", $field, $PREFIX.$field, $args->{read_cb} // $args->{on_read}, $args->{write_cb} // $args->{on_write}
+            );
         };
     }
 
