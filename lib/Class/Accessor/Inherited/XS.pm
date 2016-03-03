@@ -177,6 +177,8 @@ Class::Accessor::Inherited::XS - Fast XS inherited, object and class accessors
       class_ro  => {foo => $default},   # class_ro, varclass_ro, class, varclass set default values instead
       class     => {foo => $subref},    # lazy accessor initializer
       varclass  => ['foo', 'bar'],      # provide a list of accessor names
+      accessors => ['foo'],             # alias for 'object'
+      getters   => ['foo'],             # alias for 'object_ro'
   };
 
   # or at run time, in a Class::Accessor::Grouped-like fashion
