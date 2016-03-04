@@ -70,7 +70,7 @@ template <bool overflow> static
 SV*
 CAIXS_icache_get(pTHX_ HV* stash, GV* glob) {
     const struct mro_meta* stash_meta = HvMROMETA(stash);
-    const int64_t curgen = (int64_t)PL_sub_generation + stash_meta->pkg_gen;
+    const long long curgen = (long long)PL_sub_generation + stash_meta->pkg_gen;
 
     if (GvLINE(glob) == curgen || GvGPFLAGS(glob)) return GvSV(glob);
     if (overflow && UNLIKELY(curgen > ((U32)1 << 31) - 1)) {
