@@ -221,7 +221,8 @@ read and it's return value is stored. After that, B<lazy> accessor becomes a nor
 an accessor as a setter before first getter will loose it's defaultness (unless, of course, it's a readonly one).
 
 B<constructor> can create objects either from a list or from a single hashref. Note that if you pass
-a hash reference, it becomes blessed too. If that's not what you want, pass a dereferenced copy.
+a hash reference, it becomes blessed too. If that's not what you want, pass a dereferenced copy. As a
+special case, passing a single B<undef> returns you an empty object.
 
     __PACKAGE__->new(foo => 1, bar => 2); # values are copied
     __PACKAGE__->new(\%args);             # values are not copied, much faster

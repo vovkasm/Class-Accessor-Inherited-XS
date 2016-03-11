@@ -242,6 +242,9 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
     if (items == 2 && SvROK(*MARK) && SvTYPE(SvRV(*MARK)) == SVt_PVHV) {
         self = *MARK;
 
+    } else if (items == 2 && !SvOK(*MARK)) {
+        self = sv_2mortal(newRV_noinc((SV*)newHV()));
+
     } else if ((items & 1) == 0) {
         croak("Odd number of elements in hash constructor");
 

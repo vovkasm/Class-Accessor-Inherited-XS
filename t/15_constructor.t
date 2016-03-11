@@ -20,4 +20,11 @@ cmp_deeply \@list, [bless {1,2}];
 @list = (__PACKAGE__->new(1,2), __PACKAGE__->new(1,2));
 cmp_deeply \@list, [bless({1,2}), bless({1,2})];
 
+sub builder {
+    my ($obj) = @_;
+    return __PACKAGE__->new($obj);
+}
+
+cmp_deeply builder(), bless({});
+
 done_testing;
