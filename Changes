@@ -1,5 +1,8 @@
 Revision history for Class::Accessor::Inherited::XS.
 
+0.27 Sat Mar 12 03:10:22 MSK 2016
+    - special-case 'undef' for constructor
+
 0.26 Fri Mar  4 18:53:13 MSK 2016
     - fix 32bit arch compilation
 
