@@ -1,5 +1,8 @@
 Revision history for Class::Accessor::Inherited::XS.
 
+0.28 Mon May 16 10:27:59 MSK 2016
+    - fix recursive lazy accessors
+
 0.27 Sat Mar 12 03:10:22 MSK 2016
     - special-case 'undef' for constructor
 
