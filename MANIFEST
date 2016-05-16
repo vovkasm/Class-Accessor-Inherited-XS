@@ -29,6 +29,7 @@ t/20_opcode_entersub.t
 t/21_opcode_method_named.t
 t/22_opcode_method.t
 t/23_call_sv.t
+t/24_lazy_recursive.t
 t/30_utf8.t
 t/31_utf8_pkg_normal.t
 t/32_utf8_pkg_broken.t

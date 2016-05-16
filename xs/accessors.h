@@ -291,9 +291,12 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
         *SP = payload->storage;
     }
 
-    CvXSUB(cv) = (XSUBADDR_t)&CAIXS_entersub_wrapper<PrivateClass, is_readonly>;
-    SvREFCNT_dec_NN(payload->lazy_cb);
-    payload->lazy_cb = NULL;
+    /* Lazy getter may call setter, and so we'd end up here twice, but SvREFCNT_dec is required only once */
+    if (payload->lazy_cb) {
+        CvXSUB(cv) = (XSUBADDR_t)&CAIXS_entersub_wrapper<PrivateClass, is_readonly>;
+        SvREFCNT_dec_NN(payload->lazy_cb);
+        payload->lazy_cb = NULL;
+    }
 
     return;
 }};
