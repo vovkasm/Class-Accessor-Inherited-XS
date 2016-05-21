@@ -30,6 +30,14 @@
 #define GvGPFLAGS_off(gv) (GvGPFLAGS(gv) = 0)
 #endif
 
+#ifndef OpSIBLING
+#define OpSIBLING(o) ((o)->op_sibling)
+#endif
+
+#ifndef OpHAS_SIBLING
+#define OpHAS_SIBLING(o) ((o)->op_sibling)
+#endif
+
 #ifndef HvENAME
 #define HvENAME HvNAME
 #define HvENAME_HEK HvNAME_HEK
