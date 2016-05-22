@@ -4,7 +4,10 @@ use strict;
 
 {
     package Jopa;
-    use Class::Accessor::Inherited::XS inherited => [qw/a/];
+    use Class::Accessor::Inherited::XS {
+        inherited => [qw/a/],
+        class     => [qw/b/],
+    };
 
     sub new { return bless {}, shift }
     sub foo { 42 }
@@ -71,6 +74,8 @@ for ('Jopa', 'Jopa', 'JopaClass', $o) {
 
 *main::a = *JopaClass::a;
 
+__PACKAGE__->a; # adds 'main' to package cache for < 5.22
+
 @res = (40, 40, 70, 6);
 for ('Jopa', 'Jopa', __PACKAGE__, $o) {
     is($_->a, shift @res);
@@ -86,6 +91,12 @@ for ('Jopa', 'Jopa', 'JopaChild', 'Jopa', 'JopaChild') {
     is($_->a, shift @res);
 }
 
-is(Class::Accessor::Inherited::XS::_unstolen_count, Class::Accessor::Inherited::XS::OPTIMIZED_OPMETHOD ? 11 : 5);
+Jopa->b(80);
+@res = (40, 80);
+for (qw/a b/) {
+    is(Jopa->$_, shift @res);
+}
+
+is(Class::Accessor::Inherited::XS::_unstolen_count, Class::Accessor::Inherited::XS::OPTIMIZED_OPMETHOD ? 5 : 6);
 
 done_testing;

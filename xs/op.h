@@ -1,6 +1,15 @@
 #ifndef __INHERITED_XS_OP_H_
 #define __INHERITED_XS_OP_H_
 
+#ifdef CAIX_OPTIMIZE_OPMETHOD
+#include <unordered_map>
+
+typedef void (*ACCESSOR_t)(pTHX_ SV**, CV*, HV*);
+typedef std::unordered_map<XSUBADDR_t, ACCESSOR_t> XSUB2ACCESSOR_t;
+
+static XSUB2ACCESSOR_t accessor_map;
+#endif
+
 #define OP_UNSTEAL(name) STMT_START {       \
         ++unstolen;                         \
         PL_op->op_ppaddr = PL_ppaddr[name]; \
@@ -107,13 +116,27 @@ CAIXS_opmethod_wrapper(pTHX) {
     }
 
 gotcv:
-    if (LIKELY((CvXSUB(cv) == (XSUBADDR_t)&CAIXS_entersub_wrapper<type, is_readonly>))) {
-        assert(CvISXSUB(cv));
+    ACCESSOR_t accessor = NULL;
 
+    if (LIKELY((CvXSUB(cv) == (XSUBADDR_t)&CAIXS_entersub_wrapper<type, is_readonly>))) {
+        accessor = &CAIXS_accessor<type, is_readonly>;
+
+    } else {
+        /*
+            Check whether this is an iterator over another friendly accessor.
+            This is much faster then a permanent optimization lift, even if we guess
+            base type only once.
+        */
+
+        XSUB2ACCESSOR_t::const_iterator result = accessor_map.find(CvXSUB(cv));
+        if (result != accessor_map.end()) accessor = result->second;
+    }
+
+    if (LIKELY(accessor != NULL)) {
+        assert(CvISXSUB(cv));
         if (optype == OP_METHOD) {--SP; PUTBACK; }
 
-        CAIXS_accessor<type, is_readonly>(aTHX_ SP, cv, stash);
-
+        accessor(aTHX_ SP, cv, stash);
         return PL_op->op_next->op_next;
 
     } else {
