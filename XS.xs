@@ -115,22 +115,22 @@ BOOT:
 #ifdef CAIX_OPTIMIZE_OPMETHOD
 
     /* catchy place, don't forget to add new types here */
-    accessor_map[&CAIXS_entersub_wrapper<Inherited, true>] = &CAIXS_accessor<Inherited, true>;
-    accessor_map[&CAIXS_entersub_wrapper<Inherited, false>] = &CAIXS_accessor<Inherited, false>;
+    accessor_map.push_back(accessor_cb_pair_t(&CAIXS_entersub_wrapper<Inherited, true>, &CAIXS_accessor<Inherited, true>));
+    accessor_map.push_back(accessor_cb_pair_t(&CAIXS_entersub_wrapper<Inherited, false>, &CAIXS_accessor<Inherited, false>));
 
-    accessor_map[&CAIXS_entersub_wrapper<InheritedCb, true>] = &CAIXS_accessor<InheritedCb, true>;
-    accessor_map[&CAIXS_entersub_wrapper<InheritedCb, false>] = &CAIXS_accessor<InheritedCb, false>;
+    accessor_map.push_back(accessor_cb_pair_t(&CAIXS_entersub_wrapper<InheritedCb, true>, &CAIXS_accessor<InheritedCb, true>));
+    accessor_map.push_back(accessor_cb_pair_t(&CAIXS_entersub_wrapper<InheritedCb, false>, &CAIXS_accessor<InheritedCb, false>));
 
-    accessor_map[&CAIXS_entersub_wrapper<PrivateClass, true>] = &CAIXS_accessor<PrivateClass, true>;
-    accessor_map[&CAIXS_entersub_wrapper<PrivateClass, false>] = &CAIXS_accessor<PrivateClass, false>;
+    accessor_map.push_back(accessor_cb_pair_t(&CAIXS_entersub_wrapper<PrivateClass, true>, &CAIXS_accessor<PrivateClass, true>));
+    accessor_map.push_back(accessor_cb_pair_t(&CAIXS_entersub_wrapper<PrivateClass, false>, &CAIXS_accessor<PrivateClass, false>));
 
-    accessor_map[&CAIXS_entersub_wrapper<LazyClass, true>] = &CAIXS_accessor<LazyClass, true>;
-    accessor_map[&CAIXS_entersub_wrapper<LazyClass, false>] = &CAIXS_accessor<LazyClass, false>;
+    accessor_map.push_back(accessor_cb_pair_t(&CAIXS_entersub_wrapper<LazyClass, true>, &CAIXS_accessor<LazyClass, true>));
+    accessor_map.push_back(accessor_cb_pair_t(&CAIXS_entersub_wrapper<LazyClass, false>, &CAIXS_accessor<LazyClass, false>));
 
-    accessor_map[&CAIXS_entersub_wrapper<ObjectOnly, true>] = &CAIXS_accessor<ObjectOnly, true>;
-    accessor_map[&CAIXS_entersub_wrapper<ObjectOnly, false>] = &CAIXS_accessor<ObjectOnly, false>;
+    accessor_map.push_back(accessor_cb_pair_t(&CAIXS_entersub_wrapper<ObjectOnly, true>, &CAIXS_accessor<ObjectOnly, true>));
+    accessor_map.push_back(accessor_cb_pair_t(&CAIXS_entersub_wrapper<ObjectOnly, false>, &CAIXS_accessor<ObjectOnly, false>));
 
-    accessor_map[&CAIXS_entersub_wrapper<Constructor, false>] = &CAIXS_accessor<Constructor, false>;
+    accessor_map.push_back(accessor_cb_pair_t(&CAIXS_entersub_wrapper<Constructor, false>, &CAIXS_accessor<Constructor, false>));
 #endif
 }
 

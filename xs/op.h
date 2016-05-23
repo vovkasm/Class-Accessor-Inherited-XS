@@ -2,12 +2,15 @@
 #define __INHERITED_XS_OP_H_
 
 #ifdef CAIX_OPTIMIZE_OPMETHOD
-#include <unordered_map>
+#include <vector>
+#include <algorithm>
 
 typedef void (*ACCESSOR_t)(pTHX_ SV**, CV*, HV*);
-typedef std::unordered_map<XSUBADDR_t, ACCESSOR_t> XSUB2ACCESSOR_t;
+typedef std::pair<XSUBADDR_t, ACCESSOR_t> accessor_cb_pair_t;
+bool operator== (const accessor_cb_pair_t& a, const accessor_cb_pair_t& b) { return a.first == b.first; }
+typedef std::vector<accessor_cb_pair_t> accessor_cb_map_t;
 
-static XSUB2ACCESSOR_t accessor_map;
+static accessor_cb_map_t accessor_map;
 #endif
 
 #define OP_UNSTEAL(name) STMT_START {       \
@@ -128,7 +131,7 @@ gotcv:
             base type only once.
         */
 
-        XSUB2ACCESSOR_t::const_iterator result = accessor_map.find(CvXSUB(cv));
+        accessor_cb_map_t::const_iterator result = std::find(accessor_map.begin(), accessor_map.end(), accessor_cb_pair_t(CvXSUB(cv), 0));
         if (result != accessor_map.end()) accessor = result->second;
     }
 
