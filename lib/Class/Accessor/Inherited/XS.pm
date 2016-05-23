@@ -5,7 +5,7 @@ use warnings;
 
 use Carp ();
 
-our $VERSION = '0.28_001';
+our $VERSION = '0.28_002';
 our $PREFIX  = '__cag_';
 our $NEED_COMPAT = 0;
 
