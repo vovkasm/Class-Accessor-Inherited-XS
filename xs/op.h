@@ -2,15 +2,10 @@
 #define __INHERITED_XS_OP_H_
 
 #ifdef CAIX_OPTIMIZE_OPMETHOD
-#include <vector>
 #include <algorithm>
 
 typedef void (*ACCESSOR_t)(pTHX_ SV**, CV*, HV*);
 typedef std::pair<XSUBADDR_t, ACCESSOR_t> accessor_cb_pair_t;
-bool operator== (const accessor_cb_pair_t& a, const accessor_cb_pair_t& b) { return a.first == b.first; }
-typedef std::vector<accessor_cb_pair_t> accessor_cb_map_t;
-
-static accessor_cb_map_t accessor_map;
 #endif
 
 #define OP_UNSTEAL(name) STMT_START {       \
@@ -29,6 +24,22 @@ XSPROTO(CAIXS_entersub_wrapper) {
 }
 
 #ifdef CAIX_OPTIMIZE_OPMETHOD
+
+/* catchy place, don't forget to add new types here */
+#define ACCESSOR_MAP_SIZE 11
+static accessor_cb_pair_t accessor_map[ACCESSOR_MAP_SIZE] = {
+    accessor_cb_pair_t(&CAIXS_entersub_wrapper<Inherited, true>, &CAIXS_accessor<Inherited, true>),
+    accessor_cb_pair_t(&CAIXS_entersub_wrapper<Inherited, false>, &CAIXS_accessor<Inherited, false>),
+    accessor_cb_pair_t(&CAIXS_entersub_wrapper<InheritedCb, true>, &CAIXS_accessor<InheritedCb, true>),
+    accessor_cb_pair_t(&CAIXS_entersub_wrapper<InheritedCb, false>, &CAIXS_accessor<InheritedCb, false>),
+    accessor_cb_pair_t(&CAIXS_entersub_wrapper<PrivateClass, true>, &CAIXS_accessor<PrivateClass, true>),
+    accessor_cb_pair_t(&CAIXS_entersub_wrapper<PrivateClass, false>, &CAIXS_accessor<PrivateClass, false>),
+    accessor_cb_pair_t(&CAIXS_entersub_wrapper<LazyClass, true>, &CAIXS_accessor<LazyClass, true>),
+    accessor_cb_pair_t(&CAIXS_entersub_wrapper<LazyClass, false>, &CAIXS_accessor<LazyClass, false>),
+    accessor_cb_pair_t(&CAIXS_entersub_wrapper<ObjectOnly, true>, &CAIXS_accessor<ObjectOnly, true>),
+    accessor_cb_pair_t(&CAIXS_entersub_wrapper<ObjectOnly, false>, &CAIXS_accessor<ObjectOnly, false>),
+    accessor_cb_pair_t(&CAIXS_entersub_wrapper<Constructor, false>, &CAIXS_accessor<Constructor, false>)
+};
 
 template <AccessorType type, int optype, bool is_readonly> static
 OP *
@@ -120,8 +131,9 @@ CAIXS_opmethod_wrapper(pTHX) {
 
 gotcv:
     ACCESSOR_t accessor = NULL;
+    XSUBADDR_t xsub = CvXSUB(cv);
 
-    if (LIKELY((CvXSUB(cv) == (XSUBADDR_t)&CAIXS_entersub_wrapper<type, is_readonly>))) {
+    if (LIKELY((xsub == (XSUBADDR_t)&CAIXS_entersub_wrapper<type, is_readonly>))) {
         accessor = &CAIXS_accessor<type, is_readonly>;
 
     } else {
@@ -131,8 +143,12 @@ gotcv:
             base type only once.
         */
 
-        accessor_cb_map_t::const_iterator result = std::find(accessor_map.begin(), accessor_map.end(), accessor_cb_pair_t(CvXSUB(cv), 0));
-        if (result != accessor_map.end()) accessor = result->second;
+        for (int i = ACCESSOR_MAP_SIZE - 1; i >= 0 ; --i) {
+            if (accessor_map[i].first == xsub) {
+                accessor = accessor_map[i].second;
+                break;
+            }
+        }
     }
 
     if (LIKELY(accessor != NULL)) {
