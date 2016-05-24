@@ -1,6 +1,6 @@
 Revision history for Class::Accessor::Inherited::XS.
 
-0.28_003 Tue May 24 00:31:37 MSK 2016
+0.28_004 Wed May 25 01:34:47 MSK 2016
     - support for PERL_OP_PARENT builds
     - support calling multiply accessors from a single op
 
