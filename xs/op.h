@@ -26,7 +26,7 @@ XSPROTO(CAIXS_entersub_wrapper) {
 #ifdef CAIX_OPTIMIZE_OPMETHOD
 
 /* catchy place, don't forget to add new types here */
-#define ACCESSOR_MAP_SIZE 11
+#define ACCESSOR_MAP_SIZE 12
 static accessor_cb_pair_t accessor_map[ACCESSOR_MAP_SIZE] = {
     accessor_cb_pair_t(&CAIXS_entersub_wrapper<Inherited, true>, &CAIXS_accessor<Inherited, true>),
     accessor_cb_pair_t(&CAIXS_entersub_wrapper<Inherited, false>, &CAIXS_accessor<Inherited, false>),
@@ -38,8 +38,14 @@ static accessor_cb_pair_t accessor_map[ACCESSOR_MAP_SIZE] = {
     accessor_cb_pair_t(&CAIXS_entersub_wrapper<LazyClass, false>, &CAIXS_accessor<LazyClass, false>),
     accessor_cb_pair_t(&CAIXS_entersub_wrapper<ObjectOnly, true>, &CAIXS_accessor<ObjectOnly, true>),
     accessor_cb_pair_t(&CAIXS_entersub_wrapper<ObjectOnly, false>, &CAIXS_accessor<ObjectOnly, false>),
-    accessor_cb_pair_t(&CAIXS_entersub_wrapper<Constructor, false>, &CAIXS_accessor<Constructor, false>)
+    accessor_cb_pair_t(&CAIXS_entersub_wrapper<Constructor, false>, &CAIXS_accessor<Constructor, false>),
+    accessor_cb_pair_t(NULL, NULL) /* sentinel */
 };
+
+static int
+CAIXS_map_compare(const void* a, const void* b) {
+    return ((const accessor_cb_pair_t*)a)->first > ((const accessor_cb_pair_t*)b)->first ? -1 : 1;
+}
 
 template <AccessorType type, int optype, bool is_readonly> static
 OP *
@@ -143,12 +149,9 @@ gotcv:
             base type only once.
         */
 
-        for (int i = ACCESSOR_MAP_SIZE - 1; i >= 0 ; --i) {
-            if (accessor_map[i].first == xsub) {
-                accessor = accessor_map[i].second;
-                break;
-            }
-        }
+        int i = 0;
+        while (accessor_map[i].first > xsub) { ++i; }
+        if (accessor_map[i].first == xsub) accessor = accessor_map[i].second;
     }
 
     if (LIKELY(accessor != NULL)) {
