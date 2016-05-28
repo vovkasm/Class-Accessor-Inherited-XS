@@ -108,11 +108,9 @@ BOOT:
 {
     SV** check_env = hv_fetch(GvHV(PL_envgv), "CAIXS_DISABLE_ENTERSUB", 22, 0);
     if (check_env && SvTRUE(*check_env)) optimize_entersub = 0;
-    #ifdef CAIX_OPTIMIZE_OPMETHOD
-
+#ifdef CAIX_OPTIMIZE_OPMETHOD
     qsort(accessor_map, ACCESSOR_MAP_SIZE, sizeof(accessor_cb_pair_t), CAIXS_map_compare);
-
-    #endif
+#endif
     HV* stash = gv_stashpv("Class::Accessor::Inherited::XS", 0);
     newCONSTSUB(stash, "BINARY_UNSAFE", CAIX_BINARY_UNSAFE_RESULT);
     newCONSTSUB(stash, "OPTIMIZED_OPMETHOD", CAIX_OPTIMIZE_OPMETHOD_RESULT);
