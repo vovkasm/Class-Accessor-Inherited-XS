@@ -48,7 +48,7 @@
     assert(type == Inherited || type == PrivateClass || type == ObjectOnly || type == LazyClass || type == InheritedCompat)
 
 #define READONLY_CROAK_CHECK                            \
-    if (type != InheritedCb && is_readonly) {           \
+    if (type != InheritedCb && (opts & IsReadonly)) {   \
         READONLY_TYPE_ASSERT;                           \
         croak("Can't set value in readonly accessor");  \
         return;                                         \
@@ -225,12 +225,12 @@ CAIXS_glob_setter(pTHX_ SV *sv, MAGIC* mg) {
     return 0;
 }
 
-template <bool is_readonly>
-struct FImpl<Constructor, is_readonly> {
+template <AccessorOpts opts>
+struct FImpl<Constructor, opts> {
 static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
     dAXMARK; dITEMS;
 
-    CAIXS_install_entersub<Constructor, is_readonly>(aTHX);
+    CAIXS_install_entersub<Constructor, opts>(aTHX);
     if (UNLIKELY(!items)) croak("Usage: $obj->constructor or __PACKAGE__->constructor");
 
     PL_stack_sp = ++MARK; /* PUTBACK */
@@ -265,8 +265,8 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
     return;
 }};
 
-template <bool is_readonly>
-struct FImpl<LazyClass, is_readonly> {
+template <AccessorOpts opts>
+struct FImpl<LazyClass, opts> {
 static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
     dAXMARK; dITEMS;
 
@@ -278,7 +278,7 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
         READONLY_CROAK_CHECK;
 
         PUSHMARK(SP - items); /* our dAXMARK has popped one */
-        FImpl<PrivateClass, is_readonly>::CAIXS_accessor(aTHX_ SP, cv, stash);
+        FImpl<PrivateClass, opts>::CAIXS_accessor(aTHX_ SP, cv, stash);
 
     } else {
         ENTER;
@@ -293,7 +293,7 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
 
     /* Lazy getter may call setter, and so we'd end up here twice, but SvREFCNT_dec is required only once */
     if (payload->lazy_cb) {
-        CvXSUB(cv) = (XSUBADDR_t)&CAIXS_entersub_wrapper<PrivateClass, is_readonly>;
+        CvXSUB(cv) = (XSUBADDR_t)&CAIXS_entersub_wrapper<PrivateClass, opts>;
         SvREFCNT_dec_NN(payload->lazy_cb);
         payload->lazy_cb = NULL;
     }
@@ -301,15 +301,15 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
     return;
 }};
 
-template <bool is_readonly>
-struct FImpl<PrivateClass, is_readonly> {
+template <AccessorOpts opts>
+struct FImpl<PrivateClass, opts> {
 static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
     dAXMARK; dITEMS;
     SP -= items;
 
     if (UNLIKELY(!items)) croak("Usage: $obj->accessor or __PACKAGE__->accessor");
 
-    CAIXS_install_entersub<PrivateClass, is_readonly>(aTHX);
+    CAIXS_install_entersub<PrivateClass, opts>(aTHX);
     shared_keys* payload = CAIXS_find_payload(cv);
 
     const int type = PrivateClass; /* for CALL_*_CB */
@@ -325,7 +325,7 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
 }};
 
 /* covers type = {Inherited, InheritedCb, InheritedCompat, ObjectOnly} */
-template <AccessorType type, bool is_readonly>
+template <AccessorType type, AccessorOpts opts>
 struct FImpl {
 static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
     dAXMARK; dITEMS;
@@ -333,7 +333,7 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
 
     if (UNLIKELY(!items)) croak("Usage: $obj->accessor or __PACKAGE__->accessor");
 
-    CAIXS_install_entersub<type, is_readonly>(aTHX);
+    CAIXS_install_entersub<type, opts>(aTHX);
     shared_keys* payload = CAIXS_find_payload(cv);
 
     SV* self = *(SP+1);

@@ -14,11 +14,11 @@ typedef std::pair<XSUBADDR_t, ACCESSOR_t> accessor_cb_pair_t;
         return PL_ppaddr[name](aTHX);       \
     } STMT_END                              \
 
-template <AccessorType type, bool is_readonly> static
+template <AccessorType type, AccessorOpts opts> static
 XSPROTO(CAIXS_entersub_wrapper) {
     dSP;
 
-    CAIXS_accessor<type, is_readonly>(aTHX_ SP, cv, NULL);
+    CAIXS_accessor<type, opts>(aTHX_ SP, cv, NULL);
 
     return;
 }
@@ -28,17 +28,17 @@ XSPROTO(CAIXS_entersub_wrapper) {
 /* catchy place, don't forget to add new types here */
 #define ACCESSOR_MAP_SIZE 12
 static accessor_cb_pair_t accessor_map[ACCESSOR_MAP_SIZE] = {
-    accessor_cb_pair_t(&CAIXS_entersub_wrapper<Inherited, true>, &CAIXS_accessor<Inherited, true>),
-    accessor_cb_pair_t(&CAIXS_entersub_wrapper<Inherited, false>, &CAIXS_accessor<Inherited, false>),
-    accessor_cb_pair_t(&CAIXS_entersub_wrapper<InheritedCb, true>, &CAIXS_accessor<InheritedCb, true>),
-    accessor_cb_pair_t(&CAIXS_entersub_wrapper<InheritedCb, false>, &CAIXS_accessor<InheritedCb, false>),
-    accessor_cb_pair_t(&CAIXS_entersub_wrapper<PrivateClass, true>, &CAIXS_accessor<PrivateClass, true>),
-    accessor_cb_pair_t(&CAIXS_entersub_wrapper<PrivateClass, false>, &CAIXS_accessor<PrivateClass, false>),
-    accessor_cb_pair_t(&CAIXS_entersub_wrapper<LazyClass, true>, &CAIXS_accessor<LazyClass, true>),
-    accessor_cb_pair_t(&CAIXS_entersub_wrapper<LazyClass, false>, &CAIXS_accessor<LazyClass, false>),
-    accessor_cb_pair_t(&CAIXS_entersub_wrapper<ObjectOnly, true>, &CAIXS_accessor<ObjectOnly, true>),
-    accessor_cb_pair_t(&CAIXS_entersub_wrapper<ObjectOnly, false>, &CAIXS_accessor<ObjectOnly, false>),
-    accessor_cb_pair_t(&CAIXS_entersub_wrapper<Constructor, false>, &CAIXS_accessor<Constructor, false>),
+    accessor_cb_pair_t(&CAIXS_entersub_wrapper<Inherited, IsReadonly>, &CAIXS_accessor<Inherited, IsReadonly>),
+    accessor_cb_pair_t(&CAIXS_entersub_wrapper<Inherited, None>, &CAIXS_accessor<Inherited, None>),
+    accessor_cb_pair_t(&CAIXS_entersub_wrapper<InheritedCb, IsReadonly>, &CAIXS_accessor<InheritedCb, IsReadonly>),
+    accessor_cb_pair_t(&CAIXS_entersub_wrapper<InheritedCb, None>, &CAIXS_accessor<InheritedCb, None>),
+    accessor_cb_pair_t(&CAIXS_entersub_wrapper<PrivateClass, IsReadonly>, &CAIXS_accessor<PrivateClass, IsReadonly>),
+    accessor_cb_pair_t(&CAIXS_entersub_wrapper<PrivateClass, None>, &CAIXS_accessor<PrivateClass, None>),
+    accessor_cb_pair_t(&CAIXS_entersub_wrapper<LazyClass, IsReadonly>, &CAIXS_accessor<LazyClass, IsReadonly>),
+    accessor_cb_pair_t(&CAIXS_entersub_wrapper<LazyClass, None>, &CAIXS_accessor<LazyClass, None>),
+    accessor_cb_pair_t(&CAIXS_entersub_wrapper<ObjectOnly, IsReadonly>, &CAIXS_accessor<ObjectOnly, IsReadonly>),
+    accessor_cb_pair_t(&CAIXS_entersub_wrapper<ObjectOnly, None>, &CAIXS_accessor<ObjectOnly, None>),
+    accessor_cb_pair_t(&CAIXS_entersub_wrapper<Constructor, None>, &CAIXS_accessor<Constructor, None>),
     accessor_cb_pair_t(NULL, NULL) /* sentinel */
 };
 
@@ -47,7 +47,7 @@ CAIXS_map_compare(const void* a, const void* b) {
     return ((const accessor_cb_pair_t*)a)->first > ((const accessor_cb_pair_t*)b)->first ? -1 : 1;
 }
 
-template <AccessorType type, int optype, bool is_readonly> static
+template <AccessorType type, int optype, AccessorOpts opts> static
 OP *
 CAIXS_opmethod_wrapper(pTHX) {
     dSP;
@@ -139,8 +139,8 @@ gotcv:
     ACCESSOR_t accessor = NULL;
     XSUBADDR_t xsub = CvXSUB(cv);
 
-    if (LIKELY((xsub == (XSUBADDR_t)&CAIXS_entersub_wrapper<type, is_readonly>))) {
-        accessor = &CAIXS_accessor<type, is_readonly>;
+    if (LIKELY((xsub == (XSUBADDR_t)&CAIXS_entersub_wrapper<type, opts>))) {
+        accessor = &CAIXS_accessor<type, opts>;
 
     } else {
         /*
@@ -172,7 +172,7 @@ gotcv:
 
 #endif /* CAIX_OPTIMIZE_OPMETHOD */
 
-template <AccessorType type, bool is_readonly> static
+template <AccessorType type, AccessorOpts opts> static
 OP *
 CAIXS_entersub(pTHX) {
     dSP;
@@ -188,7 +188,7 @@ CAIXS_entersub(pTHX) {
         }
 
         /* Some older gcc's can't deduce correct function - have to add explicit cast  */
-        if (LIKELY((CvXSUB(sv) == (XSUBADDR_t)&CAIXS_entersub_wrapper<type, is_readonly>))) {
+        if (LIKELY((CvXSUB(sv) == (XSUBADDR_t)&CAIXS_entersub_wrapper<type, opts>))) {
             /*
                 Assert against future XPVCV layout change - as for now, xcv_xsub shares space with xcv_root
                 which are both pointers, so address check is enough, and there's no need to look into op_flags for CvISXSUB.
@@ -196,7 +196,7 @@ CAIXS_entersub(pTHX) {
             assert(CvISXSUB(sv));
 
             POPs; PUTBACK;
-            CAIXS_accessor<type, is_readonly>(aTHX_ SP, sv, NULL);
+            CAIXS_accessor<type, opts>(aTHX_ SP, sv, NULL);
 
             return NORMAL;
         }
@@ -206,7 +206,7 @@ CAIXS_entersub(pTHX) {
     OP_UNSTEAL(OP_ENTERSUB);
 }
 
-template <AccessorType type, bool is_readonly> inline
+template <AccessorType type, AccessorOpts opts> inline
 void
 CAIXS_install_entersub(pTHX) {
     /*
@@ -219,7 +219,7 @@ CAIXS_install_entersub(pTHX) {
 
     if ((op->op_spare & 1) != 1 && op->op_ppaddr == PL_ppaddr[OP_ENTERSUB] && optimize_entersub) {
         op->op_spare |= 1;
-        op->op_ppaddr = &CAIXS_entersub<type, is_readonly>;
+        op->op_ppaddr = &CAIXS_entersub<type, opts>;
 
 #ifdef CAIX_OPTIMIZE_OPMETHOD
         OP* methop = cUNOPx(op)->op_first;
@@ -228,10 +228,10 @@ CAIXS_install_entersub(pTHX) {
 
             if (methop->op_next == op) {
                 if (methop->op_type == OP_METHOD_NAMED && methop->op_ppaddr == PL_ppaddr[OP_METHOD_NAMED]) {
-                    methop->op_ppaddr = &CAIXS_opmethod_wrapper<type, OP_METHOD_NAMED, is_readonly>;
+                    methop->op_ppaddr = &CAIXS_opmethod_wrapper<type, OP_METHOD_NAMED, opts>;
 
                 } else if (methop->op_type == OP_METHOD && methop->op_ppaddr == PL_ppaddr[OP_METHOD]) {
-                    methop->op_ppaddr = &CAIXS_opmethod_wrapper<type, OP_METHOD, is_readonly>;
+                    methop->op_ppaddr = &CAIXS_opmethod_wrapper<type, OP_METHOD, opts>;
                 }
             }
         }

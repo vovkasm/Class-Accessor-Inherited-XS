@@ -24,7 +24,7 @@ CAIXS_payload_init(pTHX_ CV* cv) {
     return (shared_keys*)AvARRAY(payload_av);
 }
 
-template <AccessorType type, bool is_readonly> static
+template <AccessorType type, AccessorOpts opts> static
 CV*
 CAIXS_install_cv(pTHX_ SV* full_name) {
     STRLEN len;
@@ -36,7 +36,7 @@ CAIXS_install_cv(pTHX_ SV* full_name) {
     }
 #endif
 
-    CV* cv = Perl_newXS_len_flags(aTHX_ full_name_buf, len, (&CAIXS_entersub_wrapper<type, is_readonly>), __FILE__, NULL, NULL, SvUTF8(full_name));
+    CV* cv = Perl_newXS_len_flags(aTHX_ full_name_buf, len, (&CAIXS_entersub_wrapper<type, opts>), __FILE__, NULL, NULL, SvUTF8(full_name));
     if (!cv) croak("Can't install XS accessor");
 
     return cv;
@@ -48,10 +48,10 @@ CAIXS_install_accessor(pTHX_ SV* full_name, bool is_readonly) {
     CV* cv;
 
     if (is_readonly) {
-        cv = CAIXS_install_cv<type, true>(aTHX_ full_name);
+        cv = CAIXS_install_cv<type, IsReadonly>(aTHX_ full_name);
 
     } else {
-        cv = CAIXS_install_cv<type, false>(aTHX_ full_name);
+        cv = CAIXS_install_cv<type, None>(aTHX_ full_name);
     }
 
     return CAIXS_payload_init<type>(aTHX_ cv);

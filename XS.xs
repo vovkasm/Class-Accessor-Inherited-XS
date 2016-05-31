@@ -158,7 +158,7 @@ void
 install_constructor(SV* full_name)
 PPCODE:
 {
-    CAIXS_install_cv<Constructor, false>(aTHX_ full_name); /* is_readonly not applicable */
+    CAIXS_install_cv<Constructor, None>(aTHX_ full_name);
     XSRETURN_UNDEF;
 }
 

@@ -29,6 +29,11 @@ enum AccessorType {
     InheritedCompat
 };
 
+enum AccessorOpts {
+    None       = 0,
+    IsReadonly = 1,
+};
+
 /*
     - must have a value for each AccessorType element
     - '-2' will croak in av_extend() and is used as a guard
