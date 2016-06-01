@@ -26,7 +26,7 @@ enum AccessorType {
     ObjectOnly,
     Constructor,
     LazyClass,
-    InheritedCompat
+    InheritedCompat,
 };
 
 enum AccessorOpts {
