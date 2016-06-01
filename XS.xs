@@ -15,7 +15,7 @@ static int unstolen = 0;
 #include "xs/accessors.h"
 #include "xs/installer.h"
 
-#define C_FLAGS_RO ((flags & 0x1) == 0x1)
+#define C_FLAGS_RO (((flags & 0x1) == 0x1) ? IsReadonly : None)
 #define C_FLAGS_CO ((flags & 0x2) == 0x2)
 
 static void
@@ -25,7 +25,7 @@ CAIXS_install_inherited_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key,
 
     if (need_cb) {
         assert(pkg_key != NULL);
-        payload = CAIXS_install_accessor<InheritedCb>(aTHX_ full_name, false); /* is_readonly not applicable */
+        payload = CAIXS_install_accessor<InheritedCb>(aTHX_ full_name, None);
 
     } else if (pkg_key != NULL) {
         if (C_FLAGS_CO) {
@@ -71,10 +71,10 @@ CAIXS_install_class_accessor(pTHX_ SV* full_name, SV* default_sv, bool is_varcla
 
     shared_keys* payload;
     if (is_lazy) {
-        payload = CAIXS_install_accessor<LazyClass>(aTHX_ full_name, is_readonly);
+        payload = CAIXS_install_accessor<LazyClass>(aTHX_ full_name, is_readonly ? IsReadonly : None);
 
     } else {
-        payload = CAIXS_install_accessor<PrivateClass>(aTHX_ full_name, is_readonly);
+        payload = CAIXS_install_accessor<PrivateClass>(aTHX_ full_name, is_readonly ? IsReadonly : None);
     }
 
     if (is_varclass) {

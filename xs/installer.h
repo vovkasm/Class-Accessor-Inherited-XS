@@ -44,11 +44,17 @@ CAIXS_install_cv(pTHX_ SV* full_name) {
 
 template <AccessorType type> static
 shared_keys*
-CAIXS_install_accessor(pTHX_ SV* full_name, bool is_readonly) {
+CAIXS_install_accessor(pTHX_ SV* full_name, AccessorOpts opts) {
     CV* cv;
 
-    if (is_readonly) {
+    if (opts & (IsReadonly | IsWeak)) {
+        cv = CAIXS_install_cv<type, (AccessorOpts)(IsReadonly | IsWeak)>(aTHX_ full_name);
+
+    } else if (opts & IsReadonly) {
         cv = CAIXS_install_cv<type, IsReadonly>(aTHX_ full_name);
+
+    } else if (opts & IsWeak) {
+        cv = CAIXS_install_cv<type, IsWeak>(aTHX_ full_name);
 
     } else {
         cv = CAIXS_install_cv<type, None>(aTHX_ full_name);
