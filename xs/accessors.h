@@ -44,6 +44,9 @@
         PUTBACK;                                    \
     }                                               \
 
+#define CALL_WRITE_WEAKEN(slot) \
+    if (opts & IsWeak) sv_rvweaken(slot)
+
 #define READONLY_TYPE_ASSERT \
     assert(type == Inherited || type == PrivateClass || type == ObjectOnly || type == LazyClass || type == InheritedCompat)
 
@@ -321,6 +324,7 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
 
     READONLY_CROAK_CHECK;
     CALL_WRITE_CB(payload->storage, 0);
+    CALL_WRITE_WEAKEN(payload->storage);
     return;
 }};
 
@@ -352,6 +356,7 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
                 SvREFCNT_dec_NN(new_value);
                 croak("Can't store new hash value");
             }
+            CALL_WRITE_WEAKEN(new_value);
             return;
                     
         } else {
@@ -415,6 +420,7 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
 
         CALL_WRITE_CB(new_value, 0);
         SET_GVGP_FLAGS(glob, new_value);
+        CALL_WRITE_WEAKEN(new_value);
 
         return;
     }
