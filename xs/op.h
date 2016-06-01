@@ -149,9 +149,9 @@ gotcv:
             base type only once.
         */
 
-        int i = 0;
-        while (accessor_map[i].first > xsub) { ++i; }
-        if (accessor_map[i].first == xsub) accessor = accessor_map[i].second;
+        const accessor_cb_pair_t* iter = accessor_map;
+        while (iter->first > xsub) { ++iter; }
+        if (iter->first == xsub) accessor = iter->second;
     }
 
     if (LIKELY(accessor != NULL)) {
