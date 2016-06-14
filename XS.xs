@@ -15,8 +15,7 @@ static int unstolen = 0;
 #include "xs/accessors.h"
 #include "xs/installer.h"
 
-#define C_FLAGS_RO (((flags & 0x1) == 0x1) ? IsReadonly : None)
-#define C_FLAGS_CO ((flags & 0x2) == 0x2)
+#define C_FLAGS_CO ((flags & 0x100) == 0x100)
 
 static void
 CAIXS_install_inherited_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key, SV* read_cb, SV* write_cb, int flags) {
@@ -29,14 +28,14 @@ CAIXS_install_inherited_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key,
 
     } else if (pkg_key != NULL) {
         if (C_FLAGS_CO) {
-            payload = CAIXS_install_accessor<InheritedCompat>(aTHX_ full_name, C_FLAGS_RO);
+            payload = CAIXS_install_accessor<InheritedCompat>(aTHX_ full_name, (AccessorOpts)flags);
 
         } else {
-            payload = CAIXS_install_accessor<Inherited>(aTHX_ full_name, C_FLAGS_RO);
+            payload = CAIXS_install_accessor<Inherited>(aTHX_ full_name, (AccessorOpts)flags);
         }
 
     } else {
-        payload = CAIXS_install_accessor<ObjectOnly>(aTHX_ full_name, C_FLAGS_RO);
+        payload = CAIXS_install_accessor<ObjectOnly>(aTHX_ full_name, (AccessorOpts)flags);
     }
 
     STRLEN len;
@@ -66,15 +65,15 @@ CAIXS_install_inherited_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key,
 }
 
 static void
-CAIXS_install_class_accessor(pTHX_ SV* full_name, SV* default_sv, bool is_varclass, bool is_readonly) {
+CAIXS_install_class_accessor(pTHX_ SV* full_name, SV* default_sv, bool is_varclass, int flags) {
     bool is_lazy = SvROK(default_sv) && SvTYPE(SvRV(default_sv)) == SVt_PVCV;
 
     shared_keys* payload;
     if (is_lazy) {
-        payload = CAIXS_install_accessor<LazyClass>(aTHX_ full_name, is_readonly ? IsReadonly : None);
+        payload = CAIXS_install_accessor<LazyClass>(aTHX_ full_name, (AccessorOpts)flags);
 
     } else {
-        payload = CAIXS_install_accessor<PrivateClass>(aTHX_ full_name, is_readonly ? IsReadonly : None);
+        payload = CAIXS_install_accessor<PrivateClass>(aTHX_ full_name, (AccessorOpts)flags);
     }
 
     if (is_varclass) {
@@ -139,18 +138,18 @@ PPCODE:
 }
 
 void
-install_inherited_cb_accessor(SV* full_name, SV* hash_key, SV* pkg_key, SV* read_cb, SV* write_cb)
+install_inherited_cb_accessor(SV* full_name, SV* hash_key, SV* pkg_key, SV* read_cb, SV* write_cb, int flags)
 PPCODE:
 {
-    CAIXS_install_inherited_accessor(aTHX_ full_name, hash_key, pkg_key, read_cb, write_cb, 0);
+    CAIXS_install_inherited_accessor(aTHX_ full_name, hash_key, pkg_key, read_cb, write_cb, flags);
     XSRETURN_UNDEF;
 }
 
 void
-install_class_accessor(SV* full_name, SV* default_sv, SV* is_varclass, SV* is_readonly)
+install_class_accessor(SV* full_name, SV* default_sv, SV* is_varclass, SV* flags)
 PPCODE:
 {
-    CAIXS_install_class_accessor(aTHX_ full_name, default_sv, SvTRUE(is_varclass), SvTRUE(is_readonly));
+    CAIXS_install_class_accessor(aTHX_ full_name, default_sv, SvTRUE(is_varclass), SvIV(flags));
     XSRETURN_UNDEF;
 }
 

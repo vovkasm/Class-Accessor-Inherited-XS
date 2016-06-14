@@ -33,6 +33,7 @@ enum AccessorOpts {
     None       = 0,
     IsReadonly = 1,
     IsWeak     = 2,
+    Reserved   = 256,
 };
 
 /*

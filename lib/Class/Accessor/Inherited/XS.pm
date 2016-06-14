@@ -108,7 +108,7 @@ sub register_type {
         $args->{installer} = sub {
             my ($class, $name, $field) = @_;
             install_inherited_cb_accessor(
-                "${class}::${name}", $field, $PREFIX.$field, $args->{read_cb} // $args->{on_read}, $args->{write_cb} // $args->{on_write}
+                "${class}::${name}", $field, $PREFIX.$field, $args->{read_cb} // $args->{on_read}, $args->{write_cb} // $args->{on_write}, 0
             );
         };
     }
@@ -131,13 +131,13 @@ sub _type_installer {
 sub _mk_inherited_accessor {
     my ($class, $name, $field, $flags) = @_;
 
-    install_inherited_accessor("${class}::${name}", $field, $PREFIX.$field, $flags | ($NEED_COMPAT ? 2 : 0));
+    install_inherited_accessor("${class}::${name}", $field, $PREFIX.$field, $flags | ($NEED_COMPAT ? 256 : 0));
 }
 
 sub _mk_class_accessor {
-    my ($class, $name, $default, $is_varclass, $is_readonly) = @_;
+    my ($class, $name, $default, $is_varclass, $is_readonly, $is_weak) = @_;
 
-    install_class_accessor("${class}::${name}", $default, $is_varclass, $is_readonly);
+    install_class_accessor("${class}::${name}", $default, $is_varclass, ($is_readonly ? 1 : 0) | ($is_weak ? 2 : 0));
 }
 
 sub _mk_object_accessor {
