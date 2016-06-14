@@ -47,7 +47,7 @@ shared_keys*
 CAIXS_install_accessor(pTHX_ SV* full_name, AccessorOpts opts) {
     CV* cv;
 
-    if (opts & (IsReadonly | IsWeak)) {
+    if ((opts & (IsReadonly | IsWeak)) == (IsReadonly | IsWeak)) {
         cv = CAIXS_install_cv<type, (AccessorOpts)(IsReadonly | IsWeak)>(aTHX_ full_name);
 
     } else if (opts & IsReadonly) {
