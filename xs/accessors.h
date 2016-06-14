@@ -285,13 +285,20 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
 
     } else {
         ENTER;
+        if (opts & IsWeak) SAVETMPS;
         PUSHMARK(--SP); /* SP -= items */
         call_sv(payload->lazy_cb, G_SCALAR);
         SPAGAIN;
-        LEAVE;
 
         sv_setsv(payload->storage, *SP);
         *SP = payload->storage;
+
+        if (opts & IsWeak) {
+            CALL_WRITE_WEAKEN(payload->storage);
+            FREETMPS; /* that's done to immediately free stored value if it's only hard reference had been held on the stack */
+        }
+
+        LEAVE;
     }
 
     /* Lazy getter may call setter, and so we'd end up here twice, but SvREFCNT_dec is required only once */
