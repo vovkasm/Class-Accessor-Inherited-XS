@@ -5,10 +5,19 @@ use Class::XSAccessor;
 use strict;
 use Benchmark qw/cmpthese/;
 
-sub __read_caxsi {}
-Class::Accessor::Inherited::XS::install_object_accessor("CCC::caixo", "caixo", 0);
-Class::Accessor::Inherited::XS::install_class_accessor("CCC::caixc", undef, 0, 0);
-Class::Accessor::Inherited::XS::install_inherited_cb_accessor("CCC::caxsi", "caxsi", "__cag_caxsi", \&__read_caxsi, undef);
+BEGIN {
+    sub __read_caxsi {}
+    Class::Accessor::Inherited::XS::register_type(
+        caxsi => {read_cb => \&__read_caxsi}
+    );
+}
+
+use CAIXS {
+    package => 'CCC',
+    object  => 'caixo',
+    class   => 'caixc',
+    caxsi   => 'caxsi',
+};
 
 my $o = CCC->new;
 $o->a(3);
