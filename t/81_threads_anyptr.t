@@ -1,9 +1,6 @@
 use strict;
-our $has_threads;
-BEGIN {
-    $has_threads = eval{require threads; threads->create(sub{return 1})->join};
-}
-use Test::More ($has_threads) ? ('no_plan') : (skip_all => 'for threaded perls only');
+use constant HAS_THREADS => eval{ require threads; threads->create(sub{return 1})->join };
+use Test::More HAS_THREADS ? ('no_plan') : (skip_all => 'for threaded perls only');
 use Time::HiRes qw/sleep/;
 
 {

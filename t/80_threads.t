@@ -1,9 +1,6 @@
 use strict;
-our $have_threads;
-BEGIN {
-    $have_threads = eval{require threads; threads->create(sub{return 1})->join};
-}
-use Test::More ($have_threads) ? ('no_plan') : (skip_all => 'for threaded perls only');
+use constant HAS_THREADS => eval{ require threads; threads->create(sub{return 1})->join };
+use Test::More HAS_THREADS ? ('no_plan') : (skip_all => 'for threaded perls only');
 
 {
     package Test;
