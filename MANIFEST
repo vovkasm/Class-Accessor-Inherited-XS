@@ -42,6 +42,7 @@ t/71_opcode_method_named.t
 t/72_opcode_method.t
 t/73_call_sv.t
 t/74_lazy_recursive.t
+t/75_nytprof.t
 t/80_threads.t
 t/81_threads_anyptr.t
 t/90_leaktrace.t

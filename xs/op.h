@@ -217,7 +217,7 @@ CAIXS_install_entersub(pTHX) {
 
     OP* op = PL_op;
 
-    if ((op->op_spare & 1) != 1 && op->op_ppaddr == PL_ppaddr[OP_ENTERSUB] && optimize_entersub) {
+    if ((op->op_spare & 1) != 1 && op->op_type == OP_ENTERSUB && op->op_ppaddr == PL_ppaddr[OP_ENTERSUB] && optimize_entersub) {
         op->op_spare |= 1;
         op->op_ppaddr = &CAIXS_entersub<type, opts>;
 
