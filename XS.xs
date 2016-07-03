@@ -15,8 +15,6 @@ static int unstolen = 0;
 #include "xs/accessors.h"
 #include "xs/installer.h"
 
-#define C_FLAGS_CO ((flags & 0x100) == 0x100)
-
 static void
 CAIXS_install_inherited_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key, SV* read_cb, SV* write_cb, int flags) {
     shared_keys* payload;
@@ -27,12 +25,7 @@ CAIXS_install_inherited_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key,
         payload = CAIXS_install_accessor<InheritedCb>(aTHX_ full_name, None);
 
     } else if (pkg_key != NULL) {
-        if (C_FLAGS_CO) {
-            payload = CAIXS_install_accessor<InheritedCompat>(aTHX_ full_name, (AccessorOpts)flags);
-
-        } else {
-            payload = CAIXS_install_accessor<Inherited>(aTHX_ full_name, (AccessorOpts)flags);
-        }
+        payload = CAIXS_install_accessor<Inherited>(aTHX_ full_name, (AccessorOpts)flags);
 
     } else {
         payload = CAIXS_install_accessor<ObjectOnly>(aTHX_ full_name, (AccessorOpts)flags);

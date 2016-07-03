@@ -26,20 +26,18 @@ enum AccessorType {
     ObjectOnly,
     Constructor,
     LazyClass,
-    InheritedCompat,
 };
 
 enum AccessorOpts {
     None       = 0,
     IsReadonly = 1,
     IsWeak     = 2,
-    Reserved   = 256,
 };
 
 /*
     - must have a value for each AccessorType element
     - '-2' will croak in av_extend() and is used as a guard
 */
-const int ALLOC_SIZE[] = {3, 3, 0, 0, -2, 1, 3};
+const int ALLOC_SIZE[] = {3, 3, 0, 0, -2, 1};
 
 #endif /* __INHERITED_XS_TYPES_H_ */

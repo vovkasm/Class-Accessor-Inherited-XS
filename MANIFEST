@@ -24,7 +24,6 @@ t/15_constructor.t
 t/16_ro.t
 t/17_lazy.t
 t/18_shortcut.t
-t/19_cag_compat.t
 t/20_weak.t
 t/30_utf8.t
 t/31_utf8_pkg_normal.t

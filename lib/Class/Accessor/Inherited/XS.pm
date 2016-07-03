@@ -7,7 +7,6 @@ use Carp ();
 
 our $VERSION = '0.30';
 our $PREFIX  = '__cag_';
-our $NEED_COMPAT = 0;
 
 require XSLoader;
 XSLoader::load('Class::Accessor::Inherited::XS', $VERSION);
@@ -33,7 +32,6 @@ sub import {
 
     my %opts = ref($_[0]) eq 'HASH' ? %{ $_[0] } : @_;
     my $class = delete $opts{package} // caller;
-    local $NEED_COMPAT = 1 if delete $opts{compability};
 
     for my $type (keys %opts) {
         my $accessors = $opts{$type};
@@ -131,7 +129,7 @@ sub _type_installer {
 sub _mk_inherited_accessor {
     my ($class, $name, $field, $flags) = @_;
 
-    install_inherited_accessor("${class}::${name}", $field, $PREFIX.$field, $flags | ($NEED_COMPAT ? 256 : 0));
+    install_inherited_accessor("${class}::${name}", $field, $PREFIX.$field, $flags);
 }
 
 sub _mk_class_accessor {

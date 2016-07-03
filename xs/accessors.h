@@ -48,7 +48,7 @@
     if (opts & IsWeak) sv_rvweaken(slot)
 
 #define READONLY_TYPE_ASSERT \
-    assert(type == Inherited || type == PrivateClass || type == ObjectOnly || type == LazyClass || type == InheritedCompat)
+    assert(type == Inherited || type == PrivateClass || type == ObjectOnly || type == LazyClass)
 
 #define READONLY_CROAK_CHECK                            \
     if (type != InheritedCb && (opts & IsReadonly)) {   \
@@ -66,9 +66,6 @@
         GvLINE(glob) = 0;       \
     }                           \
 
-static int CAIXS_glob_setter(pTHX_ SV *sv, MAGIC* mg);
-static MGVTBL vtcompat = {NULL, CAIXS_glob_setter};
-
 template <bool overflow> static
 SV*
 CAIXS_icache_get(pTHX_ HV* stash, GV* glob) {
@@ -84,8 +81,7 @@ CAIXS_icache_get(pTHX_ HV* stash, GV* glob) {
     return NULL;
 }
 
-template <bool is_compat> static
-SV*
+static SV*
 CAIXS_icache_update(pTHX_ HV* stash, GV* glob, SV* pkg_key) {
     AV* supers = mro_get_linear_isa(stash);
     /*
@@ -108,13 +104,12 @@ CAIXS_icache_update(pTHX_ HV* stash, GV* glob, SV* pkg_key) {
         elem = *(++supers_list);
         assert(elem); /* mro_get_linear_isa returns dense array */
 
-        HV* next_stash = gv_stashsv(elem, is_compat ? GV_ADD : 0);
+        HV* next_stash = gv_stashsv(elem, 0);
         /*
-            In non-compat mode, skip entries for empty stashes to save
-            some memory. This may result in gaps in the 'stack' array,
-            but in this mode we don't care.
+            Skip entries for empty stashes to save some memory.
+            This may result in gaps in the 'stack' array, but we don't care.
         */
-        if (is_compat || LIKELY(next_stash != NULL)) {
+        if (LIKELY(next_stash != NULL)) {
             GV* next_gv = CAIXS_fetch_glob(aTHX_ next_stash, pkg_key);
             stack[fill] = next_gv;
 
@@ -125,58 +120,33 @@ CAIXS_icache_update(pTHX_ HV* stash, GV* glob, SV* pkg_key) {
     if (UNLIKELY(result == NULL)) {
         assert(fill == -1);
 
-        if (!is_compat) {
-            /* this mode doesn't force stash creation in the above loop, so do it here */
-            HV* root_stash = gv_stashsv(*supers_list, GV_ADD);
-            stack[0] = CAIXS_fetch_glob(aTHX_ root_stash, pkg_key);
-        }
+        /* Since we don't force stash creation in the above loop, do it here */
+        HV* root_stash = gv_stashsv(*supers_list, GV_ADD);
+        stack[0] = CAIXS_fetch_glob(aTHX_ root_stash, pkg_key);
 
         assert(stack[0]);
         result = GvSVn(stack[0]); /* undef from root */
-        if (!is_compat) GvGPFLAGS_on(stack[0]); /* yeah, valid 'undef', to speed up lookups later */
+        GvGPFLAGS_on(stack[0]); /* yeah, valid 'undef', to speed up lookups later */
     }
 
-    U32 pl_sgen = PL_sub_generation;
-    SSize_t new_fill = AvFILLp(supers);
+    GV* cur_gv = stack[AvFILLp(supers)];
+    assert(cur_gv && cur_gv == glob);
 
-    /*
-        For non-compat mode, perfroms a single iteration on the 'glob' variable,
-        thus saving memory for non-fetched items. But we can't do that in compat mode,
-        as we need magic cast upon everything in between.
-    */
-    for (int i = (is_compat ? fill + 1 : new_fill); i <= new_fill; ++i) {
-        GV* cur_gv = stack[i];
-        assert(cur_gv);
-        assert(is_compat || cur_gv == glob);
+    const struct mro_meta* stash_meta = HvMROMETA(GvSTASH(cur_gv));
+    const U32 curgen = PL_sub_generation + stash_meta->pkg_gen;
+    GvLINE(cur_gv) = curgen & (((U32)1 << 31) - 1); /* perl may lack 'gp_flags' field, so we must care about the highest bit */
 
-        const struct mro_meta* stash_meta = HvMROMETA(GvSTASH(cur_gv));
-        const U32 curgen = pl_sgen + stash_meta->pkg_gen;
-        GvLINE(cur_gv) = curgen & (((U32)1 << 31) - 1); /* perl may lack 'gp_flags' field, so we must care about the highest bit */
+    /* copy-by-reference */
+    SV** sv_slot = &GvSV(cur_gv);
 
-        if (is_compat) {
-            /* copy-by-val + attach watchdog magic */
-            SV* sv_slot = GvSVn(cur_gv);
-            sv_setsv_nomg(sv_slot, result);
-
-            if (!SvSMAGICAL(sv_slot) || !CAIXS_mg_findext(sv_slot, PERL_MAGIC_ext, &vtcompat)) {
-                sv_magicext(sv_slot, (SV*)cur_gv, PERL_MAGIC_ext, &vtcompat, (const char*)pkg_key, HEf_SVKEY);
-            }
-
-        } else {
-            /* copy-by-reference */
-            SV** sv_slot = &GvSV(cur_gv);
-
-            SvREFCNT_inc_simple_void_NN(result);
-            SvREFCNT_dec(*sv_slot);
-            *sv_slot = result;
-        }
-    }
+    SvREFCNT_inc_simple_void_NN(result);
+    SvREFCNT_dec(*sv_slot);
+    *sv_slot = result;
 
     return result;
 }
 
-template <bool is_compat> static
-void
+static void
 CAIXS_icache_clear(pTHX_ HV* stash, SV* pkg_key, SV* base_sv) {
     SV** svp = hv_fetchhek(PL_isarev, HvENAME_HEK(stash));
     if (svp) {
@@ -197,9 +167,7 @@ CAIXS_icache_clear(pTHX_ HV* stash, SV* pkg_key, SV* base_sv) {
                         HV* revstash = gv_stashpvn(HEK_KEY(hkey), HEK_LEN(hkey), HEK_UTF8(hkey) | GV_ADD);
                         GV* revglob = CAIXS_fetch_glob(aTHX_ revstash, pkg_key);
 
-                        if (is_compat || base_sv == NULL) {
-                            assert(!is_compat || base_sv == NULL);
-
+                        if (base_sv == NULL) {
                             /* invalidates all non-root nodes */
                             if (!GvGPFLAGS(revglob)) GvLINE(revglob) = 0;
 
@@ -215,17 +183,6 @@ CAIXS_icache_clear(pTHX_ HV* stash, SV* pkg_key, SV* base_sv) {
             }
         }
     }
-}
-
-static int
-CAIXS_glob_setter(pTHX_ SV *sv, MAGIC* mg) {
-    GV* glob = (GV*)(mg->mg_obj);
-
-    /* InheritedCompat only - cache wipe out */
-    SET_GVGP_FLAGS(glob, sv);
-    CAIXS_icache_clear<InheritedCompat>(aTHX_ GvSTASH(glob), (SV*)(mg->mg_ptr), NULL);
-
-    return 0;
 }
 
 template <AccessorOpts opts>
@@ -335,7 +292,7 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
     return;
 }};
 
-/* covers type = {Inherited, InheritedCb, InheritedCompat, ObjectOnly} */
+/* covers type = {Inherited, InheritedCb, ObjectOnly} */
 template <AccessorType type, AccessorOpts opts>
 struct FImpl {
 static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
@@ -394,35 +351,20 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
         GV* glob = CAIXS_fetch_glob(aTHX_ stash, payload->pkg_key);
         SV* new_value = GvSV(glob);
 
-        if (type == InheritedCompat) {
-            if (UNLIKELY(new_value == NULL)) {
-                GvSV(glob) = newSV(0);
-                new_value = GvSV(glob);
-            }
+        if (!GvGPFLAGS(glob)) {
+            /*
+                When this is an already calculated cache point (new_value != NULL),
+                wipe will be performed only to the 'new_value' copies. Otherwise,
+                erase the whole cache.
+            */
+            CAIXS_icache_clear(aTHX_ stash, payload->pkg_key, new_value);
+            SvREFCNT_dec(new_value);
 
-            if (!SvSMAGICAL(new_value) || !CAIXS_mg_findext(new_value, PERL_MAGIC_ext, &vtcompat)) {
-                sv_magicext(new_value, (SV*)glob, PERL_MAGIC_ext, &vtcompat, (const char*)(payload->pkg_key), HEf_SVKEY);
-            }
-
-            /* Wipe the whole cache from down there */
-            CAIXS_icache_clear<true>(aTHX_ stash, payload->pkg_key, NULL);
+            GvSV(glob) = newSV(0);
+            new_value = GvSV(glob);
 
         } else {
-            if (!GvGPFLAGS(glob)) {
-                /*
-                    When this is an already calculated cache point (new_value != NULL),
-                    wipe will be performed only to the 'new_value' copies. Otherwise,
-                    like in the above case, the whole cache gets erased.
-                */
-                CAIXS_icache_clear<false>(aTHX_ stash, payload->pkg_key, new_value);
-                SvREFCNT_dec(new_value);
-
-                GvSV(glob) = newSV(0);
-                new_value = GvSV(glob);
-
-            } else {
-                assert(new_value);
-            }
+            assert(new_value);
         }
 
         CALL_WRITE_CB(new_value, 0);
@@ -436,7 +378,7 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
     SV* result = CAIXS_icache_get<true>(aTHX_ stash, glob);
 
     /* lazy cache builder */
-    if (!result) result = CAIXS_icache_update<type == InheritedCompat>(aTHX_ stash, glob, payload->pkg_key);
+    if (!result) result = CAIXS_icache_update(aTHX_ stash, glob, payload->pkg_key);
 
     CALL_READ_CB(result);
     return;
