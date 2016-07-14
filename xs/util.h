@@ -62,7 +62,7 @@ CAIXS_find_stash(pTHX_ SV* self, CV* cv) {
     return stash;
 }
 
-inline GV*
+static GV*
 CAIXS_fetch_glob(pTHX_ HV* stash, SV* pkg_key) {
     HE* hent = hv_fetch_ent(stash, pkg_key, 0, 0);
     GV* glob = hent ? (GV*)HeVAL(hent) : NULL;
