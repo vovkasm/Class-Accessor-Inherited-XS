@@ -183,8 +183,8 @@ CAIXS_entersub(pTHX) {
         if (UNLIKELY(SvTYPE(sv) != SVt_PVCV)) {
             /* can('acc')->() or (\&acc)->()  */
 
-            if (LIKELY(SvROK(sv))) sv = (CV*)SvRV(sv);
-            if (UNLIKELY(SvTYPE(sv) != SVt_PVCV)) OP_UNSTEAL(OP_ENTERSUB);
+            if ((SvFLAGS(sv) & (SVf_ROK|SVs_GMG)) == SVf_ROK) sv = (CV*)SvRV(sv);
+            if (UNLIKELY((SvTYPE(sv) != SVt_PVCV) || SvOBJECT(sv))) OP_UNSTEAL(OP_ENTERSUB);
         }
 
         /* Some older gcc's can't deduce correct function - have to add explicit cast  */
