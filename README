@@ -73,7 +73,8 @@ DESCRIPTION
 
     constructor can create objects either from a list or from a single
     hashref. Note that if you pass a hash reference, it becomes blessed too.
-    If that's not what you want, pass a dereferenced copy.
+    If that's not what you want, pass a dereferenced copy. As a special
+    case, passing a single undef returns you an empty object.
 
         __PACKAGE__->new(foo => 1, bar => 2); # values are copied
         __PACKAGE__->new(\%args);             # values are not copied, much faster
@@ -171,7 +172,7 @@ SEE ALSO
 COPYRIGHT AND LICENSE
     Copyright (C) 2009 by Vladimir Timofeev
 
-    Copyright (C) 2014-2015 by Sergey Aleynikov
+    Copyright (C) 2014-2016 by Sergey Aleynikov
 
     This library is free software; you can redistribute it and/or modify it
     under the same terms as Perl itself, either Perl version 5.10.1 or, at
