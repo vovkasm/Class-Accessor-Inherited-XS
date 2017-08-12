@@ -35,8 +35,7 @@ sub import {
 
     for my $type (keys %opts) {
         my $accessors = $opts{$type};
-        my $installer = _type_installer($type);
-        my $clone_arg = $REGISTERED_TYPES->{$type}{clone_arg};
+        my ($installer, $clone_arg) = $pkg->_type_installer($type);
 
         if (ref($accessors) eq 'HASH') {
             $installer->($class, $_, $accessors->{$_}) for keys %$accessors;
@@ -76,8 +75,7 @@ sub mk_object_accessors {
 sub mk_type_accessors {
     my ($class, $type) = (shift, shift);
 
-    my $installer = _type_installer($type);
-    my $clone_arg = $REGISTERED_TYPES->{$type}{clone_arg};
+    my ($installer, $clone_arg) = $class->_type_installer($type);
 
     for my $entry (@_) {
         if (ref($entry) eq 'ARRAY') {
@@ -120,10 +118,10 @@ sub register_type {
 #
 
 sub _type_installer {
-    my $type = shift;
+    my (undef, $type) = @_;
 
     my $type_info = $REGISTERED_TYPES->{$type} or Carp::confess("Don't know how to install '$type' accessors");
-    return $type_info->{installer};
+    return ($type_info->{installer}, $type_info->{clone_arg});
 }
 
 sub _mk_inherited_accessor {
