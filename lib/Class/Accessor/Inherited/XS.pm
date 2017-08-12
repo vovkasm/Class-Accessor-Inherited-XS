@@ -111,7 +111,7 @@ sub register_type {
         };
     }
 
-    $args->{clone_arg} = 1 unless exists $args->{clone_arg};
+    $args->{clone_arg} = 1 unless exists $args->{clone_arg}; # for cb-types
     $REGISTERED_TYPES->{$type} = $args;
 }
 
