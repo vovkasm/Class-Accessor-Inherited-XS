@@ -19,23 +19,19 @@ sub mk_type_accessors {
 }
 
 sub mk_inherited_accessors {
-    my $class = shift;
-    mk_type_accessors($class, 'inherited', @_);
+    shift->mk_type_accessors('inherited', @_);
 }
 
 sub mk_class_accessors {
-    my $class = shift;
-    mk_type_accessors($class, 'class', @_);
+    shift->mk_type_accessors('class', @_);
 }
 
 sub mk_varclass_accessors {
-    my $class = shift;
-    mk_type_accessors($class, 'varclass', @_);
+    shift->mk_type_accessors('varclass', @_);
 }
 
 sub mk_object_accessors {
-    my $class = shift;
-    mk_type_accessors($class, 'object', @_);
+    shift->mk_type_accessors('object', @_);
 }
 
 1;
