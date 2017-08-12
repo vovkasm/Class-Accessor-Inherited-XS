@@ -144,9 +144,9 @@ Class::Accessor::Inherited::XS - Fast XS inherited, object and class accessors
       getters   => ['foo'],             # alias for 'object_ro'
   };
 
-  # or at run time, in a Class::Accessor::Grouped-like fashion
-  # this is unrecommended style and it provides very limited interface
-  use parent 'Class::Accessor::Inherited::XS';
+  # Or if you prefer a Class::Accessor::Grouped-like interface, you can do it
+  # at run time. Note that this is not recommended and provides limited feature set.
+  use parent 'Class::Accessor::Inherited::XS::Compat';
 
   __PACKAGE__->mk_inherited_accessors('foo', [bar => 'bar_key']);
   __PACKAGE__->mk_class_accessors('foo');
@@ -245,9 +245,6 @@ class_caix       31300776/s          13286%   2960%   2303%        391%         
         inherited    => ['foo'],
         inherited_cb => ['bar'],
     };
-
-    #or in a Class::Accessor::Grouped-like fashion
-    __PACKAGE__->mk_type_accessors(inherited_cb => 'foo', 'bar');
 
 You can register new inherited accessor types with associated read/write callbacks. Unlike
 L<Class::Accessor::Grouped>, only a single callback can be set for a type, without per-class
