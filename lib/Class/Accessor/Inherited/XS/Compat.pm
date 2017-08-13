@@ -3,7 +3,10 @@ use 5.010001;
 use strict;
 use warnings;
 
-use Class::Accessor::Inherited::XS;
+use parent 'Exporter';
+our @EXPORT_OK = qw/mk_type_accessors mk_inherited_accessors mk_class_accessors mk_varclass_accessors mk_object_accessors/;
+
+require Class::Accessor::Inherited::XS;
 
 sub mk_type_accessors {
     my ($class, $type) = (shift, shift);
@@ -30,19 +33,19 @@ EOF
 }
 
 sub mk_inherited_accessors {
-    shift->mk_type_accessors('inherited', @_);
+    mk_type_accessors(shift, 'inherited', @_);
 }
 
 sub mk_class_accessors {
-    shift->mk_type_accessors('class', @_);
+    mk_type_accessors(shift, 'class', @_);
 }
 
 sub mk_varclass_accessors {
-    shift->mk_type_accessors('varclass', @_);
+    mk_type_accessors(shift, 'varclass', @_);
 }
 
 sub mk_object_accessors {
-    shift->mk_type_accessors('object', @_);
+    mk_type_accessors(shift, 'object', @_);
 }
 
 1;

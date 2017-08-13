@@ -3,7 +3,7 @@ use 5.010001;
 use strict;
 use warnings;
 
-use parent 'Class::Accessor::Inherited::XS::Compat';
+use Class::Accessor::Inherited::XS::Compat qw/mk_type_accessors mk_inherited_accessors mk_class_accessors mk_varclass_accessors mk_object_accessors/;
 
 use Carp ();
 
