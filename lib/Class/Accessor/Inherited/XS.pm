@@ -7,7 +7,7 @@ use Class::Accessor::Inherited::XS::Compat qw/mk_type_accessors mk_inherited_acc
 
 use Carp ();
 
-our $VERSION = '0.32';
+our $VERSION = '0.33';
 our $PREFIX  = '__cag_';
 
 require XSLoader;
