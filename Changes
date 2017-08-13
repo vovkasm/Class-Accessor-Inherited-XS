@@ -1,5 +1,9 @@
 Revision history for Class::Accessor::Inherited::XS.
 
+0.32 Sun Aug 13 23:17:13 MSK 2017
+    - extract ::Compat type installers
+    - deprecate inheriting non-compat CAIXS class
+
 0.31 Tue Sep 27 00:11:42 MSK 2016
     - fix goto &accessor under Devel::NYTProf
     - fix overload corner cases
