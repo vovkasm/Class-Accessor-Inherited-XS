@@ -110,12 +110,6 @@ BOOT:
     newCONSTSUB(stash, "OPTIMIZED_OPMETHOD", CAIX_OPTIMIZE_OPMETHOD_RESULT);
 }
 
-void _unstolen_count()
-PPCODE:
-{
-    XSRETURN_IV(unstolen);
-}
-
 void
 install_object_accessor(SV* full_name, SV* hash_key, int flags)
 PPCODE:
@@ -156,3 +150,11 @@ PPCODE:
     XSRETURN_UNDEF;
 }
 
+MODULE = Class::Accessor::Inherited::XS     PACKAGE = Class::Accessor::Inherited::XS::Debug
+PROTOTYPES: DISABLE
+
+void unstolen_count()
+PPCODE:
+{
+    XSRETURN_IV(unstolen);
+}
