@@ -4,7 +4,7 @@
 template <AccessorType type, AccessorOpts opts>
 struct FImpl;
 
-template <AccessorType type, AccessorOpts opts> inline
+template <AccessorType type, AccessorOpts opts> static
 void
 CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
     FImpl<type, opts>::CAIXS_accessor(aTHX_ SP, cv, stash);
