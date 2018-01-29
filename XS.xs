@@ -22,7 +22,7 @@ CAIXS_install_inherited_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key,
 
     if (need_cb) {
         assert(pkg_key != NULL);
-        payload = CAIXS_install_accessor<InheritedCb>(aTHX_ full_name, None);
+        payload = CAIXS_install_accessor<InheritedCb>(aTHX_ full_name, (AccessorOpts)opts);
 
     } else if (pkg_key != NULL) {
         payload = CAIXS_install_accessor<Inherited>(aTHX_ full_name, (AccessorOpts)opts);
