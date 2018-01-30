@@ -28,11 +28,15 @@ enum AccessorType {
     LazyClass,
 };
 
+/* bitset in disguise */
 enum AccessorOpts {
     None       = 0,
     IsReadonly = 1,
     IsWeak     = 2,
 };
+
+/* 2 * last_element - 1 for template instantiation */
+#define AccessorOptsBF ((AccessorOpts)7)
 
 /*
     - must have a value for each AccessorType element
