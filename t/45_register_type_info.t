@@ -55,6 +55,6 @@ for (1..2) {
 }
 
 is $counter, 4 * 2 * 3; # arg - type - w/r/r
-is(Class::Accessor::Inherited::XS::Debug::unstolen_count(), 0);
+is(Class::Accessor::Inherited::XS::Debug::unstolen_count(), Class::Accessor::Inherited::XS::OPTIMIZED_OPMETHOD ? 0 : 2);
 
 done_testing;
