@@ -8,14 +8,19 @@ my $counter = 0;
 sub wrt { is my $foo = $_[-1], $type; ++$counter; $_[1] }
 sub rdt { is my $foo = $_[-1], $type; ++$counter; $_[0] }
 
+sub foo {}
+
 BEGIN {
-    Class::Accessor::Inherited::XS::register_type(
-        nmd => {write_cb => \&wrt, read_cb => \&rdt}
+    Class::Accessor::Inherited::XS::register_types(
+        nmd => {write_cb => \&wrt, read_cb => \&rdt, opts => 4},
+        stb => {write_cb => \&foo, read_cb => \&foo},
     );
 }
 
 use Class::Accessor::Inherited::XS
     nmd       => ['bar', 'baz'],
+    stb       => 'stb',
+    inherited => 'inh',
 ;
 
 my $obj = bless {};
@@ -39,6 +44,13 @@ for my $arg (1, 2, 100, 500) {
 
         is $obj->baz, $arg;
         is $obj->$type, $arg;
+    }
+}
+
+for (1..2) {
+    for my $meth (qw/stb inh/) {
+        $obj->$meth(42);
+        $obj->$meth;
     }
 }
 

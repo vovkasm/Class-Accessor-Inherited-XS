@@ -17,6 +17,7 @@
 */
 
 #define PUSH_PAYLOAD_KEY \
+    if (opts & PushName) {                      \
     /* METHOD_NAMED path won't give us a free SP slot */ \
     EXTEND(SP, items + 1);                      \
     *(SP += items + 1) = payload->hash_key;     \
@@ -25,6 +26,7 @@
         re-enable when messing with stack for tests
         assert(PL_curstackinfo->si_stack_hwm >= PL_stack_sp - PL_stack_base);
     */ \
+    }
 
 
 #define CALL_READ_CB(result)                        \

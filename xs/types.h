@@ -33,6 +33,7 @@ enum AccessorOpts {
     None       = 0,
     IsReadonly = 1,
     IsWeak     = 2,
+    PushName   = 4,
 };
 
 /* 2 * last_element - 1 for template instantiation */
