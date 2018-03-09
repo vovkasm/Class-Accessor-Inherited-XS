@@ -62,4 +62,8 @@
 #define CAIX_BINARY_UNSAFE_RESULT (&PL_sv_no)
 #endif
 
+#if (PERL_VERSION == 22) || (PERL_VERSION == 24) || (PERL_VERSION == 26 && PERL_SUBVERSION == 0)
+#define CAIXS_BROKEN_INITGV
+#endif
+
 #endif /* __INHERITED_XS_COMPAT_H_ */

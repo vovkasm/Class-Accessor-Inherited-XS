@@ -17,7 +17,7 @@ t/07_die.t
 t/08_stash_manip.t
 t/09_import.t
 t/10_gparent_found.t
-t/11_empty_gv.t
+t/11_init_gv.t
 t/12_simple_class.t
 t/13_varclass.t
 t/14_object.t

@@ -68,9 +68,26 @@ CAIXS_fetch_glob(pTHX_ HV* stash, SV* pkg_key) {
     GV* glob = hent ? (GV*)HeVAL(hent) : NULL;
 
     if (UNLIKELY(!glob || !isGV(glob) || SvFAKE(glob))) {
-        if (!glob) glob = (GV*)newSV(0);
-
+#ifdef CAIXS_BROKEN_INITGV
+        SV* oldsub = NULL;
+#endif
+        if (!glob) {
+            glob = (GV*)newSV(0);
+        }
+#ifdef CAIXS_BROKEN_INITGV
+        else if (SvROK(glob)) {
+            oldsub = SvRV(glob);
+            if (SvTYPE(oldsub) == SVt_PVCV && !CvNAMED(oldsub)) {
+                SvREFCNT_inc_simple_NN(oldsub);
+                SvREFCNT_dec_NN(glob);
+                glob = (GV*)newSV(0);
+            }
+        }
+#endif
         gv_init_sv(glob, stash, pkg_key, 0);
+#ifdef CAIXS_BROKEN_INITGV
+        if (oldsub) GvCV_set(glob, (CV*)oldsub);
+#endif
 
         if (hent) {
             /* There was just a stub instead of the full glob */
