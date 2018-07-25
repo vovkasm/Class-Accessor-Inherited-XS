@@ -3,6 +3,8 @@ language: perl
 perl:
   - "dev"
   - "dev-thr"
+  - "5.28"
+  - "5.28.0-thr"
   - "5.26"
   - "5.26.0-thr"
   - "5.24"
