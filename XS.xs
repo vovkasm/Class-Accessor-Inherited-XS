@@ -160,6 +160,7 @@ BOOT:
 #define RGSTR(c) \
     newCONSTSUB(stash, #c , newSViv(c)); \
     av_push(exp, newSVpvn(#c, strlen(#c)));
+    RGSTR(None);
     RGSTR(IsReadonly);
     RGSTR(IsWeak);
     RGSTR(PushName);
