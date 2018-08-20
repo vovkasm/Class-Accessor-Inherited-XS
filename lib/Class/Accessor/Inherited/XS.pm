@@ -6,26 +6,30 @@ use warnings;
 use Class::Accessor::Inherited::XS::Compat qw/mk_type_accessors mk_inherited_accessors mk_class_accessors mk_varclass_accessors mk_object_accessors/;
 
 use Carp ();
+our $PREFIX = '__cag_';
 
-our $VERSION = '0.35_01';
-our $PREFIX  = '__cag_';
+BEGIN {
+    our $VERSION = '0.35_01';
 
-require XSLoader;
-XSLoader::load('Class::Accessor::Inherited::XS', $VERSION);
+    require XSLoader;
+    XSLoader::load('Class::Accessor::Inherited::XS', $VERSION);
+}
+
+use Class::Accessor::Inherited::XS::Constants;
 
 my $REGISTERED_TYPES = {};
 register_types(
-    inherited       => {installer => sub { _mk_inherited_accessor(@_, 0) }, clone_arg => 1},
-    inherited_ro    => {installer => sub { _mk_inherited_accessor(@_, 1) }, clone_arg => 1},
-    class           => {installer => sub { _mk_class_accessor(@_, 0, 0) },  clone_arg => undef},
-    class_ro        => {installer => sub { _mk_class_accessor(@_, 0, 1) },  clone_arg => undef},
-    varclass        => {installer => sub { _mk_class_accessor(@_, 1, 0) },  clone_arg => undef},
-    varclass_ro     => {installer => sub { _mk_class_accessor(@_, 1, 1) },  clone_arg => undef},
-    object          => {installer => sub { _mk_object_accessor(@_, 0) },    clone_arg => 1},
-    accessors       => {installer => sub { _mk_object_accessor(@_, 0) },    clone_arg => 1}, # alias for object
-    object_ro       => {installer => sub { _mk_object_accessor(@_, 1) },    clone_arg => 1},
-    getters         => {installer => sub { _mk_object_accessor(@_, 1) },    clone_arg => 1}, # alias for object_ro
-    constructor     => {installer => \&_mk_constructor,                     clone_arg => undef},
+    inherited       => {installer => sub { _mk_inherited_accessor(@_,          0) }, clone_arg => 1},
+    inherited_ro    => {installer => sub { _mk_inherited_accessor(@_, IsReadonly) }, clone_arg => 1},
+    class           => {installer => sub { _mk_class_accessor(@_, 0,          0) },  clone_arg => undef},
+    class_ro        => {installer => sub { _mk_class_accessor(@_, 0, IsReadonly) },  clone_arg => undef},
+    varclass        => {installer => sub { _mk_class_accessor(@_, 1,          0) },  clone_arg => undef},
+    varclass_ro     => {installer => sub { _mk_class_accessor(@_, 1, IsReadonly) },  clone_arg => undef},
+    object          => {installer => sub { _mk_object_accessor(@_,            0) },  clone_arg => 1},
+    accessors       => {installer => sub { _mk_object_accessor(@_,            0) },  clone_arg => 1}, # alias for object
+    object_ro       => {installer => sub { _mk_object_accessor(@_, IsReadonly) },    clone_arg => 1},
+    getters         => {installer => sub { _mk_object_accessor(@_, IsReadonly) },    clone_arg => 1}, # alias for object_ro
+    constructor     => {installer => \&_mk_constructor,                              clone_arg => undef},
 );
 
 sub import {
@@ -100,9 +104,9 @@ sub _mk_inherited_accessor {
 }
 
 sub _mk_class_accessor {
-    my ($class, $name, $default, $is_varclass, $is_readonly, $is_weak) = @_;
+    my ($class, $name, $default, $is_varclass, $flags) = @_;
 
-    install_class_accessor("${class}::${name}", $default, $is_varclass, ($is_readonly ? 1 : 0) | ($is_weak ? 2 : 0));
+    install_class_accessor("${class}::${name}", $default, $is_varclass, $flags);
 }
 
 sub _mk_object_accessor {
