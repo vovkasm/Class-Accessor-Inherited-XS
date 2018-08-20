@@ -5,7 +5,6 @@ use warnings;
 
 use Class::Accessor::Inherited::XS::Compat qw/mk_type_accessors mk_inherited_accessors mk_class_accessors mk_varclass_accessors mk_object_accessors/;
 
-use Carp ();
 our $PREFIX = '__cag_';
 
 BEGIN {
@@ -15,6 +14,7 @@ BEGIN {
     XSLoader::load('Class::Accessor::Inherited::XS', $VERSION);
 }
 
+use Carp qw/confess/;
 use Class::Accessor::Inherited::XS::Constants;
 
 my $REGISTERED_TYPES = {};
@@ -53,7 +53,7 @@ sub import {
             $installer->($class, $accessors, $clone_arg && $accessors);
 
         } else {
-            Carp::confess("Can't understand format for '$type' accessors initializer");
+            confess("Can't understand format for '$type' accessors initializer");
         }
     }
 }
@@ -68,7 +68,7 @@ sub register_type {
     my ($type, $args) = @_;
 
     if (exists $REGISTERED_TYPES->{$type}) {
-        Carp::confess("Type '$type' has already been registered");
+        confess("Type '$type' has already been registered");
     }
 
     if (!exists $args->{installer}) {
@@ -101,7 +101,7 @@ sub _curry {
 sub _type_installer {
     my (undef, $type) = @_;
 
-    my $type_info = $REGISTERED_TYPES->{$type} or Carp::confess("Don't know how to install '$type' accessors");
+    my $type_info = $REGISTERED_TYPES->{$type} or confess("Don't know how to install '$type' accessors");
     return ($type_info->{installer}, $type_info->{clone_arg});
 }
 
