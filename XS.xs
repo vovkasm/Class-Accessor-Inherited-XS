@@ -150,6 +150,26 @@ PPCODE:
     XSRETURN_UNDEF;
 }
 
+MODULE = Class::Accessor::Inherited::XS     PACKAGE = Class::Accessor::Inherited::XS::Constants
+PROTOTYPES: DISABLE
+
+BOOT:
+{
+    HV* stash = gv_stashpv("Class::Accessor::Inherited::XS::Constants", GV_ADD);
+    AV* exp = get_av("Class::Accessor::Inherited::XS::Constants::EXPORT", GV_ADD);
+#define RGSTR(c) \
+    newCONSTSUB(stash, #c , newSViv(c)); \
+    av_push(exp, newSVpvn(#c, strlen(#c)));
+    RGSTR(IsReadonly);
+    RGSTR(IsWeak);
+    RGSTR(PushName);
+
+    AV* isa = get_av("Class::Accessor::Inherited::XS::Constants::ISA", GV_ADD);
+    av_push(isa, newSVpvs("Exporter"));
+
+    hv_stores(get_hv("INC", GV_ADD), "Class/Accessor/Inherited/XS/Constants.pm", &PL_sv_yes);
+}
+
 MODULE = Class::Accessor::Inherited::XS     PACKAGE = Class::Accessor::Inherited::XS::Debug
 PROTOTYPES: DISABLE
 
