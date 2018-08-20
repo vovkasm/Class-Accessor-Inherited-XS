@@ -19,17 +19,17 @@ use Class::Accessor::Inherited::XS::Constants;
 
 my $REGISTERED_TYPES = {};
 register_types(
-    inherited       => {installer => sub { _mk_inherited_accessor(@_,          0) }, clone_arg => 1},
-    inherited_ro    => {installer => sub { _mk_inherited_accessor(@_, IsReadonly) }, clone_arg => 1},
-    class           => {installer => sub { _mk_class_accessor(@_, 0,          0) },  clone_arg => undef},
-    class_ro        => {installer => sub { _mk_class_accessor(@_, 0, IsReadonly) },  clone_arg => undef},
-    varclass        => {installer => sub { _mk_class_accessor(@_, 1,          0) },  clone_arg => undef},
-    varclass_ro     => {installer => sub { _mk_class_accessor(@_, 1, IsReadonly) },  clone_arg => undef},
-    object          => {installer => sub { _mk_object_accessor(@_,            0) },  clone_arg => 1},
-    accessors       => {installer => sub { _mk_object_accessor(@_,            0) },  clone_arg => 1}, # alias for object
-    object_ro       => {installer => sub { _mk_object_accessor(@_, IsReadonly) },    clone_arg => 1},
-    getters         => {installer => sub { _mk_object_accessor(@_, IsReadonly) },    clone_arg => 1}, # alias for object_ro
-    constructor     => {installer => \&_mk_constructor,                              clone_arg => undef},
+    inherited       => {installer => _curry(\&_mk_inherited_accessor, None),       clone_arg => 1},
+    inherited_ro    => {installer => _curry(\&_mk_inherited_accessor, IsReadonly), clone_arg => 1},
+    class           => {installer => _curry(\&_mk_class_accessor, 0, None),        clone_arg => undef},
+    class_ro        => {installer => _curry(\&_mk_class_accessor, 0, IsReadonly),  clone_arg => undef},
+    varclass        => {installer => _curry(\&_mk_class_accessor, 1, None),        clone_arg => undef},
+    varclass_ro     => {installer => _curry(\&_mk_class_accessor, 1, IsReadonly),  clone_arg => undef},
+    object          => {installer => _curry(\&_mk_object_accessor, None),          clone_arg => 1},
+    accessors       => {installer => _curry(\&_mk_object_accessor, None),          clone_arg => 1}, # alias for object
+    object_ro       => {installer => _curry(\&_mk_object_accessor, IsReadonly),    clone_arg => 1},
+    getters         => {installer => _curry(\&_mk_object_accessor, IsReadonly),    clone_arg => 1}, # alias for object_ro
+    constructor     => {installer => \&_mk_constructor,                            clone_arg => undef},
 );
 
 sub import {
@@ -89,6 +89,14 @@ sub register_type {
 #
 #   Functions below are NOT part of the public API
 #
+
+sub _curry {
+    my ($sub, @args) = @_;
+
+    return sub {
+        $sub->(@_, @args);
+    };
+}
 
 sub _type_installer {
     my (undef, $type) = @_;
