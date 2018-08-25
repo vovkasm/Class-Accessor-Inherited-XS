@@ -8,7 +8,7 @@ use Class::Accessor::Inherited::XS::Compat qw/mk_type_accessors mk_inherited_acc
 our $PREFIX = '__cag_';
 
 BEGIN {
-    our $VERSION = '0.35_01';
+    our $VERSION = '0.35';
 
     require XSLoader;
     XSLoader::load('Class::Accessor::Inherited::XS', $VERSION);
