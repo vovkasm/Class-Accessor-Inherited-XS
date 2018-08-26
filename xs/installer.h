@@ -1,27 +1,37 @@
 #ifndef __INHERITED_XS_INSTALLER_H_
 #define __INHERITED_XS_INSTALLER_H_
 
-inline void
-CAIXS_payload_attach(pTHX_ CV* cv, AV* payload_av) {
-#ifndef MULTIPLICITY
-    CvXSUBANY(cv).any_ptr = (void*)AvARRAY(payload_av);
-#endif
+inline shared_keys*
+CAIXS_payload_attach(pTHX_ CV* cv) {
+    GV* gv = CvGV(cv);
+    HV* stash = GvSTASH(gv);
+    MAGIC* mg = mg_findext((SV*)stash, PERL_MAGIC_ext, &sv_payload_marker);
 
-    sv_magicext((SV*)cv, (SV*)payload_av, PERL_MAGIC_ext, &sv_payload_marker, NULL, 0);
-    SvREFCNT_dec_NN((SV*)payload_av);
+    if (!mg) {
+        AV* meta = newAV();
+        bool was_rmg = SvRMAGICAL((SV*)stash);
+        mg = sv_magicext((SV*)stash, (SV*)meta, PERL_MAGIC_ext, &sv_payload_marker, NULL, 0);
+        if (!was_rmg) SvRMAGICAL_off((SV*)stash);
+        SvREFCNT_dec_NN((SV*)meta);
+    }
+
+    AV* meta = (AV*)(mg->mg_obj);
+    int free_idx = AvFILLp(meta) + 1;
+    av_extend(meta, AvFILLp(meta) + 4);
+    AvFILLp(meta) += 4;
+
+    CvXSUBANY(cv).any_i32 = free_idx;
+
+    sv_magicext((SV*)cv, (SV*)meta, PERL_MAGIC_ext, &sv_payload_marker, NULL, 0);
     SvRMAGICAL_off((SV*)cv);
+
+    return (shared_keys*)(AvARRAY(meta) + free_idx);
 }
 
 template <AccessorType type> static
 shared_keys*
 CAIXS_payload_init(pTHX_ CV* cv) {
-    AV* payload_av = newAV();
-
-    av_extend(payload_av, ALLOC_SIZE[type]);
-    AvFILLp(payload_av) = ALLOC_SIZE[type];
-
-    CAIXS_payload_attach(aTHX_ cv, payload_av);
-    return (shared_keys*)AvARRAY(payload_av);
+    return CAIXS_payload_attach(aTHX_ cv);
 }
 
 template <AccessorType type, AccessorOpts opts> static

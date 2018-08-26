@@ -18,25 +18,11 @@ CAIXS_mg_findext(SV* sv, int type, MGVTBL* vtbl) {
 
 inline shared_keys*
 CAIXS_find_payload(CV* cv) {
-    shared_keys* payload;
-
-#ifndef MULTIPLICITY
-    /* Blessed are ye and get a fastpath */
-    payload = (shared_keys*)(CvXSUBANY(cv).any_ptr);
-    if (UNLIKELY(!payload)) croak("Can't find hash key information");
-#else
-    /*
-        We can't look into CvXSUBANY under threads, as it could have been written in the parent thread
-        and had gone away at any time without prior notice. So, instead, we have to scan our magical
-        refcnt storage - there's always a proper thread-local SV*, cloned for us by perl itself.
-    */
     MAGIC* mg = CAIXS_mg_findext((SV*)cv, PERL_MAGIC_ext, &sv_payload_marker);
     if (UNLIKELY(!mg)) croak("Can't find hash key information");
 
-    payload = (shared_keys*)AvARRAY((AV*)(mg->mg_obj));
-#endif
-
-    return payload;
+    AV* meta = (AV*)(mg->mg_obj);
+    return (shared_keys*)(AvARRAY(meta) + CvXSUBANY(cv).any_i32);
 }
 
 inline HV*
