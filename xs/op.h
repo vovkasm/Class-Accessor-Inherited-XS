@@ -26,13 +26,11 @@ XSPROTO(CAIXS_entersub_wrapper) {
 #ifdef CAIX_OPTIMIZE_OPMETHOD
 
 /* catchy place, don't forget to add new types here */
-#define ACCESSOR_MAP_SIZE 14
+#define ACCESSOR_MAP_SIZE 12
 static accessor_cb_pair_t accessor_map[ACCESSOR_MAP_SIZE] = {
     accessor_cb_pair_t(&CAIXS_entersub_wrapper<Inherited, IsReadonly>, &CAIXS_accessor<Inherited, IsReadonly>),
     accessor_cb_pair_t(&CAIXS_entersub_wrapper<Inherited, None>, &CAIXS_accessor<Inherited, None>),
-    accessor_cb_pair_t(&CAIXS_entersub_wrapper<InheritedCb, IsReadonly>, &CAIXS_accessor<InheritedCb, IsReadonly>),
     accessor_cb_pair_t(&CAIXS_entersub_wrapper<InheritedCb, None>, &CAIXS_accessor<InheritedCb, None>),
-    accessor_cb_pair_t(&CAIXS_entersub_wrapper<InheritedCbNamed, IsReadonly>, &CAIXS_accessor<InheritedCbNamed, IsReadonly>),
     accessor_cb_pair_t(&CAIXS_entersub_wrapper<InheritedCbNamed, None>, &CAIXS_accessor<InheritedCbNamed, None>),
     accessor_cb_pair_t(&CAIXS_entersub_wrapper<PrivateClass, IsReadonly>, &CAIXS_accessor<PrivateClass, IsReadonly>),
     accessor_cb_pair_t(&CAIXS_entersub_wrapper<PrivateClass, None>, &CAIXS_accessor<PrivateClass, None>),
