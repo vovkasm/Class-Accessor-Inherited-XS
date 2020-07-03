@@ -9,28 +9,10 @@ extern "C" {
 
 namespace caixs { namespace meta {
 
-struct FieldMeta {
-    SV* name;
-    bool required;
-    SV* default_value;
-
-    FieldMeta();
-    FieldMeta(SV* name_, bool required_, SV* default_value_);
-    ~FieldMeta();
-    void activate(HV* obj);
-};
-
-struct PackageMeta {
-    PackageMeta();
-    ~PackageMeta();
-
-    void record(SV* hash_key, bool required, SV* default_value);
-    void activate(SV* object);
-    HV* fields;
-};
+typedef AV* PackageMeta;
 
 void init_meta();
-void install(SV* full_name, SV* hash_key, bool required, SV* default_value);
+void install(CV* cv, SV* hash_key, SV *required, SV* default_value);
 void activate(HV* stash, SV* object);
 
 }}

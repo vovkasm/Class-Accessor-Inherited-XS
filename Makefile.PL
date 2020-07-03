@@ -33,7 +33,6 @@ WriteMakefile(
     LICENSE         => 'perl',
     MIN_PERL_VERSION=> 5.010001,
     CCFLAGS         => $CCFLAGS,
-    LDFLAGS         => '-g',
     OBJECT           => 'XS.o meta.o',
     #LIBS            => ['-lstdc++'],
 );
