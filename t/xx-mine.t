@@ -2,6 +2,7 @@ use strict;
 use Test::More;
 use Class::Accessor::Inherited::XS;
 use Class::Accessor::Inherited::XS::Constants;
+use utf8;
 
 sub install {
     my ($package, $key, $required, $default) = @_;
@@ -39,5 +40,23 @@ subtest "check default" => sub {
     is $package->new->{foo}, undef;
 };
 
+
+
+=x
+SKIP: {
+    skip 'utf8 support on this perl is broken'. 1 if $] < 5.016;
+    subtest "utf8" => sub {
+        my $package = 't::P' . __LINE__;
+        install($package, 'поле', 0, sub { 'значение-по-умолчанию' } );
+        is $package->new(поле => 'привет')->{'поле'}, 'привет';
+        is $package->new->{'поле'}, 'значение-по-умолчанию';
+    }
+}
+
+install('P', 'foo', 0, undef);
+install('P', 'foo', 0, undef);
+note "zzz";
+
+=cut
 
 done_testing;

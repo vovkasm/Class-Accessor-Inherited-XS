@@ -18,7 +18,7 @@ struct FieldMeta {
 
 
 #define FIELDS_PREALLOCADED 5
-#define FIELD_SV_COUNT 3
+#define FIELD_SV_COUNT (sizeof (FieldMeta) / sizeof (SV*))
 
 static PackageMeta find_package(HV* stash) {
     MAGIC* mg = CAIXS_mg_findext((SV*)stash, PERL_MAGIC_ext, &package_marker);
@@ -41,18 +41,13 @@ inline size_t size(PackageMeta meta) { return (AvFILLp(meta) + 1) / FIELD_SV_COU
 void record(PackageMeta meta, SV* hash_key, SV* required, SV* default_value) {
     FieldMeta* fields = (FieldMeta*)AvARRAY(meta);
 
-    STRLEN name_len;
-    char* name = SvPV(hash_key, name_len);
-
     /* check that there might be already field meta is defined*/
     size_t fields_sz = size(meta);
     for(size_t i = 0; i < fields_sz; ++i) {
-        STRLEN field_len;
-        char* field_name = SvPV(fields[i].name, field_len);
-        if (field_len != name_len) continue;
-
-        if (strcmp(name, field_name) == 0) {
-            croak("object key '%' is already defined", name);
+        if (sv_eq(fields[i].name, hash_key)) {
+            SV* err = newSV(0);
+            sv_catpvf(err, "object key '%" SVf "' is already defined", hash_key);
+            croak_sv(err);
         }
     }
 
