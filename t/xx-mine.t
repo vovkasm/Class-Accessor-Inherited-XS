@@ -29,9 +29,14 @@ subtest "check required" => sub {
 };
 
 subtest "check default" => sub {
-    my $default = \"default-value";
-    my $sub = sub { return $$default } ;
     my $package = 't::P' . __LINE__;
+    my $default = \"default-value";
+    my $sub = sub {
+        my $self = shift;
+        ok $self;
+        is ref($self), $package;
+        return $$default
+    };
     install($package, 'foo', 0, $sub);
     is $package->new(foo => 'v')->{foo}, 'v';
     is $package->new->{foo}, 'default-value';

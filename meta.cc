@@ -78,8 +78,14 @@ void activate(PackageMeta meta, SV *sv) {
             HE* value = hv_fetch_ent(hv, field.name, 0, 0);
             if (!value) {
                 dSP;
+
+                ENTER;
+                SAVETMPS;
+
                 PUSHMARK(SP);
-                int count = call_sv(fields->default_value, G_SCALAR | G_NOARGS);
+                XPUSHs(sv);
+                PUTBACK;
+                int count = call_sv(fields->default_value, G_SCALAR);
                 SPAGAIN;
 
                 if (count != 1) {
@@ -92,7 +98,10 @@ void activate(PackageMeta meta, SV *sv) {
                 SvREFCNT_inc(new_val);
                 HE* ok = hv_store_ent(hv, field.name, new_val, 0);
                 if (!ok) SvREFCNT_dec(new_val);
+
                 PUTBACK;
+                FREETMPS;
+                LEAVE;
             }
         } else if (field.required == &PL_sv_yes) {
             HE* value = hv_fetch_ent(hv, field.name, 0, 0);
