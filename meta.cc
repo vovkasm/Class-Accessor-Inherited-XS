@@ -74,29 +74,33 @@ void activate(PackageMeta meta, SV *sv) {
     for(size_t i = 0; i < fields_sz; ++i) {
         FieldMeta& field = fields[i];
 
-        STRLEN field_len;
-        char* field_name = SvPV(field.name, field_len);
-
         if (SvOK(field.default_value)) {
-            SV** value = hv_fetch(hv, field_name, field_len, 0);
+            HE* value = hv_fetch_ent(hv, field.name, 0, 0);
             if (!value) {
                 dSP;
                 PUSHMARK(SP);
                 int count = call_sv(fields->default_value, G_SCALAR | G_NOARGS);
                 SPAGAIN;
 
-                if (count != 1) croak("unexpected return from 'default': %d, expected: 1", count);
+                if (count != 1) {
+                    SV* err = newSV(0);
+                    sv_catpvf(err, "unexpected return from 'default' of '%" SVf "': %d insead of expected 1", field.name, count);
+                    croak_sv(err);
+                }
 
                 SV* new_val = POPs;
                 SvREFCNT_inc(new_val);
-                SV** ok = hv_store(hv, field_name, field_len, new_val, 0);
+                HE* ok = hv_store_ent(hv, field.name, new_val, 0);
                 if (!ok) SvREFCNT_dec(new_val);
                 PUTBACK;
             }
         } else if (field.required == &PL_sv_yes) {
-            SV** value = hv_fetch(hv, field_name, field_len, 0);
-            if (!value) croak("key '%s' is required", field_name);
-            return;
+            HE* value = hv_fetch_ent(hv, field.name, 0, 0);
+            if (!value) {
+                SV* err = newSV(0);
+                sv_catpvf(err, "key '%" SVf "' is required", field.name);
+                croak_sv(err);
+            }
         }
     }
 }

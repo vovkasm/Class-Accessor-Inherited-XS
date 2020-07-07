@@ -167,7 +167,7 @@ PPCODE:
 {
     STRLEN len;
     const char* name = SvPV_const(full_name, len);
-    CV* cv = get_cvn_flags(name, len, 0);
+    CV* cv = get_cvn_flags(name, len, SVf_UTF8);
     if (!cv) croak("Can't get cv");
 
     caixs::meta::install(cv, hash_key, required, default_value);

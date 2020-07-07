@@ -42,7 +42,6 @@ subtest "check default" => sub {
 
 
 
-=x
 SKIP: {
     skip 'utf8 support on this perl is broken'. 1 if $] < 5.016;
     subtest "utf8" => sub {
@@ -52,11 +51,5 @@ SKIP: {
         is $package->new->{'поле'}, 'значение-по-умолчанию';
     }
 }
-
-install('P', 'foo', 0, undef);
-install('P', 'foo', 0, undef);
-note "zzz";
-
-=cut
 
 done_testing;
