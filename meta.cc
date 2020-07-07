@@ -72,12 +72,7 @@ void record(PackageMeta meta, SV* hash_key, SV* required, SV* default_value) {
 }
 
 void activate(PackageMeta meta, SV *sv) {
-    if (!SvROK(sv)) croak("cannot activate non-reference");
-
-    SV* obj = SvRV(sv);
-    if (SvTYPE(obj) != SVt_PVHV) croak("cannot activate non-hash reference");
-    HV* hv = (HV*)obj;
-
+    HV* hv = (HV*)SvRV(sv);
 
     FieldMeta* fields = (FieldMeta*)AvARRAY(meta);
     size_t fields_sz = size(meta);
