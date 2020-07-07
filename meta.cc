@@ -1,4 +1,5 @@
 #include "xs/meta.h"
+#include "xs/common.h"
 #include <new>
 
 namespace caixs { namespace meta {
@@ -19,15 +20,9 @@ struct FieldMeta {
 #define FIELDS_PREALLOCADED 5
 #define FIELD_SV_COUNT 3
 
-PackageMeta find_package(HV* stash) {
-    if (SvTYPE(stash) >= SVt_PVMG) {
-        for (MAGIC* mg = SvMAGIC(stash); mg; mg = mg->mg_moremagic) {
-            if (mg->mg_virtual == &package_marker) {
-                return (PackageMeta)mg->mg_obj;
-            }
-        }
-    }
-    return NULL;
+static PackageMeta find_package(HV* stash) {
+    MAGIC* mg = CAIXS_mg_findext((SV*)stash, PERL_MAGIC_ext, &package_marker);
+    return (PackageMeta)(mg ? mg->mg_obj : NULL);
 }
 
 static PackageMeta create_package(HV* stash) {
