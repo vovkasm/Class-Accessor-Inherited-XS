@@ -82,12 +82,26 @@ void activate(PackageMeta meta, SV *sv) {
         STRLEN field_len;
         char* field_name = SvPV(field.name, field_len);
 
-        if (field.required == &PL_sv_yes) {
-            SV** ref = hv_fetch(hv, field_name, field_len, 0);
-            if (!ref) croak("key '%s' is required", field_name);
+        if (SvOK(field.default_value)) {
+            SV** value = hv_fetch(hv, field_name, field_len, 0);
+            if (!value) {
+                dSP;
+                PUSHMARK(SP);
+                int count = call_sv(fields->default_value, G_SCALAR | G_NOARGS);
+                SPAGAIN;
+
+                if (count != 1) croak("unexpected return from 'default': %d, expected: 1", count);
+
+                SV* new_val = POPs;
+                SvREFCNT_inc(new_val);
+                SV** ok = hv_store(hv, field_name, field_len, new_val, 0);
+                if (!ok) SvREFCNT_dec(new_val);
+                PUTBACK;
+            }
+        } else if (field.required == &PL_sv_yes) {
+            SV** value = hv_fetch(hv, field_name, field_len, 0);
+            if (!value) croak("key '%s' is required", field_name);
             return;
-        } else if (SvOK(field.default_value)) {
-            // ...
         }
     }
 }

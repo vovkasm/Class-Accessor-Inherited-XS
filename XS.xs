@@ -35,9 +35,11 @@ CAIXS_install_inherited_accessor(pTHX_ SV* full_name, SV* hash_key, SV* pkg_key,
 
     } else {
         info = CAIXS_install_accessor<ObjectOnly>(aTHX_ full_name, (AccessorOpts)opts);
+        /*
         SV* required = &PL_sv_yes;
         SV* default_val = &PL_sv_undef;
         caixs::meta::install(info.cv, hash_key, required, default_val);
+        */
     }
 
     STRLEN len;
@@ -156,6 +158,19 @@ install_constructor(SV* full_name)
 PPCODE:
 {
     CAIXS_install_cv<Constructor, None>(aTHX_ full_name);
+    XSRETURN_UNDEF;
+}
+
+void
+test_install_meta(SV* full_name, SV* hash_key, SV* required, SV* default_value)
+PPCODE:
+{
+    STRLEN len;
+    const char* name = SvPV_const(full_name, len);
+    CV* cv = get_cvn_flags(name, len, 0);
+    if (!cv) croak("Can't get cv");
+
+    caixs::meta::install(cv, hash_key, required, default_value);
     XSRETURN_UNDEF;
 }
 
