@@ -62,10 +62,13 @@ void record(PackageMeta meta, SV* hash_key, SV* required, SV* default_value) {
     size_t new_sz = AvFILLp(meta) + FIELD_SV_COUNT;
     av_fill(meta, new_sz);
 
+    SvREFCNT_inc_simple_NN(hash_key);
+    SvREFCNT_inc_simple(default_value);
     FieldMeta& field = fields[fields_sz];
-    field.name = SvREFCNT_inc(hash_key);
-    field.required = SvREFCNT_inc(required);
-    field.default_value = SvREFCNT_inc(default_value);
+
+    field.name = hash_key;
+    field.required = SvTRUE(required) ? &PL_sv_yes : NULL;
+    field.default_value = default_value;
 }
 
 void activate(PackageMeta meta, SV *sv) {
@@ -84,7 +87,7 @@ void activate(PackageMeta meta, SV *sv) {
         STRLEN field_len;
         char* field_name = SvPV(field.name, field_len);
 
-        if (SvTRUE(field.required)) {
+        if (field.required == &PL_sv_yes) {
             SV** ref = hv_fetch(hv, field_name, field_len, 0);
             if (!ref) croak("key '%s' is required", field_name);
             return;
