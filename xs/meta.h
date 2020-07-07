@@ -11,7 +11,6 @@ namespace caixs { namespace meta {
 
 typedef AV* PackageMeta;
 
-void init_meta();
 void install(CV* cv, SV* hash_key, SV *required, SV* default_value);
 void activate(HV* stash, SV* object);
 
