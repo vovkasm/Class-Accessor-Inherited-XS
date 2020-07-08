@@ -13,6 +13,7 @@ static int field_meta_free(pTHX_ SV*, MAGIC* mg);
 struct FieldMeta {
     SV* name;
     SV* required;
+    SV* default_code;
     SV* default_value;
 };
 
@@ -51,19 +52,28 @@ void record(PackageMeta meta, SV* hash_key, SV* required, SV* default_value) {
         }
     }
 
-    if (SvOK(default_value) && (!SvROK(default_value) || SvTYPE(SvRV(default_value)) != SVt_PVCV))
-        croak("'default' should be a code reference");
-
     size_t new_sz = AvFILLp(meta) + FIELD_SV_COUNT;
     av_fill(meta, new_sz);
+    FieldMeta& field = fields[fields_sz];
+
+    if (default_value && SvOK(default_value)) {
+        if (SvROK(default_value)) {
+            if (SvTYPE(SvRV(default_value)) == SVt_PVCV) {
+                field.default_code = SvREFCNT_inc_simple_NN(default_value);
+            }
+            else {
+                SV* err = newSV(0);
+                sv_catpvf(err, "Default values for '%" SVf "' should be either simple (string, number) or code ref", hash_key);
+                croak_sv(err);
+            }
+        }
+        else field.default_value = SvREFCNT_inc_simple_NN(default_value);
+    }
 
     SvREFCNT_inc_simple_NN(hash_key);
-    SvREFCNT_inc_simple(default_value);
-    FieldMeta& field = fields[fields_sz];
 
     field.name = hash_key;
     field.required = SvTRUE(required) ? &PL_sv_yes : NULL;
-    field.default_value = default_value;
 }
 
 void activate(PackageMeta meta, SV *sv) {
@@ -74,42 +84,43 @@ void activate(PackageMeta meta, SV *sv) {
     for(size_t i = 0; i < fields_sz; ++i) {
         FieldMeta& field = fields[i];
 
-        if (SvOK(field.default_value)) {
-            HE* value = hv_fetch_ent(hv, field.name, 0, 0);
-            if (!value) {
-                dSP;
+        HE* value = hv_fetch_ent(hv, field.name, 0, 0);
+        if (value) continue;
 
-                ENTER;
-                SAVETMPS;
+        if (field.default_code) {
+            dSP;
 
-                PUSHMARK(SP);
-                XPUSHs(sv);
-                PUTBACK;
-                int count = call_sv(fields->default_value, G_SCALAR);
-                SPAGAIN;
+            ENTER;
+            SAVETMPS;
 
-                if (count != 1) {
-                    SV* err = newSV(0);
-                    sv_catpvf(err, "unexpected return from 'default' of '%" SVf "': %d insead of expected 1", field.name, count);
-                    croak_sv(err);
-                }
+            PUSHMARK(SP);
+            XPUSHs(sv);
+            PUTBACK;
+            int count = call_sv(fields->default_code, G_SCALAR);
+            SPAGAIN;
 
-                SV* new_val = POPs;
-                SvREFCNT_inc(new_val);
-                HE* ok = hv_store_ent(hv, field.name, new_val, 0);
-                if (!ok) SvREFCNT_dec(new_val);
-
-                PUTBACK;
-                FREETMPS;
-                LEAVE;
-            }
-        } else if (field.required == &PL_sv_yes) {
-            HE* value = hv_fetch_ent(hv, field.name, 0, 0);
-            if (!value) {
+            if (count != 1) {
                 SV* err = newSV(0);
-                sv_catpvf(err, "key '%" SVf "' is required", field.name);
+                sv_catpvf(err, "unexpected return from 'default' of '%" SVf "': %d insead of expected 1", field.name, count);
                 croak_sv(err);
             }
+
+            SV* new_val = POPs;
+            SvREFCNT_inc(new_val);
+            HE* ok = hv_store_ent(hv, field.name, new_val, 0);
+            if (!ok) SvREFCNT_dec(new_val);
+
+            PUTBACK;
+            FREETMPS;
+            LEAVE;
+        } else if (field.default_value) {
+            SvREFCNT_inc(field.default_value);
+            HE* ok = hv_store_ent(hv, field.name, field.default_value, 0);
+            if (!ok) SvREFCNT_dec(field.default_value);
+        } else if (field.required == &PL_sv_yes) {
+            SV* err = newSV(0);
+            sv_catpvf(err, "key '%" SVf "' is required", field.name);
+            croak_sv(err);
         }
     }
 }

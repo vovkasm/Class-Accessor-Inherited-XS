@@ -28,7 +28,7 @@ subtest "check required" => sub {
     };
 };
 
-subtest "check default" => sub {
+subtest "check default (code)" => sub {
     my $package = 't::P' . __LINE__;
     my $default = \"default-value";
     my $sub = sub {
@@ -45,7 +45,41 @@ subtest "check default" => sub {
     is $package->new->{foo}, undef;
 };
 
+subtest "check default (value)" => sub {
+    subtest "common case" => sub {
+        my $package = 't::P' . __LINE__;
+        my $default = "default-value";
+        install($package, 'foo', 0, $default);
+        is $package->new->{foo}, $default;
+        is $package->new(foo => 'v')->{foo}, 'v';
+    };
+    subtest "zero" => sub {
+        my $package = 't::P' . __LINE__;
+        my $default = 0;
+        install($package, 'foo', 0, $default);
+        is $package->new->{foo}, $default;
+    };
+    subtest "empty string" => sub {
+        my $package = 't::P' . __LINE__;
+        my $default = '';
+        install($package, 'foo', 0, $default);
+        is $package->new->{foo}, $default;
+    };
+    subtest "undef" => sub {
+        my $package = 't::P' . __LINE__;
+        my $default;
+        install($package, 'foo', 0, $default);
+        is $package->new->{foo}, $default;
+    };
+};
 
+subtest "check default (non-code references are prohibed)" => sub {
+    my $package = 't::P' . __LINE__;
+    my $default = \"default-value";
+    my $ok = eval { install($package, 'foo', 0, $default); 1 };
+    ok !$ok;
+    like $@, qr/\QDefault values for 'foo' should be either simple (string, number) or code ref\E/;
+};
 
 SKIP: {
     skip 'utf8 support on this perl is broken'. 1 if $] < 5.016;
