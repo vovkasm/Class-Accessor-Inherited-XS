@@ -101,12 +101,12 @@ void activate(PackageMeta meta, SV *sv) {
 
             if (count != 1) {
                 SV* err = newSV(0);
-                sv_catpvf(err, "unexpected return from 'default' of '%" SVf "': %d insead of expected 1", field.name, count);
+                sv_catpvf(err, "Got more than one item for default value of key '%" SVf "'", field.name);
                 croak_sv(err);
             }
 
             SV* new_val = POPs;
-            SvREFCNT_inc(new_val);
+            SvREFCNT_inc_NN(new_val);
             HE* ok = hv_store_ent(hv, field.name, new_val, 0);
             if (!ok) SvREFCNT_dec(new_val);
 
