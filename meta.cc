@@ -67,7 +67,9 @@ void record(PackageMeta meta, SV* hash_key, SV* required, SV* default_value) {
                 croak_sv(err);
             }
         }
-        else field.default_value = SvREFCNT_inc_simple_NN(default_value);
+        else  {
+            field.default_value = SvREFCNT_inc_simple_NN(default_value);
+        }
     }
 
     SvREFCNT_inc_simple_NN(hash_key);
