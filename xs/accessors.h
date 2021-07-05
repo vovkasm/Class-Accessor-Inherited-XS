@@ -240,6 +240,7 @@ static void CAIXS_accessor(pTHX_ SV** SP, CV* cv, HV* stash) {
     }
 
     sv_bless(self, stash);
+    caixs::meta::activate(stash, self);
     *ret = self;
     return;
 }};

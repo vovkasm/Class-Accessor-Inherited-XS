@@ -44,13 +44,16 @@ CAIXS_install_cv(pTHX_ SV* full_name) {
 
 template <AccessorType type, AccessorOpts opts>
 struct CImpl {
-static shared_keys* CAIXS_install_accessor(pTHX_ AccessorOpts val, SV* full_name) {
+static install_info
+CAIXS_install_accessor(pTHX_ AccessorOpts val, SV* full_name) {
     if (TYPE_INHERITED && (opts & IsReadonly)) goto next;
     if (type == Constructor) goto next;
 
     if ((val & opts) == opts) {
-        CV* cv = CAIXS_install_cv<type, opts>(aTHX_ full_name);
-        return CAIXS_payload_init<type>(aTHX_ cv);
+        install_info info;
+        info.cv = CAIXS_install_cv<type, opts>(aTHX_ full_name);
+        info.payload = CAIXS_payload_init<type>(aTHX_ info.cv);
+        return info;
     }
 
 next:
@@ -59,9 +62,11 @@ next:
 
 template <AccessorType type>
 struct CImpl<type, (AccessorOpts)0> {
-static shared_keys* CAIXS_install_accessor(pTHX_ int val, SV* full_name) {
-    CV* cv = CAIXS_install_cv<type, None>(aTHX_ full_name);
-    return CAIXS_payload_init<type>(aTHX_ cv);
+static install_info CAIXS_install_accessor(pTHX_ int val, SV* full_name) {
+    install_info info;
+    info.cv = CAIXS_install_cv<type, None>(aTHX_ full_name);
+    info.payload = CAIXS_payload_init<type>(aTHX_ info.cv);
+    return info;
 }};
 
 #endif /* __INHERITED_XS_INSTALLER_H_ */

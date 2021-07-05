@@ -19,6 +19,11 @@ struct shared_keys {
     SV* write_cb;
 };
 
+struct install_info {
+    shared_keys* payload;
+    CV* cv;
+};
+
 enum AccessorType {
     Inherited,
     InheritedCb,

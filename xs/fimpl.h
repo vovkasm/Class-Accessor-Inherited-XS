@@ -14,7 +14,7 @@ template <AccessorType type, AccessorOpts opts>
 struct CImpl;
 
 template <AccessorType type> inline
-shared_keys*
+install_info
 CAIXS_install_accessor(pTHX_ SV* full_name, AccessorOpts val) {
     return CImpl<type, AccessorOptsBF>::CAIXS_install_accessor(aTHX_ val, full_name);
 }
